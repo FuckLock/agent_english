@@ -1,0 +1,11 @@
+Migration summary:
+- Added 11 Codex project skills under `.agents/skills/`.
+- Added 4 Codex custom agents under `.codex/agents/`.
+- Added Codex hooks config under `.codex/hooks.json` and executable scripts under `.codex/hooks/`.
+- Migrated feedback/evolution records into `.codex/feedback/` and `.codex/EVOLUTION.md`.
+- Added root `AGENTS.md` as the Codex project controller.
+
+Runtime notes:
+- Codex hooks are not a perfect Claude Code hook clone. PreToolUse/PostToolUse are shell-command oriented; Edit/Write review marking is approximated by Stop hook plus git diff.
+- Custom-agent tool lists are guidance only; hard permissions come from Codex sandbox/config.
+- Project skills live in `.agents/skills/`; start a new Codex session if they are not visible in the current one.
