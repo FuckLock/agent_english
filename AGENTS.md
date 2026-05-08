@@ -101,6 +101,95 @@
       skill: evolution-engine
       required_packet: feedback_dir, skills_dir, agents_md_path
 
+[Hook 契约]
+    总原则：
+    - `.codex/hooks.json` 是当前唯一 hook 注册入口；磁盘上有脚本不等于已触发。
+    - Codex hook 当前执行 shell command；不会自动派发 `.codex/agents/*.toml`。
+    - hook 输出只作为提醒 / 阻断 / 状态标记；主 Agent 必须主动验证关键结果。
+    - hook 失败、超时或沉默都不等于流程完成。
+
+    1. detect-feedback-signal
+       来源：UserPromptSubmit
+       脚本：.codex/hooks/detect-feedback-signal.sh
+       当前能力：检测用户修正 / 纠偏关键词，命中时注入 additionalContext。
+       模式：提醒承接，不自动派发 agent。
+       主 Agent 动作：
+         - 先完成当前用户请求。
+         - 若命中信号，处理完主请求后用 feedback-writer 流程记录到 `.codex/feedback/`。
+         - 默认主 Agent 本地记录；只有用户明确要求 delegation / sub-agent 时，才派 feedback-observer。
+       禁止：
+         - 把 additionalContext 当成 feedback 已写入。
+         - 只写 memory，不写 `.codex/feedback/`。
+
+    2. check-evolution
+       来源：SessionStart，matcher=startup|resume
+       脚本：.codex/hooks/check-evolution.sh
+       当前能力：统计 `.codex/feedback/FEEDBACK-INDEX.md` 中的索引条目数，并输出提醒。
+       模式：提醒模式，不自动扫描、不自动修改。
+       主 Agent 动作：
+         - 初始化时注意是否存在 feedback 池。
+         - 没有更高优先级任务时，可提示用户是否检查进化建议。
+         - 用户明确要求检查进化建议时，按 evolution-engine 流程扫描。
+       禁止：
+         - 把提醒文本当成 evolution-engine 已执行。
+         - 未经用户确认就修改 AGENTS.md 或 Skill。
+
+    3. pre-commit-check
+       来源：PreToolUse，matcher=^git commit(\s|$)
+       脚本：.codex/hooks/pre-commit-check.sh
+       当前能力：在项目内寻找 tsconfig.json；找到后运行 `npx tsc --noEmit`，失败则阻止 commit。
+       模式：条件阻断。
+       主 Agent 动作：
+         - commit 被阻止时读取 TypeScript 报错并修复。
+         - 没有 tsconfig.json 时该 hook 直接放行；主 Agent 仍需按项目技术栈主动验证。
+       禁止：
+         - 把 commit 通过等同于构建、测试、review 全通过。
+
+    4. kill-dev-ports
+       来源：PreToolUse，matcher=^(pnpm|npm|yarn)\s+(run\s+)?dev(\s|$)
+       脚本：.codex/hooks/kill-dev-ports.sh
+       当前能力：启动 dev 前强杀 3000 / 3001 / 4173 / 5173 / 8080 端口占用进程。
+       模式：环境清理。
+       主 Agent 动作：
+         - 运行 dev server 前知道这些端口可能被清理。
+         - 若用户明确要求保留某个本地服务，不能依赖该 hook，需调整端口或先说明冲突。
+       禁止：
+         - 把端口清理当成 dev server 已成功启动。
+
+    5. auto-push
+       来源：PostToolUse，matcher=^git commit(\s|$)
+       脚本：.codex/hooks/auto-push.sh
+       当前能力：commit 命令成功后尝试 `git push`；push 失败会被脚本吞掉并放行。
+       模式：best-effort 后置动作。
+       主 Agent 动作：
+         - 需要交付远程结果时，必须主动用 `git status --short --branch` / `git log` / `git remote` 验证。
+         - 只有看到明确 push 结果，才说已推送。
+       禁止：
+         - 因为 commit 成功就宣称远程已同步。
+
+    6. mark-review-needed
+       来源：Stop
+       脚本：.codex/hooks/mark-review-needed.sh
+       当前能力：通过 git diff 或 `.codex/.review-snapshot` 检测代码文件改动，写入 `.codex/.needs-review = needs_review`。
+       排除：文档、配置、lock/log/env、`.codex/*`、`.agents/skills/*/SKILL.md` 等非代码文件。
+       模式：状态标脏。
+       主 Agent 动作：
+         - 代码改动后视为 review_pending。
+         - 无独立 git 仓库时依赖 snapshot 兜底，但仍要主动确认关键改动。
+       禁止：
+         - 把未触发标脏当成不需要 review 的证据。
+
+    7. stop-gate
+       来源：Stop，在 mark-review-needed 之后执行
+       脚本：.codex/hooks/stop-gate.sh
+       当前能力：`.codex/.needs-review=needs_review` 时阻止停止；`clean` 时删除状态文件并放行。
+       模式：review 闭环阻断。
+       主 Agent 动作：
+         - 被阻止时继续 code-review / 修复闭环，或明确告诉用户卡在 review gate。
+         - review 通过后写回 `.codex/.needs-review = clean`。
+       禁止：
+         - 绕过 stop-gate 宣称开发链路收口。
+
 [项目旅程]
     状态检测：
     - Product-Spec.md
