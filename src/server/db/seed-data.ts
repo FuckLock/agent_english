@@ -1,4 +1,5 @@
 import { asJson } from "./utils";
+import { builtinProviderTemplates } from "../providers/provider-templates";
 
 export const lessonSeeds = [
   {
@@ -95,17 +96,14 @@ export const lessonSeeds = [
   }
 ] as const;
 
-export const providerTemplateSeeds = [
-  ["openai-official", "openai", "OpenAI 官方", "text", "https://api.openai.com/v1"],
-  ["google-official", "google", "Google 官方", "text", "https://generativelanguage.googleapis.com"],
-  ["grsai-compatible", "grsai", "grsai 可配置", "text", null],
-  ["openai-compatible", "openai-compatible", "OpenAI-compatible", "text", null],
-  ["custom-http", "custom-http", "自定义 HTTP", "text", null],
-  ["bing-search", "bing", "Bing Search", "search", "https://api.bing.microsoft.com"],
-  ["google-cse", "google-cse", "Google CSE", "search", "https://www.googleapis.com"],
-  ["tavily-search", "tavily", "Tavily", "search", "https://api.tavily.com"],
-  ["serpapi-search", "serpapi", "SerpAPI", "search", "https://serpapi.com"]
-] as const;
+export const providerTemplateSeeds = builtinProviderTemplates.map((templateItem) => [
+  templateItem.id,
+  templateItem.providerKey,
+  templateItem.name,
+  templateItem.capability,
+  templateItem.defaultBaseUrl,
+  templateItem.defaultModel
+] as const);
 
 export const comicPanelSeeds = [
   ["panel-cafe-1", 1, "Could I get an iced latte, please?", "我想礼貌地点一杯冰拿铁。"],

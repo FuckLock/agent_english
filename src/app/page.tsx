@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import {
   CheckCircle2,
   Image as ImageIcon,
@@ -16,6 +17,9 @@ import { GameButton } from "@/components/ui/game-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { dungeons as fallbackDungeons } from "@/lib/design-tokens";
 import { getHomeOverview } from "@/server/repositories/game-repository";
+import { getProviderSetupStatus } from "@/server/repositories/provider-repository";
+
+export const dynamic = "force-dynamic";
 
 type PinStyle = CSSProperties & {
   "--pin-color": string;
@@ -58,6 +62,7 @@ const fallbackMapPins = [
 
 export default function Home() {
   const home = getHomeOverview();
+  const providerStatus = getProviderSetupStatus();
   const mapPins = home.dungeons.length > 0 ? home.dungeons : fallbackMapPins;
   const dailyDungeons = home.dungeons.length > 0 ? home.dungeons.slice(0, 3) : fallbackDungeons;
 
@@ -182,9 +187,18 @@ export default function Home() {
 
           <ProgressBar label="Boss 血量" value={42} />
 
-          <GameButton icon={<Play size={18} fill="currentColor" strokeWidth={2.4} />} variant="dark">
-            继续打
-          </GameButton>
+          {providerStatus.canStartFormalLearning ? (
+            <GameButton icon={<Play size={18} fill="currentColor" strokeWidth={2.4} />} variant="dark">
+              继续打
+            </GameButton>
+          ) : (
+            <Link className="game-button game-button--dark game-button--md" href="/setup">
+              <span className="game-button__icon">
+                <Play aria-hidden="true" size={18} fill="currentColor" strokeWidth={2.4} />
+              </span>
+              <span>配置文字模型</span>
+            </Link>
+          )}
         </aside>
       </div>
     </main>

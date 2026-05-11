@@ -8,11 +8,14 @@ import {
   storyLessons
 } from "./schema";
 import { demoJson, lessonSeeds, providerTemplateSeeds } from "./seed-data";
+import { getTemplateDefinition, serializeTemplateSchema } from "../providers/provider-templates";
 
 export function applyProviderTemplates(timestamp: string) {
   const db = getDb();
 
-  for (const [id, providerKey, name, capability, defaultBaseUrl] of providerTemplateSeeds) {
+  for (const [id, providerKey, name, capability, defaultBaseUrl, defaultModel] of providerTemplateSeeds) {
+    const templateDefinition = getTemplateDefinition(id);
+
     db.insert(providerTemplates)
       .values({
         id,
@@ -20,15 +23,17 @@ export function applyProviderTemplates(timestamp: string) {
         name,
         capability,
         defaultBaseUrl,
-        defaultModel: null,
-        configSchemaJson: demoJson.providerSchema,
+        defaultModel,
+        configSchemaJson: templateDefinition
+          ? serializeTemplateSchema(templateDefinition)
+          : demoJson.providerSchema,
         isBuiltin: true,
         createdAt: timestamp,
         updatedAt: timestamp
       })
       .onConflictDoUpdate({
         target: providerTemplates.id,
-        set: { name, capability, defaultBaseUrl, updatedAt: timestamp }
+        set: { name, capability, defaultBaseUrl, defaultModel, updatedAt: timestamp }
       })
       .run();
   }
