@@ -8,6 +8,7 @@ import {
   storyLessons
 } from "./schema";
 import { demoJson, lessonSeeds, providerTemplateSeeds } from "./seed-data";
+import { asJson } from "./utils";
 import { getTemplateDefinition, serializeTemplateSchema } from "../providers/provider-templates";
 
 export function applyProviderTemplates(timestamp: string) {
@@ -55,13 +56,34 @@ export function applyLessons(timestamp: string) {
         difficultyLevel: seed.difficultyLevel,
         copyrightRisk: "low",
         longTermStorageRisk: "low",
-        metadataJson: demoJson.empty,
+        metadataJson: asJson({
+          category: seed.category,
+          length: "short",
+          mode: "quest",
+          suitableForDungeon: true,
+          reasons: []
+        }),
         createdAt: timestamp,
         updatedAt: timestamp
       })
       .onConflictDoUpdate({
         target: contentSources.id,
-        set: { title: seed.title, status: "ready", updatedAt: timestamp }
+        set: {
+          title: seed.title,
+          sourceType: seed.sourceType,
+          status: "ready",
+          difficultyLevel: seed.difficultyLevel,
+          copyrightRisk: "low",
+          longTermStorageRisk: "low",
+          metadataJson: asJson({
+            category: seed.category,
+            length: "short",
+            mode: "quest",
+            suitableForDungeon: true,
+            reasons: []
+          }),
+          updatedAt: timestamp
+        }
       })
       .run();
 
@@ -79,7 +101,13 @@ export function applyLessons(timestamp: string) {
       })
       .onConflictDoUpdate({
         target: contentExcerpts.id,
-        set: { excerptText: seed.excerpt, summary: seed.summary, updatedAt: timestamp }
+        set: {
+          excerptText: seed.excerpt,
+          summary: seed.summary,
+          wordCount: seed.excerpt.split(" ").length,
+          difficultyLevel: seed.difficultyLevel,
+          updatedAt: timestamp
+        }
       })
       .run();
 

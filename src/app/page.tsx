@@ -1,70 +1,24 @@
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
-  Image as ImageIcon,
-  MapPin,
   MessageCircle,
   Play,
-  Search,
   ShieldCheck,
   Sparkles,
-  Swords,
   Zap
 } from "lucide-react";
 
+import { DungeonMap } from "@/components/home/dungeon-map";
 import { GameButton } from "@/components/ui/game-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { dungeons as fallbackDungeons } from "@/lib/design-tokens";
 import { getHomeOverview } from "@/server/repositories/game-repository";
 import { getProviderSetupStatus } from "@/server/repositories/provider-repository";
 
 export const dynamic = "force-dynamic";
 
-type PinStyle = CSSProperties & {
-  "--pin-color": string;
-};
-
-const fallbackMapPins = [
-  {
-    title: "Cafe Mystery",
-    meta: "A2 · 点餐听力",
-    top: "21%",
-    left: "17%",
-    tone: "#FF7A59",
-    active: true
-  },
-  {
-    title: "Bakery Chase",
-    meta: "A1 · 漫画跟读",
-    top: "58%",
-    left: "35%",
-    tone: "#19A974",
-    active: false
-  },
-  {
-    title: "Moon Station",
-    meta: "B1 · 科幻阅读",
-    top: "34%",
-    left: "64%",
-    tone: "#4F7CFF",
-    active: false
-  },
-  {
-    title: "Word Forge",
-    meta: "A2 · 单词铸造",
-    top: "70%",
-    left: "72%",
-    tone: "#F4B740",
-    active: false
-  }
-] as const;
-
 export default function Home() {
   const home = getHomeOverview();
   const providerStatus = getProviderSetupStatus();
-  const mapPins = home.dungeons.length > 0 ? home.dungeons : fallbackMapPins;
-  const dailyDungeons = home.dungeons.length > 0 ? home.dungeons.slice(0, 3) : fallbackDungeons;
 
   return (
     <main className="page-shell">
@@ -80,76 +34,7 @@ export default function Home() {
       </section>
 
       <div className="home-grid">
-        <section className="panel map-panel" id="map" aria-labelledby="map-title">
-          <div className="panel-heading">
-            <div>
-              <p className="section-kicker">Dungeon Map</p>
-              <h2 id="map-title">选择今天的入口</h2>
-            </div>
-            <GameButton icon={<Search size={16} strokeWidth={2.6} />} size="sm" variant="secondary">
-              找副本
-            </GameButton>
-          </div>
-
-          <div className="map-board" aria-label="今日副本地图">
-            <div className="map-region map-region--market">
-              <ImageIcon aria-hidden="true" size={18} strokeWidth={2.5} />
-              <span>Comic Town</span>
-            </div>
-            <div className="map-region map-region--dock">
-              <MessageCircle aria-hidden="true" size={18} strokeWidth={2.5} />
-              <span>Talk Harbor</span>
-            </div>
-            <span className="route-line route-line--one" />
-            <span className="route-line route-line--two" />
-            <span className="route-line route-line--three" />
-
-            {mapPins.map((pin, index) => (
-              <article
-                className={index === 0 ? "dungeon-pin is-active" : "dungeon-pin"}
-                key={pin.title}
-                style={
-                  {
-                    "--pin-color": pin.tone,
-                    left: "mapLeft" in pin ? pin.mapLeft : pin.left,
-                    top: "mapTop" in pin ? pin.mapTop : pin.top
-                  } as PinStyle
-                }
-              >
-                <span className="dungeon-pin__dot">
-                  {index === 0 ? (
-                    <Swords aria-hidden="true" size={16} strokeWidth={2.8} />
-                  ) : (
-                    <MapPin aria-hidden="true" size={16} strokeWidth={2.8} />
-                  )}
-                </span>
-                <span>
-                  <strong>{pin.title}</strong>
-                  <small>{"tag" in pin ? `${pin.level} · ${pin.tag}` : pin.meta}</small>
-                </span>
-              </article>
-            ))}
-          </div>
-
-          <div className="daily-grid" id="discover">
-            {dailyDungeons.map((dungeon) => (
-              <article
-                className="quest-card"
-                key={dungeon.title}
-                style={{ "--card-tone": dungeon.tone } as CSSProperties & { "--card-tone": string }}
-              >
-                <span className="quest-card__stripe" />
-                <div className="quest-card__top">
-                  <span>{dungeon.level}</span>
-                  <strong>+{dungeon.xp} XP</strong>
-                </div>
-                <h3>{dungeon.title}</h3>
-                <p>{dungeon.tag}</p>
-                <ProgressBar label="通关进度" value={dungeon.progress} />
-              </article>
-            ))}
-          </div>
-        </section>
+        <DungeonMap dungeons={home.dungeons} />
 
         <aside className="challenge-panel" id="vault" aria-labelledby="challenge-title">
           <div className="challenge-panel__top">

@@ -23,7 +23,8 @@ export const lessonSeeds = [
     excerpt: "Could I get an iced latte, please? I would also like a small cake.",
     summary: "在咖啡店用礼貌英语点单。",
     sourceType: "demo",
-    difficultyLevel: "A2"
+    difficultyLevel: "A2",
+    category: "culture"
   },
   {
     sourceId: "source-moon-station",
@@ -46,7 +47,8 @@ export const lessonSeeds = [
     excerpt: "The moon station was quiet until the warning light began to blink.",
     summary: "在月球站处理一个轻量科幻事件。",
     sourceType: "demo",
-    difficultyLevel: "B1"
+    difficultyLevel: "B1",
+    category: "tech"
   },
   {
     sourceId: "source-bakery-chase",
@@ -69,7 +71,8 @@ export const lessonSeeds = [
     excerpt: "The baker runs after the warm bread and laughs with the children.",
     summary: "用短句跟读轻松漫画场景。",
     sourceType: "demo",
-    difficultyLevel: "A1"
+    difficultyLevel: "A1",
+    category: "weird"
   },
   {
     sourceId: "source-word-forge",
@@ -92,7 +95,8 @@ export const lessonSeeds = [
     excerpt: "A useful word becomes stronger when you use it in a real sentence.",
     summary: "把单词变成能开口使用的句子。",
     sourceType: "demo",
-    difficultyLevel: "A2"
+    difficultyLevel: "A2",
+    category: "people"
   }
 ] as const;
 

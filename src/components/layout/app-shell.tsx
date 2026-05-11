@@ -35,10 +35,10 @@ export function AppShell({ children }: AppShellProps) {
           <span className="brand__text">{appCopy.productName}</span>
         </a>
 
-        <label className="top-search">
+        <form action="/discover" className="top-search">
           <Search aria-hidden="true" size={18} strokeWidth={2.4} />
-          <input aria-label="搜索副本或单词" placeholder="搜副本、漫画、单词" />
-        </label>
+          <input aria-label="搜索副本或单词" name="q" placeholder="搜副本、漫画、单词" />
+        </form>
 
         <nav aria-label="主导航" className="top-nav">
           {navItems.map((item) => {
