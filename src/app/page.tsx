@@ -14,13 +14,14 @@ import {
 
 import { GameButton } from "@/components/ui/game-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { dungeons, xpSummary } from "@/lib/design-tokens";
+import { dungeons as fallbackDungeons } from "@/lib/design-tokens";
+import { getHomeOverview } from "@/server/repositories/game-repository";
 
 type PinStyle = CSSProperties & {
   "--pin-color": string;
 };
 
-const mapPins = [
+const fallbackMapPins = [
   {
     title: "Cafe Mystery",
     meta: "A2 · 点餐听力",
@@ -56,6 +57,10 @@ const mapPins = [
 ] as const;
 
 export default function Home() {
+  const home = getHomeOverview();
+  const mapPins = home.dungeons.length > 0 ? home.dungeons : fallbackMapPins;
+  const dailyDungeons = home.dungeons.length > 0 ? home.dungeons.slice(0, 3) : fallbackDungeons;
+
   return (
     <main className="page-shell">
       <section className="today-strip" aria-labelledby="today-title">
@@ -63,9 +68,9 @@ export default function Home() {
           <p className="section-kicker">今日地图</p>
           <h1 id="today-title">开心打完 3 个英语副本</h1>
         </div>
-        <div className="streak-card" aria-label={xpSummary.streak}>
+        <div className="streak-card" aria-label={home.progress.streakLabel}>
           <Sparkles aria-hidden="true" size={18} strokeWidth={2.6} />
-          <span>{xpSummary.streak}</span>
+          <span>{home.progress.streakLabel}</span>
         </div>
       </section>
 
@@ -94,20 +99,20 @@ export default function Home() {
             <span className="route-line route-line--two" />
             <span className="route-line route-line--three" />
 
-            {mapPins.map((pin) => (
+            {mapPins.map((pin, index) => (
               <article
-                className={pin.active ? "dungeon-pin is-active" : "dungeon-pin"}
+                className={index === 0 ? "dungeon-pin is-active" : "dungeon-pin"}
                 key={pin.title}
                 style={
                   {
                     "--pin-color": pin.tone,
-                    left: pin.left,
-                    top: pin.top
+                    left: "mapLeft" in pin ? pin.mapLeft : pin.left,
+                    top: "mapTop" in pin ? pin.mapTop : pin.top
                   } as PinStyle
                 }
               >
                 <span className="dungeon-pin__dot">
-                  {pin.active ? (
+                  {index === 0 ? (
                     <Swords aria-hidden="true" size={16} strokeWidth={2.8} />
                   ) : (
                     <MapPin aria-hidden="true" size={16} strokeWidth={2.8} />
@@ -115,14 +120,14 @@ export default function Home() {
                 </span>
                 <span>
                   <strong>{pin.title}</strong>
-                  <small>{pin.meta}</small>
+                  <small>{"tag" in pin ? `${pin.level} · ${pin.tag}` : pin.meta}</small>
                 </span>
               </article>
             ))}
           </div>
 
           <div className="daily-grid" id="discover">
-            {dungeons.map((dungeon) => (
+            {dailyDungeons.map((dungeon) => (
               <article
                 className="quest-card"
                 key={dungeon.title}

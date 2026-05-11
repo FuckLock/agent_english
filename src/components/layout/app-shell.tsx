@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { appCopy, navItems, xpSummary } from "@/lib/design-tokens";
+import { appCopy, navItems } from "@/lib/design-tokens";
+import { getUserProgressSummary } from "@/server/repositories/game-repository";
 
 const navIcons = {
   map: Compass,
@@ -22,6 +23,8 @@ type AppShellProps = {
 };
 
 export function AppShell({ children }: AppShellProps) {
+  const progress = getUserProgressSummary();
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -50,10 +53,10 @@ export function AppShell({ children }: AppShellProps) {
           })}
         </nav>
 
-        <div className="xp-pill" aria-label={`${xpSummary.level} ${xpSummary.xp}`}>
+        <div className="xp-pill" aria-label={`${progress.levelLabel} ${progress.xpLabel}`}>
           <Trophy aria-hidden="true" size={17} strokeWidth={2.5} />
-          <span>{xpSummary.level}</span>
-          <strong>{xpSummary.xp}</strong>
+          <span>{progress.levelLabel}</span>
+          <strong>{progress.xpLabel}</strong>
         </div>
       </header>
 
