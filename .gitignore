@@ -3,7 +3,11 @@
 
 .DS_Store
 node_modules/
+.next/
+out/
 dist/
 build/
+tsconfig.tsbuildinfo
 .env
 .env.*
+!.env.example
