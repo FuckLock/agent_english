@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, BookMarked, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, BookMarked, Trophy } from "lucide-react";
 
+import { StartBattleButton } from "@/components/battle/start-battle-button";
 import { ComicReadingColumn } from "@/components/lesson/comic-reading-column";
 import { LessonAudioPlayer } from "@/components/lesson/lesson-audio-player";
 import {
@@ -49,10 +50,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
             <p>{lesson.objectiveText}</p>
           </div>
 
-          <Link className="lesson-challenge-button" href={lesson.dungeonId ? `#battle-${lesson.dungeonId}` : "#"}>
-            <Swords aria-hidden="true" size={18} />
-            进入副本挑战
-          </Link>
+          <StartBattleButton dungeonId={lesson.dungeonId} lessonId={lesson.id} />
 
           <LessonAudioPlayer
             canUseTts={lesson.canUseTts}

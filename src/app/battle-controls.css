@@ -1,0 +1,134 @@
+.battle-side-column {
+  position: sticky;
+  top: 96px;
+}
+
+.equipment-bar__title {
+  gap: 8px;
+}
+
+.equipment-slots {
+  display: grid;
+  gap: 10px;
+}
+
+.equipment-slot {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d8e3ff;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.equipment-slot span {
+  color: #4f7cff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.equipment-slot strong {
+  line-height: 1.25;
+}
+
+.battle-rescue-note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.battle-rescue-note strong,
+.battle-rescue-note span {
+  grid-column: 1;
+}
+
+.battle-rescue-note button,
+.battle-answer-row button {
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.battle-rescue-note button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  padding: 0 12px;
+  background: #eef5ff;
+  color: #1e2545;
+}
+
+.battle-starter {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fff8e4;
+}
+
+.battle-input-panel label {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.battle-answer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 10px;
+}
+
+.battle-answer-row textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.battle-answer-row button {
+  background: #f4b740;
+  color: #17212b;
+}
+
+.battle-input-error {
+  color: #b42318;
+}
+
+@media (max-width: 980px) {
+  .battle-side-column {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .battle-side-column {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -10px;
+    padding: 10px;
+    background: rgba(247, 250, 242, 0.94);
+  }
+
+  .battle-answer-row,
+  .battle-rescue-note {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-rescue-note button,
+  .battle-rescue-note strong,
+  .battle-rescue-note span {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

@@ -1,0 +1,285 @@
+.battle-shell {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 30px 0 112px;
+}
+
+.battle-topbar,
+.battle-topbar a,
+.monster-card,
+.monster-card__stats,
+.battle-arena__intro,
+.equipment-bar__title,
+.battle-rescue-note button,
+.battle-answer-row button,
+.battle-clear-banner {
+  display: flex;
+  align-items: center;
+}
+
+.battle-topbar {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
+.battle-topbar a {
+  gap: 8px;
+}
+
+.battle-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 28px;
+  align-items: start;
+}
+
+.battle-main-column,
+.battle-side-column,
+.battle-turn-list,
+.battle-input-panel,
+.equipment-bar {
+  display: grid;
+  gap: 16px;
+}
+
+.monster-card {
+  gap: 22px;
+  padding: 22px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 183, 64, 0.28), transparent 42%),
+    var(--color-night);
+  color: #fff;
+  box-shadow: var(--shadow-panel);
+}
+
+.monster-card__art {
+  position: relative;
+  width: 168px;
+  min-width: 168px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 35%, #ffcf6e 0 15%, transparent 16%),
+    linear-gradient(145deg, #4f7cff, #242b55 64%, #12172b);
+}
+
+.monster-card__face {
+  position: absolute;
+  inset: 44px 36px 34px;
+  border-radius: 40% 40% 48% 48%;
+  background: #fff4d6;
+}
+
+.monster-card__face span {
+  position: absolute;
+  top: 32px;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: #17212b;
+}
+
+.monster-card__face span:first-child {
+  left: 30px;
+}
+
+.monster-card__face span:last-child {
+  right: 30px;
+}
+
+.monster-card__body {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.monster-card h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.05;
+}
+
+.monster-card p {
+  margin: 0;
+  color: #dde7ff;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.monster-card__stats {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.monster-card__stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.monster-hp {
+  overflow: hidden;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.monster-hp span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f4b740, #5ad18f);
+}
+
+.battle-arena,
+.equipment-bar,
+.battle-input-panel {
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-panel);
+}
+
+.battle-arena__intro {
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.battle-arena__intro div,
+.battle-clear-banner div {
+  display: grid;
+  gap: 4px;
+}
+
+.battle-arena__intro span,
+.battle-empty-turn p,
+.battle-bubble p,
+.battle-bubble em,
+.battle-clear-banner span,
+.battle-rescue-note span,
+.battle-starter span,
+.equipment-empty,
+.battle-input-status,
+.battle-input-error {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.battle-empty-turn {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 36px 16px;
+  border-radius: 8px;
+  background: #f7faf2;
+  text-align: center;
+}
+
+.battle-turn {
+  display: grid;
+  gap: 10px;
+}
+
+.battle-bubble {
+  display: grid;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 8px;
+}
+
+.battle-bubble > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.battle-bubble--user {
+  margin-left: 54px;
+  background: #fff8e4;
+}
+
+.battle-bubble--ai {
+  margin-right: 54px;
+  background: #eef5ff;
+}
+
+.battle-bubble--ai strong {
+  color: #1e2545;
+}
+
+.battle-rewrite {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.battle-rewrite small,
+.equipment-slot small,
+.battle-starter small {
+  color: #2f7d5f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.battle-rewrite span {
+  color: var(--color-ink);
+  font-weight: 900;
+}
+
+.battle-clear-banner {
+  gap: 10px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #e7f5ed;
+  color: #2f7d5f;
+}
+
+@media (max-width: 980px) {
+  .battle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .battle-shell {
+    width: min(100% - 20px, 640px);
+    padding-bottom: 24px;
+  }
+
+  .monster-card {
+    display: grid;
+  }
+
+  .monster-card__art {
+    width: 100%;
+    min-width: 0;
+    max-height: 220px;
+  }
+
+  .battle-bubble--user,
+  .battle-bubble--ai {
+    margin: 0;
+  }
+}
