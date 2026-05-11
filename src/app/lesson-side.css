@@ -1,0 +1,53 @@
+.lesson-side-panel {
+  position: sticky;
+  top: 96px;
+  display: grid;
+  gap: 18px;
+  padding: 30px;
+  border-radius: 8px;
+  background: var(--color-night);
+  color: #fff;
+}
+
+.lesson-side-panel h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.lesson-side-panel p,
+.lesson-audio span,
+.lesson-equipment-card span,
+.lesson-stats-card span {
+  color: #dde7ff;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.lesson-challenge-button {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  align-items: center;
+  border-radius: 999px;
+  background: #f4b740;
+  color: #17212b;
+  font-weight: 900;
+}
+
+.lesson-audio,
+.lesson-equipment-card,
+.lesson-stats-card {
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--color-night-soft);
+}
+
+.lesson-audio > div,
+.lesson-equipment-card > div,
+.lesson-stats-card > div {
+  display: grid;
+  gap: 6px;
+}

@@ -1,0 +1,272 @@
+.lesson-shell {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 30px 0 96px;
+}
+
+.lesson-topbar,
+.lesson-topbar a,
+.comic-panel-card__top,
+.image-job-status,
+.lesson-audio,
+.lesson-equipment-card,
+.lesson-stats-card,
+.expression-row,
+.lesson-action-button,
+.expression-save,
+.audio-play-button {
+  display: flex;
+  align-items: center;
+}
+
+.lesson-topbar {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
+.lesson-topbar a {
+  gap: 8px;
+}
+
+.lesson-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 32px;
+  align-items: start;
+}
+
+.lesson-reading-column {
+  display: grid;
+  gap: 22px;
+  padding: 24px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-panel);
+}
+
+.lesson-cover {
+  display: grid;
+  gap: 10px;
+}
+
+.comic-art {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.52), transparent 34%),
+    linear-gradient(155deg, #ffd79b 0%, #ff7a59 44%, #223050 100%);
+}
+
+.comic-art__scene {
+  display: grid;
+  align-content: end;
+  gap: 8px;
+  min-height: inherit;
+  padding: 18px;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(17, 24, 39, 0.28);
+}
+
+.comic-art__scene strong {
+  font-size: 18px;
+}
+
+.comic-art__scene span {
+  max-width: 680px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.lesson-intro h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.08;
+}
+
+.lesson-intro p {
+  max-width: 760px;
+  color: var(--color-muted);
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.comic-panel-list {
+  display: grid;
+  gap: 16px;
+}
+
+.comic-panel-card {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f7faf2;
+}
+
+.comic-panel-card .comic-art {
+  min-height: 154px;
+}
+
+.comic-panel-card img {
+  width: 100%;
+  min-height: 154px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.comic-panel-card__body {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.comic-panel-card__top {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comic-panel-card__top > span {
+  color: #2f7d5f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.comic-panel-card h2 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.18;
+}
+
+.comic-panel-card p,
+.sentence-explain span,
+.lesson-action-error {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.sentence-explain {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.expression-row {
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #1f2a44;
+  font-weight: 900;
+}
+
+.expression-row > span {
+  margin-right: auto;
+}
+
+.expression-save,
+.lesson-action-button,
+.audio-play-button {
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-ink);
+  font-weight: 900;
+}
+
+.expression-save.is-saved {
+  background: #e7f5ed;
+  color: #2f7d5f;
+}
+
+.lesson-expand-card,
+.full-text-fold {
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff8e4;
+}
+
+.lesson-expand-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.lesson-expand-card div,
+.full-text-fold {
+  display: grid;
+  gap: 8px;
+}
+
+.lesson-expand-card span,
+.full-text-fold p {
+  color: var(--color-muted);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.full-text-fold summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.image-job-status {
+  flex-wrap: wrap;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.image-job-status small {
+  flex-basis: 100%;
+  color: #8a5a00;
+}
+
+.image-job-status--pending {
+  color: #2f7d5f;
+}
+
+.image-job-status--failed {
+  color: #b42318;
+}
+
+@media (max-width: 920px) {
+  .lesson-grid,
+  .comic-panel-card {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-side-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .lesson-shell {
+    width: min(100% - 24px, 460px);
+    padding-top: 20px;
+  }
+
+  .lesson-reading-column,
+  .lesson-side-panel {
+    padding: 18px;
+  }
+}

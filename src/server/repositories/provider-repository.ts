@@ -32,6 +32,7 @@ export type ProviderConfigSafe = Omit<
 export type ProviderSetupStatus = {
   hasTextProvider: boolean;
   hasImageProvider: boolean;
+  hasTtsProvider: boolean;
   hasSearchProvider: boolean;
   manualInputAvailable: boolean;
   canStartFormalLearning: boolean;
@@ -161,17 +162,27 @@ export function getProviderSetupStatus(): ProviderSetupStatus {
   const configs = listProviderConfigsSafe().filter((config) => config.enabled && isConfigReady(config));
   const hasTextProvider = configs.some((config) => config.capability === "text");
   const hasImageProvider = configs.some((config) => config.capability === "image");
+  const hasTtsProvider = configs.some((config) => config.capability === "tts");
   const hasSearchProvider = configs.some((config) => config.capability === "search");
 
   return {
     hasTextProvider,
     hasImageProvider,
+    hasTtsProvider,
     hasSearchProvider,
     manualInputAvailable: true,
     canStartFormalLearning: hasTextProvider,
     imageMode: hasImageProvider ? "image" : "text-card",
     searchMode: hasSearchProvider ? "search" : "manual"
   };
+}
+
+export function getReadyProviderConfigId(capability: ProviderCapability) {
+  return (
+    listProviderConfigsSafe().find(
+      (config) => config.enabled && config.capability === capability && isConfigReady(config)
+    )?.id ?? null
+  );
 }
 
 export function getProviderSettingsData() {

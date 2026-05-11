@@ -1,4 +1,5 @@
 import { AlertTriangle, Bookmark, BookOpenText, Swords } from "lucide-react";
+import Link from "next/link";
 
 import type { DiscoveryCandidate } from "@/server/content/content-pipeline";
 
@@ -36,14 +37,21 @@ export function DungeonResultCard({ candidate }: DungeonResultCardProps) {
       ) : null}
 
       <div className="result-actions">
-        <button type="button">
+        <Link href={`/lessons/${candidate.sourceId}`}>
           <BookOpenText aria-hidden="true" size={15} />
           阅读
-        </button>
-        <button disabled={!candidate.suitableForDungeon} type="button">
-          <Swords aria-hidden="true" size={15} />
-          生成副本
-        </button>
+        </Link>
+        {candidate.suitableForDungeon ? (
+          <Link href={`/lessons/${candidate.sourceId}`}>
+            <Swords aria-hidden="true" size={15} />
+            生成副本
+          </Link>
+        ) : (
+          <button disabled type="button">
+            <Swords aria-hidden="true" size={15} />
+            生成副本
+          </button>
+        )}
         <button type="button">
           <Bookmark aria-hidden="true" size={15} />
           收藏
