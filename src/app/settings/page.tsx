@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { ArrowLeft, SlidersHorizontal } from "lucide-react";
 
+import { DataManagementPanel } from "@/components/settings/data-management-panel";
 import { ProviderConfigForm } from "@/components/settings/provider-config-form";
 import { ProviderStatusGrid } from "@/components/settings/provider-status-grid";
 import { ProviderTemplateList } from "@/components/settings/provider-template-list";
 import { ProviderUsageList } from "@/components/settings/provider-usage-list";
+import { getDataManagementSummary } from "@/server/data/export-service";
 import { getProviderSettingsData } from "@/server/repositories/provider-repository";
 
 export const dynamic = "force-dynamic";
 
 export default function SettingsPage() {
   const data = getProviderSettingsData();
+  const dataSummary = getDataManagementSummary();
 
   return (
     <main className="settings-shell">
@@ -51,6 +54,7 @@ export default function SettingsPage() {
             </div>
           </section>
           <ProviderUsageList recentUsage={data.recentUsage} />
+          <DataManagementPanel summary={dataSummary} />
         </div>
       </div>
 

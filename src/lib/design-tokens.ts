@@ -6,7 +6,7 @@ export const appCopy = {
 export const navItems = [
   { id: "map", label: "地图", href: "#map" },
   { id: "discover", label: "发现", href: "/discover" },
-  { id: "vault", label: "收藏", href: "#vault" },
+  { id: "vault", label: "收藏", href: "/collection" },
   { id: "settings", label: "设置", href: "/settings" }
 ] as const;
 
