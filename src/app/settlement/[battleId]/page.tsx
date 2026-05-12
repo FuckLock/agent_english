@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, BookMarked, HeartPulse, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
+import { EquipmentDropCard } from "@/components/settlement/equipment-drop-card";
+import { ReviewItemsCard } from "@/components/settlement/review-items-card";
+import { RewardHero } from "@/components/settlement/reward-hero";
+import { XpSummaryCard } from "@/components/settlement/xp-summary-card";
 import { getBattlePageModel } from "@/server/battles/battle-model";
+import { getSettlementRewardModel } from "@/server/game/reward-service";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +21,8 @@ export default async function SettlementPage({ params }: SettlementPageProps) {
   if (!battle) notFound();
   if (battle.status !== "completed") redirect(`/battles/${battle.id}`);
 
-  const lastTurn = battle.turns.at(-1);
+  const settlement = getSettlementRewardModel(battle.id);
+  if (!settlement) notFound();
 
   return (
     <main className="battle-shell">
@@ -28,39 +34,20 @@ export default async function SettlementPage({ params }: SettlementPageProps) {
         <span>{battle.title} · 结算</span>
       </header>
 
-      <section className="settlement-panel" aria-label="通关结算">
-        <p className="section-kicker">Quest Clear</p>
-        <h1>怪兽退场了</h1>
-        <p>你已经用英文完成这次挑战。先收下本轮表达记录。</p>
-
-        <div className="settlement-stat-row">
-          <span>
-            <HeartPulse aria-hidden="true" size={16} />
-            HP 清零
-          </span>
-          <span>
-            <Sparkles aria-hidden="true" size={16} />
-            中文救援 {battle.rescueCount} 次
-          </span>
-          <span>
-            <BookMarked aria-hidden="true" size={16} />
-            {battle.turns.length} 轮回答
-          </span>
-        </div>
-
-        {lastTurn ? (
-          <div className="settlement-expression">
-            <small>本轮可复用表达</small>
-            <strong>{lastTurn.feedback.rewrite}</strong>
-            <span>{lastTurn.feedback.explanationZh}</span>
-          </div>
-        ) : null}
+      <div className="settlement-layout">
+        <RewardHero settlement={settlement} />
+        <XpSummaryCard settlement={settlement} />
+        <EquipmentDropCard settlement={settlement} />
+        <ReviewItemsCard settlement={settlement} />
 
         <div className="settlement-actions">
+          {settlement.nextActions.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
           <Link href="/discover">继续找副本</Link>
           <Link href={`/lessons/${battle.lessonId}`}>再读一遍漫画</Link>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

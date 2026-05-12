@@ -58,7 +58,9 @@ export function BattleDialogueArena({ battle }: BattleDialogueArenaProps) {
               <strong>通关完成</strong>
               <span>本轮回答已记录，去看这次挑战留下了什么。</span>
             </div>
-            <Link href={`/settlement/${battle.id}`}>进入结算</Link>
+            <Link href={`/settlement/${battle.id}`} prefetch={false}>
+              进入结算
+            </Link>
           </div>
         ) : null}
       </div>
