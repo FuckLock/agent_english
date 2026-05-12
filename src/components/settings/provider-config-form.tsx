@@ -1,8 +1,10 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, KeyRound, Save, Trash2, Zap } from "lucide-react";
+import { KeyRound, Save, Trash2, Zap } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+
+import { ProviderTestAlert } from "@/components/states/provider-test-alert";
 
 type TemplateItem = {
   id: string;
@@ -30,7 +32,7 @@ type ProviderConfigFormProps = {
 };
 
 type Notice = {
-  tone: "success" | "error";
+  tone: "success" | "error" | "loading";
   text: string;
 };
 
@@ -66,6 +68,7 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
     }
 
     startTransition(async () => {
+      setNotice({ tone: "loading", text: "正在保存 Provider..." });
       const response = await fetch("/api/providers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,6 +91,7 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
     }
 
     startTransition(async () => {
+      setNotice({ tone: "loading", text: "正在测试 Provider 连接..." });
       const response = await fetch("/api/providers/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,6 +109,7 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
 
   function testSavedConfig(configId: string) {
     startTransition(async () => {
+      setNotice({ tone: "loading", text: "正在测试已保存 Provider..." });
       const response = await fetch("/api/providers/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,6 +127,7 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
 
   function deleteConfig(configId: string) {
     startTransition(async () => {
+      setNotice({ tone: "loading", text: "正在删除 Provider..." });
       const response = await fetch(`/api/providers?id=${encodeURIComponent(configId)}`, {
         method: "DELETE"
       });
@@ -135,6 +141,7 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
 
   function clearConfigKey(config: ConfigItem) {
     startTransition(async () => {
+      setNotice({ tone: "loading", text: "正在清空 API Key..." });
       const response = await fetch("/api/providers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -251,7 +258,7 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
         </button>
       </div>
 
-      {notice ? <NoticeBox notice={notice} /> : null}
+      {notice ? <ProviderTestAlert text={notice.text} tone={notice.tone} /> : null}
 
       <div className="saved-provider-list">
         {configs.length === 0 ? (
@@ -281,17 +288,5 @@ export function ProviderConfigForm({ templates, configs }: ProviderConfigFormPro
         )}
       </div>
     </section>
-  );
-}
-
-function NoticeBox({ notice }: { notice: Notice }) {
-  const Icon = notice.tone === "success" ? CheckCircle2 : AlertTriangle;
-
-  return (
-    <div className={`provider-notice provider-notice--${notice.tone}`}>
-      <Icon size={17} />
-      <span>{notice.text}</span>
-      {notice.tone === "success" ? <KeyRound size={16} /> : null}
-    </div>
   );
 }

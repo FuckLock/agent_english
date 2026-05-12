@@ -9,16 +9,18 @@ import {
 } from "lucide-react";
 
 import { DungeonMap } from "@/components/home/dungeon-map";
-import { GameButton } from "@/components/ui/game-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { getHomeOverview } from "@/server/repositories/game-repository";
+import { getHomeOverview, listActiveBattles } from "@/server/repositories/game-repository";
 import { getProviderSetupStatus } from "@/server/repositories/provider-repository";
 
 export const dynamic = "force-dynamic";
 
 export default function Home() {
   const home = getHomeOverview();
+  const activeBattle = listActiveBattles()[0] ?? null;
   const providerStatus = getProviderSetupStatus();
+  const challengeHref = activeBattle ? `/battles/${activeBattle.id}` : "/discover";
+  const challengeLabel = activeBattle ? "继续打" : "找新副本";
 
   return (
     <main className="page-shell">
@@ -73,9 +75,12 @@ export default function Home() {
           <ProgressBar label="Boss 血量" value={42} />
 
           {providerStatus.canStartFormalLearning ? (
-            <GameButton icon={<Play size={18} fill="currentColor" strokeWidth={2.4} />} variant="dark">
-              继续打
-            </GameButton>
+            <Link className="game-button game-button--dark game-button--md" href={challengeHref}>
+              <span className="game-button__icon">
+                <Play aria-hidden="true" size={18} fill="currentColor" strokeWidth={2.4} />
+              </span>
+              <span>{challengeLabel}</span>
+            </Link>
           ) : (
             <Link className="game-button game-button--dark game-button--md" href="/setup">
               <span className="game-button__icon">

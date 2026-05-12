@@ -43,7 +43,7 @@
 }
 
 .data-actions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .data-actions button,
@@ -61,6 +61,11 @@
 .data-actions button:first-child {
   background: #f4b740;
   color: #17212b;
+}
+
+.data-actions button:nth-child(2) {
+  background: #eef5ff;
+  color: #1e2545;
 }
 
 .data-actions button:last-child,

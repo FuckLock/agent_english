@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Trash2 } from "lucide-react";
+import { Download, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import type { getDataManagementSummary } from "@/server/data/export-service";
@@ -9,6 +9,12 @@ type DataSummary = ReturnType<typeof getDataManagementSummary>;
 
 type DataManagementPanelProps = {
   summary: DataSummary;
+};
+
+type PrivacyAuditResponse = {
+  export: { findings: { message: string }[]; ok: boolean };
+  frontend: { findings: { message: string }[]; ok: boolean };
+  ok: boolean;
 };
 
 export function DataManagementPanel({ summary }: DataManagementPanelProps) {
@@ -35,6 +41,20 @@ export function DataManagementPanel({ summary }: DataManagementPanelProps) {
     window.location.href = "/api/data/export";
   }
 
+  async function runPrivacyAudit() {
+    setMessage("正在审计导出和前端密钥暴露...");
+    const response = await fetch("/api/audit/privacy");
+    const result = (await response.json()) as PrivacyAuditResponse;
+    if (result.ok) {
+      setMessage("隐私审计通过：前端和导出文件未发现完整 API Key。");
+      return;
+    }
+
+    const firstFinding =
+      result.frontend.findings[0]?.message ?? result.export.findings[0]?.message ?? "隐私审计未通过。";
+    setMessage(firstFinding);
+  }
+
   return (
     <section className="settings-panel data-management" aria-label="数据管理">
       <div className="settings-panel__heading">
@@ -58,6 +78,10 @@ export function DataManagementPanel({ summary }: DataManagementPanelProps) {
         <button onClick={exportData} type="button">
           <Download aria-hidden="true" size={16} />
           导出学习数据
+        </button>
+        <button onClick={runPrivacyAudit} type="button">
+          <ShieldCheck aria-hidden="true" size={16} />
+          隐私审计
         </button>
         <button onClick={() => runAction({ action: "clear_learning_records" })} type="button">
           <Trash2 aria-hidden="true" size={16} />

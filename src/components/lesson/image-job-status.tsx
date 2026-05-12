@@ -1,6 +1,7 @@
-import { AlertTriangle, CheckCircle2, Image as ImageIcon, LoaderCircle } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 
 import { GenerationActionButton } from "@/components/lesson/generation-action-button";
+import { ImageFallbackState } from "@/components/states/image-fallback-state";
 
 type ImageJobStatusProps = {
   canGenerateImages: boolean;
@@ -16,19 +17,20 @@ export function ImageJobStatus({
   status
 }: ImageJobStatusProps) {
   const tone = getTone(status, canGenerateImages);
-  const Icon = tone === "ready" ? CheckCircle2 : tone === "pending" ? LoaderCircle : AlertTriangle;
 
   return (
-    <div className={`image-job-status image-job-status--${tone}`}>
-      <Icon aria-hidden="true" size={16} />
-      <span>{getLabel(status, canGenerateImages)}</span>
-      {error ? <small>{error}</small> : null}
-      {canGenerateImages && tone !== "ready" ? (
-        <GenerationActionButton action="retry_images" lessonId={lessonId}>
-          重试图片
-        </GenerationActionButton>
-      ) : null}
-    </div>
+    <ImageFallbackState
+      action={
+        canGenerateImages && tone !== "ready" ? (
+          <GenerationActionButton action="retry_images" lessonId={lessonId}>
+            重试图片
+          </GenerationActionButton>
+        ) : null
+      }
+      detail={error}
+      label={getLabel(status, canGenerateImages)}
+      tone={tone}
+    />
   );
 }
 

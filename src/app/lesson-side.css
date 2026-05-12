@@ -58,3 +58,9 @@
   display: grid;
   gap: 6px;
 }
+
+@media (max-width: 920px) {
+  .lesson-side-panel > .lesson-challenge-wrap {
+    display: none;
+  }
+}

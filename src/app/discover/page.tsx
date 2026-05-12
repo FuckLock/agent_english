@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, Compass } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { DungeonResultCard } from "@/components/discovery/dungeon-result-card";
 import { ManualInputFallback } from "@/components/discovery/manual-input-fallback";
 import { SearchQuestPanel } from "@/components/discovery/search-quest-panel";
+import { EmptyQuestState } from "@/components/states/empty-quest-state";
 import {
   searchDiscoveryCandidates,
   type DiscoveryFilters
@@ -57,11 +58,10 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
                 ))}
               </div>
             ) : (
-              <div className="no-results">
-                <Compass aria-hidden="true" size={26} strokeWidth={2.5} />
-                <strong>这组条件暂时没有候选</strong>
-                <p>{result.fallbackActions.join(" / ")}</p>
-              </div>
+              <EmptyQuestState
+                description={result.fallbackActions.join(" / ")}
+                title="这组条件暂时没有候选"
+              />
             )}
           </section>
         </div>

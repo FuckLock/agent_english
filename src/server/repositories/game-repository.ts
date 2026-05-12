@@ -100,12 +100,16 @@ export function getDungeonDetail(dungeonId: string) {
 }
 
 export function listActiveBattles() {
-  return getDb()
-    .select()
-    .from(battleSessions)
-    .where(eq(battleSessions.status, "in_progress"))
-    .orderBy(asc(battleSessions.createdAt))
-    .all();
+  try {
+    return getDb()
+      .select()
+      .from(battleSessions)
+      .where(eq(battleSessions.status, "in_progress"))
+      .orderBy(asc(battleSessions.createdAt))
+      .all();
+  } catch {
+    return [];
+  }
 }
 
 export function listExpressionEquipment() {

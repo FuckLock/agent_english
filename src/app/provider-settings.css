@@ -1,5 +1,4 @@
 .settings-actions,
-.provider-notice,
 .saved-provider-card,
 .saved-provider-card__actions {
   display: flex;
@@ -74,25 +73,6 @@
 
 .settings-actions button {
   padding: 0 14px;
-}
-
-.provider-notice {
-  gap: 8px;
-  margin-top: 14px;
-  padding: 11px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.provider-notice--success {
-  background: #e9f8ef;
-  color: #14613d;
-}
-
-.provider-notice--error {
-  background: #ffe9e4;
-  color: #9d351f;
 }
 
 .saved-provider-list,
@@ -235,5 +215,19 @@
   .template-list,
   .provider-form {
     grid-template-columns: 1fr;
+  }
+
+  .settings-actions,
+  .saved-provider-card__actions {
+    width: 100%;
+  }
+
+  .settings-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .saved-provider-card__actions button {
+    flex: 1 1 110px;
   }
 }

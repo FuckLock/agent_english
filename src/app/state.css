@@ -1,0 +1,105 @@
+.empty-quest-state,
+.provider-test-alert,
+.image-fallback-state {
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.empty-quest-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 26px 18px;
+  border: 1px dashed #b8c6a9;
+  background: #f7faf2;
+  color: var(--color-ink);
+  text-align: center;
+}
+
+.empty-quest-state__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 8px;
+  background: #fff8e4;
+  color: #9a6500;
+}
+
+.empty-quest-state p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.state-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.provider-test-alert,
+.image-fallback-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.provider-test-alert {
+  margin-top: 14px;
+  padding: 11px 12px;
+}
+
+.provider-test-alert--success {
+  background: #e9f8ef;
+  color: #14613d;
+}
+
+.provider-test-alert--error {
+  background: #ffe9e4;
+  color: #9d351f;
+}
+
+.provider-test-alert--info,
+.provider-test-alert--loading {
+  background: #eef5ff;
+  color: #1e2545;
+}
+
+.image-fallback-state {
+  color: var(--color-muted);
+}
+
+.image-fallback-state small {
+  flex-basis: 100%;
+  color: #8a5a00;
+}
+
+.image-fallback-state--pending {
+  color: #2f7d5f;
+}
+
+.image-fallback-state--failed {
+  color: #b42318;
+}
+
+.image-fallback-state--skipped {
+  color: #7a4b00;
+}
+
+.is-spinning {
+  animation: state-spin 0.9s linear infinite;
+}
+
+@keyframes state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

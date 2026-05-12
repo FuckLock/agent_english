@@ -40,6 +40,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
         </span>
       </header>
 
+      <div className="lesson-mobile-challenge" aria-label="移动端副本入口">
+        <StartBattleButton dungeonId={lesson.dungeonId} lessonId={lesson.id} />
+      </div>
+
       <div className="lesson-grid">
         <ComicReadingColumn lesson={lesson} />
 

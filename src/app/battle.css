@@ -265,17 +265,29 @@
 @media (max-width: 640px) {
   .battle-shell {
     width: min(100% - 20px, 640px);
-    padding-bottom: 24px;
+    padding-top: 18px;
+    padding-bottom: 272px;
+  }
+
+  .battle-topbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .monster-card {
     display: grid;
+    gap: 16px;
+    padding: 16px;
   }
 
   .monster-card__art {
     width: 100%;
     min-width: 0;
     max-height: 220px;
+  }
+
+  .monster-card h1 {
+    font-size: 27px;
   }
 
   .battle-bubble--user,

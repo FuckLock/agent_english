@@ -230,6 +230,7 @@
   .page-shell {
     width: min(100% - 24px, 460px);
     padding-top: 18px;
+    padding-bottom: 116px;
   }
 
   .today-strip,
@@ -240,6 +241,10 @@
 
   .today-strip h1 {
     font-size: 28px;
+  }
+
+  .challenge-panel {
+    order: -1;
   }
 
   .map-panel,
@@ -253,5 +258,9 @@
 
   .monster-card {
     grid-template-columns: 1fr;
+  }
+
+  .challenge-panel .game-button {
+    width: 100%;
   }
 }
