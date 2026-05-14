@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 
-import type { StoryPanelDraft } from "@/server/ai/story-lesson-generator";
+import { DEFAULT_COMIC_PANEL_COUNT, type StoryPanelDraft } from "@/server/ai/story-lesson-generator";
 import { getDb } from "@/server/db/client";
 import { comicPanels, storyLessons } from "@/server/db/schema";
 import { asJson, nowIso } from "@/server/db/utils";
@@ -23,6 +23,8 @@ export function insertPanel(
       imagePrompt: panel.imagePrompt,
       imageStatus,
       imageUrl: null,
+      rhythmType: panel.rhythmType,
+      visualGrammarJson: asJson(panel.visualGrammar),
       createdAt: timestamp,
       updatedAt: timestamp
     })
@@ -33,6 +35,8 @@ export function insertPanel(
         chineseHint: panel.chineseHint,
         imagePrompt: panel.imagePrompt,
         imageStatus,
+        rhythmType: panel.rhythmType,
+        visualGrammarJson: asJson(panel.visualGrammar),
         updatedAt: timestamp
       }
     })
@@ -48,7 +52,7 @@ export function ensureMinimumPanels(lessonId: string) {
     .orderBy(asc(comicPanels.panelOrder))
     .all();
 
-  if (panels.length >= 3) return;
+  if (panels.length >= DEFAULT_COMIC_PANEL_COUNT) return;
 
   const lesson = db.select().from(storyLessons).where(eq(storyLessons.id, lessonId)).get();
   if (!lesson) return;
@@ -56,7 +60,9 @@ export function ensureMinimumPanels(lessonId: string) {
   const draft = readLessonDraft(lesson.lessonJson, lesson, panels);
   const timestamp = nowIso();
 
-  for (const panel of draft.panels.slice(panels.length, 3)) {
+  const existingOrders = new Set(panels.map((panel) => panel.panelOrder));
+  for (const panel of draft.panels.slice(0, DEFAULT_COMIC_PANEL_COUNT)) {
+    if (existingOrders.has(panel.order)) continue;
     insertPanel(lessonId, panel, "skipped", timestamp);
   }
 }
@@ -112,6 +118,37 @@ function toPanelDraft(
     explanationZh: "这句可以直接拿去复用。",
     imagePrompt: panel.imagePrompt,
     expression: panel.englishText.replace(/[.!?]+$/g, ""),
-    meaningZh: "可复用表达。"
+    meaningZh: "可复用表达。",
+    rhythmType: readRhythmType(panel.rhythmType),
+    visualGrammar: readVisualGrammar(panel.visualGrammarJson)
   };
+}
+
+function readRhythmType(value: string): StoryPanelDraft["rhythmType"] {
+  const allowed: StoryPanelDraft["rhythmType"][] = [
+    "setup",
+    "turn",
+    "reaction",
+    "challenge",
+    "expression",
+    "reward",
+    "extension"
+  ];
+
+  return allowed.includes(value as StoryPanelDraft["rhythmType"])
+    ? (value as StoryPanelDraft["rhythmType"])
+    : "extension";
+}
+
+function readVisualGrammar(value: string): StoryPanelDraft["visualGrammar"] {
+  try {
+    const parsed = JSON.parse(value) as Partial<StoryPanelDraft["visualGrammar"]>;
+    return {
+      shot: typeof parsed.shot === "string" ? parsed.shot : "comic beat",
+      focus: typeof parsed.focus === "string" ? parsed.focus : "story comprehension",
+      mood: typeof parsed.mood === "string" ? parsed.mood : "warm adventure"
+    };
+  } catch {
+    return { shot: "comic beat", focus: "story comprehension", mood: "warm adventure" };
+  }
 }

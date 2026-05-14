@@ -7,6 +7,7 @@ import {
 } from "@/server/providers/provider-adapter";
 import {
   deleteProviderConfig,
+  getCapabilityProbeEventType,
   getProviderConfigUnsafe,
   getProviderSettingsData,
   recordProviderUsage,
@@ -41,27 +42,41 @@ export async function POST(request: Request) {
   }
 
   const isClearingExistingKey = Boolean(parsed.data.id && parsed.data.apiKeySecret === null);
+  const configId = parsed.data.id ?? crypto.randomUUID();
+  let successfulProbe: Awaited<ReturnType<typeof testProviderConnection>> | null = null;
 
   if (!isClearingExistingKey) {
-    const testResult = await testProviderConnection(resolveSaveTestInput(parsed.data));
-
-    recordProviderUsage({
-      providerConfigId: parsed.data.id,
-      eventType: "save_validation",
-      status: testResult.status,
-      latencyMs: testResult.latencyMs,
-      errorSummary: testResult.ok ? null : testResult.message
-    });
+    const testResult = await testProviderConnection(resolveSaveTestInput(parsed.data, configId));
 
     if (!testResult.ok) {
+      recordProviderUsage({
+        providerConfigId: parsed.data.id,
+        eventType: "save_validation",
+        status: testResult.status,
+        latencyMs: testResult.latencyMs,
+        errorSummary: testResult.message
+      });
+
       return NextResponse.json(
         { ok: false, error: `Provider 测试未通过，未保存：${testResult.message}` },
         { status: 400 }
       );
     }
+
+    successfulProbe = testResult;
   }
 
-  const config = saveProviderConfig(parsed.data);
+  const config = saveProviderConfig({ ...parsed.data, id: configId });
+
+  if (successfulProbe) {
+    recordProviderUsage({
+      providerConfigId: config.id,
+      eventType: getCapabilityProbeEventType(successfulProbe.capability),
+      status: successfulProbe.status,
+      latencyMs: successfulProbe.latencyMs,
+      errorSummary: null
+    });
+  }
 
   return NextResponse.json({ ok: true, config });
 }
@@ -78,13 +93,16 @@ export async function DELETE(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
-function resolveSaveTestInput(input: z.infer<typeof providerConfigSchema>): ProviderAdapterInput {
+function resolveSaveTestInput(
+  input: z.infer<typeof providerConfigSchema>,
+  providerConfigId: string
+): ProviderAdapterInput {
   const existing = input.id ? getProviderConfigUnsafe(input.id) : null;
   const apiKeySecret =
     input.apiKeySecret === undefined ? existing?.apiKeySecret ?? null : input.apiKeySecret;
 
   return {
-    providerConfigId: input.id,
+    providerConfigId,
     templateId: input.templateId,
     displayName: input.displayName,
     capability: input.capability,

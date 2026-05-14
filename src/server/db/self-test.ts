@@ -1,5 +1,10 @@
-import { getDatabasePath } from "./client";
+import { eq } from "drizzle-orm";
+
+import { getLessonPageModel } from "@/server/lessons/lesson-service";
+
+import { getDatabasePath, getDb } from "./client";
 import { runMigrations } from "./migrate";
+import { generationJobs } from "./schema";
 import { seedDatabase } from "./seed";
 import { isDirectRun } from "./utils";
 import { getHomeOverview, listExpressionEquipment, listReviewQueue } from "../repositories/game-repository";
@@ -20,6 +25,7 @@ export function runDatabaseSelfTest() {
   const sources = listContentSources();
   const lessons = listStoryLessons();
   const cafeLesson = getStoryLessonWithPanels("lesson-cafe-mystery");
+  const cafeModel = getLessonPageModel("lesson-cafe-mystery");
   const templates = listProviderTemplates();
   const configs = listProviderConfigsSafe();
   const equipment = listExpressionEquipment();
@@ -33,8 +39,20 @@ export function runDatabaseSelfTest() {
     throw new Error("Expected seeded user XP.");
   }
 
-  if (!cafeLesson || cafeLesson.panels.length < 3) {
-    throw new Error("Expected Cafe Mystery lesson with 3 comic panels.");
+  if (!cafeLesson || cafeLesson.panels.length < 6 || !cafeModel || cafeModel.panels.length < 6) {
+    throw new Error("Expected Cafe Mystery lesson with the default 6 comic panels.");
+  }
+
+  const cafeJobs = getDb()
+    .select()
+    .from(generationJobs)
+    .where(eq(generationJobs.storyLessonId, "lesson-cafe-mystery"))
+    .all();
+  const jobTypes = new Set(cafeJobs.map((job) => job.jobType));
+  for (const jobType of ["cover_image", "panel_image", "monster_card", "clearance_card"]) {
+    if (!jobTypes.has(jobType)) {
+      throw new Error(`Expected v1.6 generation job type: ${jobType}.`);
+    }
   }
 
   return {
@@ -49,7 +67,8 @@ export function runDatabaseSelfTest() {
       storyLessons: lessons.length,
       equipment: equipment.length,
       reviewTriggers: reviewQueue.triggers.length,
-      bossItems: reviewQueue.bossItems.length
+      bossItems: reviewQueue.bossItems.length,
+      cafeGenerationJobs: cafeJobs.length
     },
     home: {
       progress: home.progress,

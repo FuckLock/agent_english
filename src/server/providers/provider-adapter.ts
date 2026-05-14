@@ -32,6 +32,10 @@ export async function testProviderConnection(input: ProviderAdapterInput): Promi
     return failed(config.capability, "未知 Provider 模板。", startedAt);
   }
 
+  if (template.capability !== config.capability) {
+    return failed(config.capability, `模板能力是 ${template.capability}，不能测试为 ${config.capability}。`, startedAt);
+  }
+
   if (template.capability === "data") {
     return success(template.capability, "手动输入和本地数据兜底可用。", startedAt);
   }
@@ -63,8 +67,8 @@ export async function testProviderConnection(input: ProviderAdapterInput): Promi
   }
 
   const message = config.model
-    ? `配置自检通过，模型 ${config.model} 可用于 ${template.capability}。`
-    : `配置自检通过，${template.name} 可用于 ${template.capability}。`;
+    ? `能力探测通过，模型 ${config.model} 可用于 ${template.capability}。`
+    : `能力探测通过，${template.name} 可用于 ${template.capability}。`;
 
   return success(template.capability, message, startedAt);
 }

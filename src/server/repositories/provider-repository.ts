@@ -84,11 +84,19 @@ function isConfigReady(config: ProviderConfigSafe) {
     return false;
   }
 
+  if (template.capability !== config.capability) {
+    return false;
+  }
+
   if (template.requiresApiKey && !config.apiKeyLast4) {
     return false;
   }
 
-  return template.capability === "data" || Boolean(config.baseUrl ?? template.defaultBaseUrl);
+  if (template.capability === "data") {
+    return true;
+  }
+
+  return Boolean(config.baseUrl ?? template.defaultBaseUrl) && hasSuccessfulCapabilityProbe(config);
 }
 
 export function listProviderTemplates() {
@@ -251,6 +259,10 @@ export function recordProviderUsage(input: {
     .run();
 }
 
+export function getCapabilityProbeEventType(capability: ProviderCapability) {
+  return `capability_probe:${capability}`;
+}
+
 export function listRecentProviderUsage(limit = 20) {
   return getDb()
     .select()
@@ -258,4 +270,22 @@ export function listRecentProviderUsage(limit = 20) {
     .orderBy(desc(providerUsageLogs.createdAt))
     .limit(limit)
     .all();
+}
+
+function hasSuccessfulCapabilityProbe(config: ProviderConfigSafe) {
+  const capability = providerCapabilities.has(config.capability as ProviderCapability)
+    ? (config.capability as ProviderCapability)
+    : null;
+  if (!capability) return false;
+
+  const eventType = getCapabilityProbeEventType(capability);
+  const latestProbe = getDb()
+    .select()
+    .from(providerUsageLogs)
+    .where(eq(providerUsageLogs.providerConfigId, config.id))
+    .orderBy(desc(providerUsageLogs.createdAt))
+    .all()
+    .find((log) => log.eventType === eventType);
+
+  return latestProbe?.status === "success" && latestProbe.createdAt >= config.updatedAt;
 }

@@ -20,6 +20,13 @@ export const generationJobStatuses = [
 
 export type GenerationQuality = "draft" | "standard" | "high";
 export type GenerationJobStatus = (typeof generationJobStatuses)[number];
+export type GenerationJobType =
+  | "cover_image"
+  | "panel_image"
+  | "monster_card"
+  | "clearance_card"
+  | "equipment_card"
+  | "tts";
 
 type PanelForJob = {
   id: string;
@@ -33,7 +40,7 @@ type JobInput = {
   storyLessonId: string;
   comicPanelId?: string | null;
   providerConfigId?: string | null;
-  jobType: "cover_image" | "panel_image" | "tts";
+  jobType: GenerationJobType;
   status: GenerationJobStatus;
   quality: GenerationQuality;
   dedupeKey: string;
@@ -59,6 +66,26 @@ export function ensureLessonGenerationJobs(lessonId: string, quality: Generation
     dedupeKey: `lesson:${lessonId}:cover:${quality}`,
     request: { target: "cover", quality },
     errorSummary: providerStatus.hasImageProvider ? null : "图片 Provider 未配置，封面降级为文本卡。"
+  });
+
+  ensureLessonVisualJob({
+    lessonId,
+    jobType: "monster_card",
+    target: "monster_card",
+    quality,
+    hasImageProvider: providerStatus.hasImageProvider,
+    providerConfigId: imageProviderId,
+    missingProviderMessage: "图片 Provider 未配置，怪兽卡降级为可读任务卡。"
+  });
+
+  ensureLessonVisualJob({
+    lessonId,
+    jobType: "clearance_card",
+    target: "clearance_card",
+    quality,
+    hasImageProvider: providerStatus.hasImageProvider,
+    providerConfigId: imageProviderId,
+    missingProviderMessage: "图片 Provider 未配置，通关卡降级为文字奖励卡。"
   });
 
   for (const panel of panels) {
@@ -110,22 +137,45 @@ export function ensurePanelImageJob(
 }
 
 export function retryLessonImages(lessonId: string, quality: GenerationQuality = "draft") {
+  ensureLessonGenerationJobs(lessonId, quality);
   const providerStatus = getProviderSetupStatus();
-  const providerConfigId = getReadyProviderConfigId("image");
   const panels = getDb()
     .select()
     .from(comicPanels)
     .where(eq(comicPanels.storyLessonId, lessonId))
     .all();
 
-  for (const panel of panels) {
-    ensurePanelImageJob(toPanelForJob(panel), quality, providerStatus.hasImageProvider, providerConfigId);
-  }
-
   return {
-    queued: panels.length,
+    queued: panels.length + 3,
     imageMode: providerStatus.imageMode
   };
+}
+
+export function ensureEquipmentCardJob(input: {
+  lessonId: string;
+  equipmentId: string;
+  expression: string;
+  quality?: GenerationQuality;
+}) {
+  const providerStatus = getProviderSetupStatus();
+  const providerConfigId = getReadyProviderConfigId("image");
+  const quality = input.quality ?? "draft";
+
+  upsertJob({
+    id: `job-${input.equipmentId}-${quality}`,
+    storyLessonId: input.lessonId,
+    jobType: "equipment_card",
+    providerConfigId,
+    status: providerStatus.hasImageProvider ? "pending" : "skipped",
+    quality,
+    dedupeKey: `lesson:${input.lessonId}:equipment:${input.equipmentId}:${quality}`,
+    request: {
+      target: "equipment_card",
+      expression: input.expression,
+      quality
+    },
+    errorSummary: providerStatus.hasImageProvider ? null : "图片 Provider 未配置，装备卡降级为文字卡。"
+  });
 }
 
 export function queueLessonTts(lessonId: string) {
@@ -205,6 +255,28 @@ function upsertJob(input: JobInput) {
       updatedAt: timestamp
     })
     .run();
+}
+
+function ensureLessonVisualJob(input: {
+  lessonId: string;
+  jobType: Extract<GenerationJobType, "monster_card" | "clearance_card">;
+  target: string;
+  quality: GenerationQuality;
+  hasImageProvider: boolean;
+  providerConfigId: string | null;
+  missingProviderMessage: string;
+}) {
+  upsertJob({
+    id: `job-${input.lessonId}-${input.jobType}-${input.quality}`,
+    storyLessonId: input.lessonId,
+    jobType: input.jobType,
+    providerConfigId: input.providerConfigId,
+    status: input.hasImageProvider ? "pending" : "skipped",
+    quality: input.quality,
+    dedupeKey: `lesson:${input.lessonId}:${input.jobType}:${input.quality}`,
+    request: { target: input.target, quality: input.quality },
+    errorSummary: input.hasImageProvider ? null : input.missingProviderMessage
+  });
 }
 
 function toPanelForJob(panel: typeof comicPanels.$inferSelect): PanelForJob {

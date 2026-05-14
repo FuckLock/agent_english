@@ -5,6 +5,9 @@ import { ComicArtPlaceholder, ImageJobStatus } from "@/components/lesson/image-j
 import { SaveExpressionButton } from "@/components/lesson/save-expression-button";
 import type { LessonPageModel, LessonPanelView } from "@/server/lessons/lesson-service";
 
+const DEFAULT_PANEL_COUNT = 6;
+const MAX_PANEL_COUNT = 8;
+
 type ComicReadingColumnProps = {
   lesson: LessonPageModel;
 };
@@ -42,10 +45,12 @@ export function ComicReadingColumn({ lesson }: ComicReadingColumnProps) {
       <div className="lesson-expand-card">
         <div>
           <Sparkles aria-hidden="true" size={18} />
-          <strong>{lesson.panels.length >= 6 ? "6 格漫画已完整" : "想看后续分镜？"}</strong>
-          <span>先读 3 格也能挑战，4-6 格按需生成，避免图片成本失控。</span>
+          <strong>
+            {lesson.panels.length >= DEFAULT_PANEL_COUNT ? "默认 6 格漫画已完整" : "正在补齐默认 6 格"}
+          </strong>
+          <span>短内容至少 4 格；想多看剧情时可手动扩展第 7-8 格，避免图片成本失控。</span>
         </div>
-        {lesson.panels.length < 6 ? (
+        {lesson.panels.length < MAX_PANEL_COUNT ? (
           <GenerationActionButton action="extend_panels" lessonId={lesson.id}>
             扩展第 {lesson.panels.length + 1} 格
           </GenerationActionButton>
@@ -83,7 +88,7 @@ function ComicPanelCard({
 
       <div className="comic-panel-card__body">
         <div className="comic-panel-card__top">
-          <span>Panel {panel.order}/6</span>
+          <span>Panel {panel.order}/{panel.order > DEFAULT_PANEL_COUNT ? MAX_PANEL_COUNT : DEFAULT_PANEL_COUNT}</span>
           <ImageJobStatus
             canGenerateImages={canGenerateImages}
             error={panel.jobError}

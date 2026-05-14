@@ -1,4 +1,5 @@
 import {
+  DEFAULT_COMIC_PANEL_COUNT,
   createStoryLessonDraft,
   type StoryLessonDraft,
   type StoryPanelDraft
@@ -78,12 +79,23 @@ function readPanelDrafts(value: unknown, fallback: StoryPanelDraft[]) {
         explanationZh: getString(record.explanationZh) || "这句可以直接拿去复用。",
         imagePrompt: getString(record.imagePrompt) || `comic panel ${order}`,
         expression: getString(record.expression) || englishText,
-        meaningZh: getString(record.meaningZh) || "可复用表达。"
+        meaningZh: getString(record.meaningZh) || "可复用表达。",
+        rhythmType: readRhythmType(record.rhythmType, fallback[order - 1]?.rhythmType),
+        visualGrammar: readVisualGrammar(record.visualGrammar, fallback[order - 1]?.visualGrammar)
       } satisfies StoryPanelDraft;
     })
     .filter((item): item is StoryPanelDraft => Boolean(item));
 
-  return panels.length > 0 ? panels : fallback;
+  if (panels.length === 0) return fallback;
+
+  const panelByOrder = new Map(panels.map((panel) => [panel.order, panel]));
+  for (const fallbackPanel of fallback.slice(0, DEFAULT_COMIC_PANEL_COUNT)) {
+    if (!panelByOrder.has(fallbackPanel.order)) {
+      panelByOrder.set(fallbackPanel.order, fallbackPanel);
+    }
+  }
+
+  return [...panelByOrder.values()].sort((first, second) => first.order - second.order);
 }
 
 function readExpressions(value: unknown, fallback: StoryLessonDraft["expressions"]) {
@@ -110,6 +122,39 @@ function parseUnknownRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function readRhythmType(value: unknown, fallback: StoryPanelDraft["rhythmType"] = "extension") {
+  const allowed: StoryPanelDraft["rhythmType"][] = [
+    "setup",
+    "turn",
+    "reaction",
+    "challenge",
+    "expression",
+    "reward",
+    "extension"
+  ];
+
+  return typeof value === "string" && allowed.includes(value as StoryPanelDraft["rhythmType"])
+    ? (value as StoryPanelDraft["rhythmType"])
+    : fallback;
+}
+
+function readVisualGrammar(
+  value: unknown,
+  fallback: StoryPanelDraft["visualGrammar"] = {
+    shot: "comic beat",
+    focus: "story comprehension",
+    mood: "warm adventure"
+  }
+) {
+  const record = parseUnknownRecord(value);
+
+  return {
+    shot: getString(record.shot) || fallback.shot,
+    focus: getString(record.focus) || fallback.focus,
+    mood: getString(record.mood) || fallback.mood
+  };
 }
 
 function getString(value: unknown) {

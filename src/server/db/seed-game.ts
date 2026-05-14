@@ -13,6 +13,7 @@ import {
   userProgress
 } from "./schema";
 import { comicPanelSeeds, demoJson } from "./seed-data";
+import { asJson } from "./utils";
 
 export function applyDemoBattle(timestamp: string) {
   const db = getDb();
@@ -29,12 +30,20 @@ export function applyDemoBattle(timestamp: string) {
         imagePrompt: `webtoon panel for ${englishText}`,
         imageStatus: "skipped",
         imageUrl: null,
+        rhythmType: getSeedPanelRhythm(panelOrder),
+        visualGrammarJson: asJson(getSeedPanelVisualGrammar(panelOrder)),
         createdAt: timestamp,
         updatedAt: timestamp
       })
       .onConflictDoUpdate({
         target: comicPanels.id,
-        set: { englishText, chineseHint, updatedAt: timestamp }
+        set: {
+          englishText,
+          chineseHint,
+          rhythmType: getSeedPanelRhythm(panelOrder),
+          visualGrammarJson: asJson(getSeedPanelVisualGrammar(panelOrder)),
+          updatedAt: timestamp
+        }
       })
       .run();
   }
@@ -45,7 +54,7 @@ export function applyDemoBattle(timestamp: string) {
       storyLessonId: lessonId,
       comicPanelId: null,
       providerConfigId: null,
-      jobType: "image",
+      jobType: "cover_image",
       status: "skipped",
       quality: "draft",
       dedupeKey: "seed:cafe-cover",
@@ -57,7 +66,7 @@ export function applyDemoBattle(timestamp: string) {
     })
     .onConflictDoUpdate({
       target: generationJobs.id,
-      set: { status: "skipped", updatedAt: timestamp }
+      set: { jobType: "cover_image", status: "skipped", updatedAt: timestamp }
     })
     .run();
 
@@ -98,6 +107,20 @@ export function applyDemoBattle(timestamp: string) {
       set: { aiFeedbackJson: demoJson.battleFeedback, updatedAt: timestamp }
     })
     .run();
+}
+
+function getSeedPanelRhythm(order: number) {
+  const rhythm = ["setup", "turn", "reaction", "challenge", "expression", "reward"];
+
+  return rhythm[order - 1] ?? "extension";
+}
+
+function getSeedPanelVisualGrammar(order: number) {
+  return {
+    shot: order <= 3 ? "story setup" : "expression reward",
+    focus: order <= 4 ? "story comprehension" : "usable expression",
+    mood: "warm cafe adventure"
+  };
 }
 
 export function applyProgress(timestamp: string) {

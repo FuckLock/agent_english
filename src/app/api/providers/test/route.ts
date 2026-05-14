@@ -6,6 +6,7 @@ import {
   type ProviderAdapterInput
 } from "@/server/providers/provider-adapter";
 import {
+  getCapabilityProbeEventType,
   getProviderConfigUnsafe,
   recordProviderUsage
 } from "@/server/repositories/provider-repository";
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   const result = await testProviderConnection(input);
   recordProviderUsage({
     providerConfigId: input.providerConfigId,
-    eventType: "test_connection",
+    eventType: getCapabilityProbeEventType(result.capability),
     status: result.status,
     latencyMs: result.latencyMs,
     errorSummary: result.ok ? null : result.message

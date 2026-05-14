@@ -143,7 +143,14 @@ export function applyLessons(timestamp: string) {
       })
       .onConflictDoUpdate({
         target: storyLessons.id,
-        set: { title: seed.title, level: seed.level, updatedAt: timestamp }
+        set: {
+          title: seed.title,
+          level: seed.level,
+          shortSummary: seed.summary,
+          fullTextFolded: true,
+          lessonJson: demoJson.lesson,
+          updatedAt: timestamp
+        }
       })
       .run();
 

@@ -3,6 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import {
   createExtensionPanelDraft,
   createStoryLessonDraft,
+  MAX_COMIC_PANEL_COUNT,
   type StoryLessonDraft
 } from "@/server/ai/story-lesson-generator";
 import { getDb } from "@/server/db/client";
@@ -210,7 +211,7 @@ export function getLessonPageModel(lessonId: string): LessonPageModel | null {
 
 export function extendLessonPanels(lessonId: string, quality: GenerationQuality = "draft") {
   const model = getLessonPageModel(lessonId);
-  if (!model || model.panels.length >= 6) return model;
+  if (!model || model.panels.length >= MAX_COMIC_PANEL_COUNT) return model;
 
   const timestamp = nowIso();
   const providerStatus = getProviderSetupStatus();

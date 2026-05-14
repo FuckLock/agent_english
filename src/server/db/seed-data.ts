@@ -112,14 +112,17 @@ export const providerTemplateSeeds = builtinProviderTemplates.map((templateItem)
 export const comicPanelSeeds = [
   ["panel-cafe-1", 1, "Could I get an iced latte, please?", "我想礼貌地点一杯冰拿铁。"],
   ["panel-cafe-2", 2, "Would you like anything else?", "店员询问是否还需要别的东西。"],
-  ["panel-cafe-3", 3, "A small cake sounds perfect.", "我再加一个小蛋糕。"]
+  ["panel-cafe-3", 3, "A small cake sounds perfect.", "我再加一个小蛋糕。"],
+  ["panel-cafe-4", 4, "The menu suddenly looks like a dungeon map.", "菜单突然像一张副本地图。"],
+  ["panel-cafe-5", 5, "I can ask politely and keep the conversation going.", "我可以礼貌提问，让对话继续。"],
+  ["panel-cafe-6", 6, "The useful sentence becomes a new expression gear.", "有用句子变成新的表达装备。"]
 ] as const;
 
 export const demoJson = {
   empty: asJson({}),
   appSettings: asJson({ theme: "quest-light", dailyGoal: 3 }),
   providerSchema: asJson({ fields: ["apiKey", "baseUrl", "model"], advancedMapping: true }),
-  lesson: asJson({ mode: "comic", panelCount: 3, fallback: "text-card" }),
+  lesson: asJson({ mode: "comic", panelCount: 6, fallback: "text-card" }),
   battleFeedback: asJson({
     passed: true,
     rewrite: "Could I get an iced latte, please?",

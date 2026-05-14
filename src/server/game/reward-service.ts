@@ -11,6 +11,7 @@ import {
   savedExpressions
 } from "@/server/db/schema";
 import { nowIso } from "@/server/db/utils";
+import { ensureEquipmentCardJob } from "@/server/generation/generation-job-runner";
 import {
   ensureXpAward,
   getExistingXpAward,
@@ -181,6 +182,7 @@ function ensureEquipmentDrop(battle: BattlePageModel) {
       updatedAt: timestamp
     })
     .run();
+  ensureEquipmentCardJob({ equipmentId, expression: saved.expression, lessonId: battle.lessonId });
 
   return {
     equipmentName,

@@ -92,6 +92,8 @@ export const comicPanels = sqliteTable(
     imagePrompt: text("image_prompt").notNull(),
     imageStatus: text("image_status").notNull(),
     imageUrl: text("image_url"),
+    rhythmType: text("rhythm_type").notNull(),
+    visualGrammarJson: text("visual_grammar_json").notNull(),
     ...timestamps
   },
   (table) => [

@@ -8,6 +8,12 @@ export type StoryPanelDraft = {
   imagePrompt: string;
   expression: string;
   meaningZh: string;
+  rhythmType: "setup" | "turn" | "reaction" | "challenge" | "expression" | "reward" | "extension";
+  visualGrammar: {
+    shot: string;
+    focus: string;
+    mood: string;
+  };
 };
 
 export type StoryLessonDraft = {
@@ -38,28 +44,27 @@ type StoryLessonInput = {
   originName: string;
 };
 
+export const MIN_COMIC_PANEL_COUNT = 4;
+export const DEFAULT_COMIC_PANEL_COUNT = 6;
+export const MAX_COMIC_PANEL_COUNT = 8;
+
 const extensionPanels = [
   {
-    englishText: "I can explain the problem clearly.",
-    chineseHint: "我可以把问题说清楚。",
-    explanationZh: "explain the problem clearly 适合描述状况，不只是说 I don't know。"
-  },
-  {
-    englishText: "Could you help me check it?",
-    chineseHint: "你能帮我检查一下吗？",
-    explanationZh: "Could you help me...? 是礼貌求助句，比命令式更自然。"
+    englishText: "I can explain the reason in one clear sentence.",
+    chineseHint: "我可以用一句清楚的话说明原因。",
+    explanationZh: "explain the reason 适合把故事理解转成真实表达。"
   },
   {
     englishText: "Now I know what to say next time.",
     chineseHint: "现在我知道下次该怎么说了。",
-    explanationZh: "what to say next time 可以表达下次遇到类似场景的应对。"
+    explanationZh: "what to say next time 用来把本次副本收束成可复用经验。"
   }
 ] as const;
 
 export function createStoryLessonDraft(input: StoryLessonInput): StoryLessonDraft {
   const sentences = normalizeSentences(input.excerpt);
   const baseSentences = ensurePanelSentences(sentences, input.title);
-  const panels = baseSentences.slice(0, 3).map((sentence, index) =>
+  const panels = baseSentences.slice(0, DEFAULT_COMIC_PANEL_COUNT).map((sentence, index) =>
     createPanelDraft(index + 1, sentence, input.title, input.category)
   );
 
@@ -84,7 +89,7 @@ export function createStoryLessonDraft(input: StoryLessonInput): StoryLessonDraf
 }
 
 export function createExtensionPanelDraft(order: number, title: string, category: DiscoveryCategoryId) {
-  const template = extensionPanels[(order - 4) % extensionPanels.length];
+  const template = extensionPanels[(order - DEFAULT_COMIC_PANEL_COUNT - 1) % extensionPanels.length];
 
   return createPanelDraft(order, template.englishText, title, category, {
     chineseHint: template.chineseHint,
@@ -96,10 +101,13 @@ function ensurePanelSentences(sentences: string[], title: string) {
   const fallback = [
     `I noticed something interesting in ${title}.`,
     "The situation became clearer after one small detail.",
-    "I can use a short English sentence to explain it."
+    "I can use a short English sentence to explain it.",
+    "A small problem became a speaking challenge.",
+    "The useful expression started to feel like equipment.",
+    "The next step is to answer in English."
   ];
 
-  return [...sentences, ...fallback].slice(0, 3);
+  return [...sentences, ...fallback].slice(0, Math.max(MIN_COMIC_PANEL_COUNT, DEFAULT_COMIC_PANEL_COUNT));
 }
 
 function normalizeSentences(text: string) {
@@ -131,7 +139,9 @@ function createPanelDraft(
     explanationZh: override?.explanationZh ?? createExplanation(englishText, expression),
     imagePrompt: createImagePrompt(`panel ${order}`, title, category, englishText),
     expression,
-    meaningZh: createExpressionMeaning(expression)
+    meaningZh: createExpressionMeaning(expression),
+    rhythmType: getRhythmType(order),
+    visualGrammar: createVisualGrammar(order, category)
   };
 }
 
@@ -171,7 +181,7 @@ function createExpressionMeaning(expression: string) {
 
 function createObjectiveText(category: DiscoveryCategoryId) {
   const objectives: Record<DiscoveryCategoryId, string> = {
-    today: "读完 3 格漫画后，用一句英文说清楚故事重点。",
+    today: "读完 6 格漫画后，用一句英文说清楚故事重点。",
     weird: "把奇怪事件讲给别人听，说明你发现了什么。",
     movie: "用英文描述一个幕后细节或人物动机。",
     tech: "用简单英文解释一个科技变化或小问题。",
@@ -181,6 +191,38 @@ function createObjectiveText(category: DiscoveryCategoryId) {
   };
 
   return objectives[category];
+}
+
+function getRhythmType(order: number): StoryPanelDraft["rhythmType"] {
+  const rhythm: StoryPanelDraft["rhythmType"][] = [
+    "setup",
+    "turn",
+    "reaction",
+    "challenge",
+    "expression",
+    "reward"
+  ];
+
+  return rhythm[order - 1] ?? "extension";
+}
+
+function createVisualGrammar(order: number, category: DiscoveryCategoryId) {
+  const categoryMood: Record<DiscoveryCategoryId, string> = {
+    today: "warm discovery",
+    weird: "curious but safe",
+    movie: "cinematic light",
+    tech: "clear sci-fi",
+    culture: "friendly daily life",
+    people: "character focused",
+    travel: "bright journey"
+  };
+  const shots = ["wide scene", "medium action", "reaction closeup", "challenge reveal", "expression focus", "reward beat"];
+
+  return {
+    shot: shots[order - 1] ?? "bonus beat",
+    focus: order <= 4 ? "story comprehension" : "usable expression",
+    mood: categoryMood[category]
+  };
 }
 
 function createImagePrompt(kind: string, title: string, category: string, detail: string) {
