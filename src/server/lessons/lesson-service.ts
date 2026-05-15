@@ -18,7 +18,6 @@ import {
 } from "@/server/db/schema";
 import { asJson, nowIso } from "@/server/db/utils";
 import {
-  ensureLessonGenerationJobs,
   ensurePanelImageJob,
   getTodayGenerationStats,
   queueLessonTts,
@@ -27,45 +26,15 @@ import {
 } from "@/server/generation/generation-job-runner";
 import { normalizeCategory, normalizeDifficulty } from "@/server/content/content-analysis";
 import { parseRecord, readLessonDraft, slugifyId } from "@/server/lessons/lesson-draft";
-import { ensureMinimumPanels, getPanelId, insertPanel, updateLessonDraft } from "@/server/lessons/lesson-panels";
+import { getPanelId, insertPanel, updateLessonDraft } from "@/server/lessons/lesson-panels";
+import {
+  maybeEnsureLessonGenerationJobs,
+  maybeEnsureMinimumPanels
+} from "@/server/lessons/prologue-service";
 import { getProviderSetupStatus, getReadyProviderConfigId } from "@/server/repositories/provider-repository";
+import type { LessonPageModel } from "@/server/lessons/lesson-types";
 
-export type LessonPanelView = {
-  id: string;
-  order: number;
-  englishText: string;
-  chineseHint: string;
-  explanationZh: string;
-  imagePrompt: string;
-  imageStatus: string;
-  imageUrl: string | null;
-  expression: string;
-  meaningZh: string;
-  jobStatus: string | null;
-  jobError: string | null;
-};
-
-export type LessonPageModel = {
-  id: string;
-  title: string;
-  level: string;
-  summaryZh: string;
-  objectiveText: string;
-  fullText: string;
-  fullTextFolded: boolean;
-  coverPrompt: string;
-  coverJobStatus: string | null;
-  coverJobError: string | null;
-  panels: LessonPanelView[];
-  expressions: StoryLessonDraft["expressions"];
-  ttsDisclosure: string;
-  ttsStatus: string | null;
-  ttsError: string | null;
-  canUseTts: boolean;
-  canGenerateImages: boolean;
-  generationStats: ReturnType<typeof getTodayGenerationStats>;
-  dungeonId: string | null;
-};
+export type { LessonPageModel, LessonPanelView } from "@/server/lessons/lesson-types";
 
 export function getOrCreateStoryLessonFromSource(contentSourceId: string) {
   const existing = getDb()
@@ -75,7 +44,7 @@ export function getOrCreateStoryLessonFromSource(contentSourceId: string) {
     .get();
 
   if (existing) {
-    ensureLessonGenerationJobs(existing.id);
+    maybeEnsureLessonGenerationJobs(existing.id);
     return existing;
   }
 
@@ -116,7 +85,7 @@ export function getOrCreateStoryLessonFromSource(contentSourceId: string) {
     insertPanel(lessonId, panel, "skipped", timestamp);
   }
 
-  ensureLessonGenerationJobs(lessonId);
+  maybeEnsureLessonGenerationJobs(lessonId);
 
   return getDb().select().from(storyLessons).where(eq(storyLessons.id, lessonId)).get() ?? null;
 }
@@ -126,8 +95,8 @@ export function getLessonPageModel(lessonId: string): LessonPageModel | null {
   const lesson = db.select().from(storyLessons).where(eq(storyLessons.id, lessonId)).get();
   if (!lesson) return null;
 
-  ensureMinimumPanels(lesson.id);
-  ensureLessonGenerationJobs(lesson.id);
+  maybeEnsureMinimumPanels(lesson.id);
+  maybeEnsureLessonGenerationJobs(lesson.id);
 
   const source = db
     .select()
