@@ -23,11 +23,13 @@ export const dungeons = sqliteTable(
     status: text("status").notNull(),
     objectiveText: text("objective_text").notNull(),
     monsterName: text("monster_name").notNull(),
+    isPrologue: integer("is_prologue", { mode: "boolean" }).notNull().default(false),
     ...timestamps
   },
   (table) => [
     uniqueIndex("dungeons_slug_unique").on(table.slug),
-    index("dungeons_status_idx").on(table.status)
+    index("dungeons_status_idx").on(table.status),
+    index("dungeons_is_prologue_idx").on(table.isPrologue)
   ]
 );
 
