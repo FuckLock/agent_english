@@ -1,15 +1,17 @@
 import Link from "next/link";
-import { ArrowLeft, BookOpenText, Trophy } from "lucide-react";
+import { ArrowLeft, BookOpenText, Sword, Trophy } from "lucide-react";
 
 import { EquipmentAlbum } from "@/components/collection/equipment-album";
 import { MonsterRecords } from "@/components/collection/monster-records";
 import { SkillTreePanel } from "@/components/collection/skill-tree-panel";
 import { getCollectionModel } from "@/server/collection/collection-service";
+import { isPrologueComplete, PROLOGUE_LESSON_ID } from "@/server/lessons/prologue-service";
 
 export const dynamic = "force-dynamic";
 
 export default function CollectionPage() {
   const collection = getCollectionModel();
+  const prologueComplete = isPrologueComplete();
 
   return (
     <main className="collection-shell">
@@ -36,6 +38,27 @@ export default function CollectionPage() {
       </section>
 
       <div className="collection-grid">
+        <section className="collection-panel prologue-entry" aria-label="序章副本">
+          <div className="collection-panel__heading">
+            <Sword aria-hidden="true" size={19} />
+            <div>
+              <p className="section-kicker">Prologue</p>
+              <h2>序章副本</h2>
+            </div>
+          </div>
+          <p>
+            {prologueComplete
+              ? "你已经通关序章，可以随时重打练手。"
+              : "推荐先打序章，认识 Hello Sword 装备。"}
+          </p>
+          <Link
+            className="settings-link-button settings-link-button--dark"
+            href={`/lessons/${PROLOGUE_LESSON_ID}`}
+          >
+            {prologueComplete ? "重打序章" : "进入序章"}
+          </Link>
+        </section>
+
         <EquipmentAlbum collection={collection} />
         <MonsterRecords collection={collection} />
         <SkillTreePanel collection={collection} />

@@ -1,15 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, Map } from "lucide-react";
+import { ArrowRight, Map, Sword } from "lucide-react";
 
 import { ProviderConfigForm } from "@/components/settings/provider-config-form";
 import { ProviderStatusGrid } from "@/components/settings/provider-status-grid";
 import { ProviderTemplateList } from "@/components/settings/provider-template-list";
 import { getProviderSettingsData } from "@/server/repositories/provider-repository";
+import { isPrologueComplete, PROLOGUE_LESSON_ID } from "@/server/lessons/prologue-service";
 
 export const dynamic = "force-dynamic";
 
 export default function SetupPage() {
   const data = getProviderSettingsData();
+  const prologueComplete = isPrologueComplete();
 
   return (
     <main className="settings-shell">
@@ -43,6 +45,15 @@ export default function SetupPage() {
             打开设置中心
             <ArrowRight aria-hidden="true" size={17} strokeWidth={2.6} />
           </Link>
+          {data.status.hasTextProvider ? (
+            <Link
+              className="settings-link-button settings-link-button--dark"
+              href={`/lessons/${PROLOGUE_LESSON_ID}`}
+            >
+              <Sword aria-hidden="true" size={17} strokeWidth={2.6} />
+              {prologueComplete ? "重打序章副本" : "进入序章副本"}
+            </Link>
+          ) : null}
         </section>
       </div>
 

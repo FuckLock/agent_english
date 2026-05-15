@@ -21,6 +21,7 @@ import {
   type XpAwardResult
 } from "@/server/game/progress-service";
 import { slugifyId } from "@/server/lessons/lesson-draft";
+import { applyPrologueClearance } from "@/server/lessons/prologue-service";
 
 export type SettlementRewardModel = {
   battle: BattlePageModel;
@@ -118,6 +119,7 @@ export function getSettlementRewardModel(battleId: string): SettlementRewardMode
       : getProgressSnapshot();
   const reviewItems = listBattleReviewItems(battle);
   const bossItems = ensureBossTrainingItems(reviewItems);
+  applyPrologueClearance(battle.id);
 
   return {
     battle,
