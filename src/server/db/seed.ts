@@ -4,6 +4,7 @@ import { getDatabasePath, getDb } from "./client";
 import { runMigrations } from "./migrate";
 import { applyProviderTemplates, applyLessons } from "./seed-content";
 import { applyDemoBattle, applyProgress } from "./seed-game";
+import { applyPrologueSeed } from "./seed-prologue";
 import { dungeons, providerTemplates, userProgress } from "./schema";
 import { isDirectRun, nowIso } from "./utils";
 
@@ -13,6 +14,7 @@ export function seedDatabase() {
   const timestamp = nowIso();
   applyProviderTemplates(timestamp);
   applyLessons(timestamp);
+  applyPrologueSeed(timestamp);
   applyDemoBattle(timestamp);
   applyProgress(timestamp);
 

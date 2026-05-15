@@ -131,3 +131,78 @@ export const demoJson = {
   skillProgress: asJson({ speaking: 42, listening: 35, reading: 58 }),
   learningRecord: asJson({ source: "seed", duplicateRewardBlocked: true })
 };
+
+export const prologueSeed = {
+  sourceId: "source-prologue",
+  excerptId: "excerpt-prologue",
+  jobId: "job-prologue-ready",
+  lessonId: "lesson-prologue",
+  dungeonId: "dungeon-prologue",
+  slug: "prologue",
+  title: "First Meeting",
+  level: "A1",
+  tag: "新手教学",
+  xpReward: 100,
+  progressPercent: 0,
+  tone: "#FFA45C",
+  mapTop: "85%",
+  mapLeft: "10%",
+  region: "Prologue Vale",
+  objectiveText: "Say hello to the friendly monster you meet.",
+  monsterName: "Village Sprite",
+  sourceType: "prologue",
+  difficultyLevel: "A1",
+  category: "weird",
+  excerpt:
+    "A wanderer arrives at a quiet village gate at dusk. The wanderer waves and says hello. The monster smiles and gives a glowing sword.",
+  summary: "在一段轻冒险序章里学会用 Hello 打招呼。",
+  coverImageUrl: "/assets/prologue/cover.webp",
+  monsterImageUrl: "/assets/prologue/monster.webp",
+  victoryImageUrl: "/assets/prologue/victory.webp",
+  equipmentImageUrl: "/assets/prologue/hello-sword.webp",
+  panels: [
+    {
+      id: "panel-prologue-1",
+      order: 1,
+      englishText: "A wanderer arrives at a quiet village gate at dusk.",
+      chineseHint: "一位旅人在黄昏时分来到一座安静的村门。",
+      imageUrl: "/assets/prologue/panel-1.webp",
+      rhythmType: "setup",
+      visualGrammar: { shot: "wide", focus: "arrival", mood: "quiet dusk village" }
+    },
+    {
+      id: "panel-prologue-2",
+      order: 2,
+      englishText: "The wanderer waves and says hello.",
+      chineseHint: "旅人挥手，对路上小怪兽说 Hello。",
+      imageUrl: "/assets/prologue/panel-2.webp",
+      rhythmType: "turn",
+      visualGrammar: { shot: "medium", focus: "greeting", mood: "friendly first contact" }
+    },
+    {
+      id: "panel-prologue-3",
+      order: 3,
+      englishText: "The monster smiles and gives a glowing sword.",
+      chineseHint: "怪兽微笑着，递出一把发光的剑。",
+      imageUrl: "/assets/prologue/panel-3.webp",
+      rhythmType: "reward",
+      visualGrammar: { shot: "close-up", focus: "gift reveal", mood: "warm reward" }
+    }
+  ],
+  helloSword: {
+    expressionId: "expression-prologue-hello",
+    equipmentId: "equipment-hello-sword",
+    expression: "Hello!",
+    meaningZh: "你好！",
+    sourceText: "The wanderer waves and says hello.",
+    equipmentName: "Hello Sword",
+    rarity: "common"
+  }
+} as const;
+
+export const prologueLessonJson = asJson({
+  mode: "prologue_comic",
+  panelCount: 3,
+  fallback: "built-in-assets",
+  isPrologue: true
+});
