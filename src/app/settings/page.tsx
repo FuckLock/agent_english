@@ -3,9 +3,7 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, Database, Plug, Volume2 } from "lucide-react";
 
 import { DataManagementPanel } from "@/components/settings/data-management-panel";
-import { ProviderConfigForm } from "@/components/settings/provider-config-form";
-import { ProviderStatusGrid } from "@/components/settings/provider-status-grid";
-import { ProviderTemplateList } from "@/components/settings/provider-template-list";
+import { ProviderCapabilityPanel } from "@/components/settings/provider-capability-panel";
 import { ProviderUsageList } from "@/components/settings/provider-usage-list";
 import { getDataManagementSummary } from "@/server/data/export-service";
 import {
@@ -53,12 +51,14 @@ export default function SettingsPage() {
           <div>
             <p className="section-kicker">Section 1 · Capabilities</p>
             <h2 id="caps-title">能力配置</h2>
-            <p>文字 / 图片 / 语音 / 搜索 Provider 与模板。</p>
+            <p>先选能力卡（文字 / 图片 / 语音 / 搜索），下方表单只显示对应模板。</p>
           </div>
         </header>
-        <ProviderStatusGrid status={data.status} />
-        <ProviderConfigForm configs={data.configs} templates={data.templates} />
-        <ProviderTemplateList templates={data.templates} />
+        <ProviderCapabilityPanel
+          configs={data.configs}
+          status={data.status}
+          templates={data.templates}
+        />
       </section>
 
       <section className="settings-section" aria-labelledby="exp-title">

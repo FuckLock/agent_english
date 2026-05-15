@@ -7,8 +7,7 @@
 .settings-hero,
 .setup-hero,
 .settings-link-button,
-.status-card,
-.route-guard {
+.status-card {
   display: flex;
   align-items: center;
 }
@@ -137,11 +136,6 @@
   margin-bottom: 22px;
 }
 
-.settings-side-stack {
-  display: grid;
-  gap: 22px;
-}
-
 .settings-panel {
   padding: 22px;
   border: 1px solid var(--color-line);
@@ -162,24 +156,45 @@
   font-size: 23px;
 }
 
-.route-guard {
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
+/* Capability filter UX: 4 个可点击能力卡 + 1 个手动输入只读卡 */
+
+.status-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.status-card__body {
+  min-width: 0;
+  margin-right: auto;
+}
+
+.status-card--clickable {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.status-card--clickable:hover {
+  border-color: var(--color-night);
+  box-shadow: 0 4px 12px -6px rgba(23, 33, 43, 0.15);
+}
+
+.status-card--active {
+  border-color: var(--color-night);
+  box-shadow: 0 0 0 2px var(--color-night);
+}
+
+.capability-hint {
+  margin: 0;
+  padding: 10px 14px;
+  background: rgba(244, 183, 64, 0.08);
+  border: 1px solid rgba(244, 183, 64, 0.25);
   border-radius: 8px;
-  background: #f7faf2;
-}
-
-.route-guard strong,
-.route-guard span {
-  display: block;
-}
-
-.route-guard span {
-  margin-top: 5px;
+  font-size: 0.88rem;
   color: var(--color-muted);
-  font-size: 13px;
-  font-weight: 800;
+  line-height: 1.5;
 }
 
 @media (max-width: 980px) {
