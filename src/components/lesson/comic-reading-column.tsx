@@ -16,13 +16,19 @@ export function ComicReadingColumn({ lesson }: ComicReadingColumnProps) {
   return (
     <section className="lesson-reading-column" aria-labelledby="lesson-title">
       <div className="lesson-cover">
-        <ComicArtPlaceholder label={`${lesson.title} 封面`} prompt={lesson.coverPrompt} />
-        <ImageJobStatus
-          canGenerateImages={lesson.canGenerateImages}
-          error={lesson.coverJobError}
-          lessonId={lesson.id}
-          status={lesson.coverJobStatus}
-        />
+        {lesson.coverImageUrl ? (
+          <img alt={`${lesson.title} 封面`} src={lesson.coverImageUrl} />
+        ) : (
+          <ComicArtPlaceholder label={`${lesson.title} 封面`} prompt={lesson.coverPrompt} />
+        )}
+        {lesson.isPrologue ? null : (
+          <ImageJobStatus
+            canGenerateImages={lesson.canGenerateImages}
+            error={lesson.coverJobError}
+            lessonId={lesson.id}
+            status={lesson.coverJobStatus}
+          />
+        )}
       </div>
 
       <div className="lesson-intro">
@@ -42,20 +48,22 @@ export function ComicReadingColumn({ lesson }: ComicReadingColumnProps) {
         ))}
       </div>
 
-      <div className="lesson-expand-card">
-        <div>
-          <Sparkles aria-hidden="true" size={18} />
-          <strong>
-            {lesson.panels.length >= DEFAULT_PANEL_COUNT ? "默认 6 格漫画已完整" : "正在补齐默认 6 格"}
-          </strong>
-          <span>短内容至少 4 格；想多看剧情时可手动扩展第 7-8 格，避免图片成本失控。</span>
+      {lesson.isPrologue ? null : (
+        <div className="lesson-expand-card">
+          <div>
+            <Sparkles aria-hidden="true" size={18} />
+            <strong>
+              {lesson.panels.length >= DEFAULT_PANEL_COUNT ? "默认 6 格漫画已完整" : "正在补齐默认 6 格"}
+            </strong>
+            <span>短内容至少 4 格；想多看剧情时可手动扩展第 7-8 格，避免图片成本失控。</span>
+          </div>
+          {lesson.panels.length < MAX_PANEL_COUNT ? (
+            <GenerationActionButton action="extend_panels" lessonId={lesson.id}>
+              扩展第 {lesson.panels.length + 1} 格
+            </GenerationActionButton>
+          ) : null}
         </div>
-        {lesson.panels.length < MAX_PANEL_COUNT ? (
-          <GenerationActionButton action="extend_panels" lessonId={lesson.id}>
-            扩展第 {lesson.panels.length + 1} 格
-          </GenerationActionButton>
-        ) : null}
-      </div>
+      )}
 
       <details className="full-text-fold" open={!lesson.fullTextFolded}>
         <summary>

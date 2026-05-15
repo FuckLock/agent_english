@@ -28,6 +28,7 @@ import { normalizeCategory, normalizeDifficulty } from "@/server/content/content
 import { parseRecord, readLessonDraft, slugifyId } from "@/server/lessons/lesson-draft";
 import { getPanelId, insertPanel, updateLessonDraft } from "@/server/lessons/lesson-panels";
 import {
+  isPrologueLesson,
   maybeEnsureLessonGenerationJobs,
   maybeEnsureMinimumPanels
 } from "@/server/lessons/prologue-service";
@@ -160,6 +161,7 @@ export function getLessonPageModel(lessonId: string): LessonPageModel | null {
     fullText: excerpt?.excerptText || draft.fullText || draft.sourceExcerpt,
     fullTextFolded: lesson.fullTextFolded,
     coverPrompt: draft.coverPrompt,
+    coverImageUrl: readCoverImageUrl(coverJob),
     coverJobStatus: coverJob?.status ?? null,
     coverJobError: coverJob?.errorSummary ?? null,
     panels: panelViews,
@@ -174,11 +176,25 @@ export function getLessonPageModel(lessonId: string): LessonPageModel | null {
     canUseTts: providerStatus.hasTtsProvider,
     canGenerateImages: providerStatus.hasImageProvider,
     generationStats: getTodayGenerationStats(),
-    dungeonId: dungeon?.id ?? null
+    dungeonId: dungeon?.id ?? null,
+    isPrologue: isPrologueLesson(lesson.id)
   };
 }
 
+function readCoverImageUrl(coverJob: { resultJson: string } | null): string | null {
+  if (!coverJob) return null;
+  try {
+    const result = JSON.parse(coverJob.resultJson) as { imageUrl?: string };
+    return typeof result.imageUrl === "string" && result.imageUrl.length > 0
+      ? result.imageUrl
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function extendLessonPanels(lessonId: string, quality: GenerationQuality = "draft") {
+  if (isPrologueLesson(lessonId)) return getLessonPageModel(lessonId);
   const model = getLessonPageModel(lessonId);
   if (!model || model.panels.length >= MAX_COMIC_PANEL_COUNT) return model;
 
@@ -211,11 +227,13 @@ export function extendLessonPanels(lessonId: string, quality: GenerationQuality 
 }
 
 export function retryLessonImageJobs(lessonId: string, quality: GenerationQuality = "draft") {
+  if (isPrologueLesson(lessonId)) return getLessonPageModel(lessonId);
   retryLessonImages(lessonId, quality);
   return getLessonPageModel(lessonId);
 }
 
 export function queueLessonAudioJob(lessonId: string) {
+  if (isPrologueLesson(lessonId)) return getLessonPageModel(lessonId);
   queueLessonTts(lessonId);
   return getLessonPageModel(lessonId);
 }

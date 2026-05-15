@@ -25,6 +25,7 @@ export type LessonPageModel = {
   fullText: string;
   fullTextFolded: boolean;
   coverPrompt: string;
+  coverImageUrl: string | null;
   coverJobStatus: string | null;
   coverJobError: string | null;
   panels: LessonPanelView[];
@@ -36,4 +37,5 @@ export type LessonPageModel = {
   canGenerateImages: boolean;
   generationStats: ReturnType<typeof getTodayGenerationStats>;
   dungeonId: string | null;
+  isPrologue: boolean;
 };
