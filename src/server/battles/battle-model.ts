@@ -17,6 +17,7 @@ import {
   storyLessons
 } from "@/server/db/schema";
 import { readLessonDraft, slugifyId } from "@/server/lessons/lesson-draft";
+import { PROLOGUE_ASSETS } from "@/server/lessons/prologue-service";
 
 export type BattleEquipmentView = {
   id: string;
@@ -51,6 +52,8 @@ export type BattlePageModel = {
   turns: BattleTurnView[];
   equipment: BattleEquipmentView[];
   rescue: BattleRescue;
+  isPrologue: boolean;
+  monsterImageUrl: string | null;
 };
 
 export function getBattlePageModel(battleId: string): BattlePageModel | null {
@@ -102,7 +105,9 @@ export function getBattlePageModel(battleId: string): BattlePageModel | null {
     rescue: generateBattleRescue({
       objectiveText: dungeon.objectiveText,
       targetExpression: draft.expressions[0]?.expression ?? ""
-    })
+    }),
+    isPrologue: Boolean(dungeon.isPrologue),
+    monsterImageUrl: dungeon.isPrologue ? PROLOGUE_ASSETS.monsterImageUrl : null
   };
 }
 

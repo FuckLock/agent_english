@@ -23,6 +23,23 @@ export const PROLOGUE_HELLO_EQUIPMENT_ID = "equipment-hello-sword";
 export const PROLOGUE_HELLO_EXPRESSION_ID = "expression-prologue-hello";
 export const PROLOGUE_STATE_SETTING_KEY = "prologue_state";
 
+export const PROLOGUE_ASSETS = {
+  monsterImageUrl: "/assets/prologue/monster.webp",
+  victoryImageUrl: "/assets/prologue/victory.webp",
+  equipmentImageUrl: "/assets/prologue/hello-sword.webp"
+} as const;
+
+export function getPrologueEquipmentDrop() {
+  return {
+    equipmentName: "Hello Sword",
+    expression: "Hello!",
+    meaningZh: "你好！",
+    newlyCreated: !isPrologueComplete(),
+    rarity: "common",
+    imageUrl: PROLOGUE_ASSETS.equipmentImageUrl
+  };
+}
+
 export function isPrologueLesson(lessonId: string): boolean {
   const dungeon = getDb()
     .select({ isPrologue: dungeons.isPrologue })

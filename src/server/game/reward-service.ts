@@ -21,7 +21,11 @@ import {
   type XpAwardResult
 } from "@/server/game/progress-service";
 import { slugifyId } from "@/server/lessons/lesson-draft";
-import { applyPrologueClearance } from "@/server/lessons/prologue-service";
+import {
+  applyPrologueClearance,
+  getPrologueEquipmentDrop,
+  PROLOGUE_ASSETS
+} from "@/server/lessons/prologue-service";
 
 export type SettlementRewardModel = {
   battle: BattlePageModel;
@@ -40,7 +44,9 @@ export type SettlementRewardModel = {
     meaningZh: string;
     newlyCreated: boolean;
     rarity: string;
+    imageUrl: string | null;
   } | null;
+  victoryImageUrl: string | null;
   reviewItems: Array<{
     id: string;
     skillKey: string;
@@ -92,7 +98,7 @@ export function getSettlementRewardModel(battleId: string): SettlementRewardMode
           xpDelta: 5
         })
       : EMPTY_XP;
-  const equipmentDrop = ensureEquipmentDrop(battle);
+  const equipmentDrop = battle.isPrologue ? getPrologueEquipmentDrop() : ensureEquipmentDrop(battle);
   const expressionRewardKey = equipmentDrop
     ? `equipment:${battle.id}:${slugifyId(equipmentDrop.expression)}`
     : "";
@@ -120,6 +126,7 @@ export function getSettlementRewardModel(battleId: string): SettlementRewardMode
   const reviewItems = listBattleReviewItems(battle);
   const bossItems = ensureBossTrainingItems(reviewItems);
   applyPrologueClearance(battle.id);
+  const victoryImageUrl = battle.isPrologue ? PROLOGUE_ASSETS.victoryImageUrl : null;
 
   return {
     battle,
@@ -133,6 +140,7 @@ export function getSettlementRewardModel(battleId: string): SettlementRewardMode
     },
     progress,
     equipmentDrop,
+    victoryImageUrl,
     reviewItems,
     bossItems,
     nextActions: getNextActions(battle.rescueCount, bossItems.length)
@@ -164,7 +172,8 @@ function ensureEquipmentDrop(battle: BattlePageModel) {
       expression: saved.expression,
       meaningZh: saved.meaningZh,
       newlyCreated: false,
-      rarity: existing.rarity
+      rarity: existing.rarity,
+      imageUrl: null
     };
   }
 
@@ -191,7 +200,8 @@ function ensureEquipmentDrop(battle: BattlePageModel) {
     expression: saved.expression,
     meaningZh: saved.meaningZh,
     newlyCreated: true,
-    rarity
+    rarity,
+    imageUrl: null
   };
 }
 

@@ -12,10 +12,14 @@ export function MonsterObjectiveCard({ battle }: MonsterObjectiveCardProps) {
   return (
     <section className="monster-card" aria-label="怪兽任务卡">
       <div className="monster-card__art" aria-hidden="true">
-        <div className="monster-card__face">
-          <span />
-          <span />
-        </div>
+        {battle.monsterImageUrl ? (
+          <img alt="" src={battle.monsterImageUrl} />
+        ) : (
+          <div className="monster-card__face">
+            <span />
+            <span />
+          </div>
+        )}
       </div>
 
       <div className="monster-card__body">

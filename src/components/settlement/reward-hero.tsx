@@ -12,7 +12,11 @@ export function RewardHero({ settlement }: RewardHeroProps) {
   return (
     <section className="reward-hero" aria-label="通关庆祝">
       <div className="reward-hero__crest" aria-hidden="true">
-        <PartyPopper size={36} />
+        {settlement.victoryImageUrl ? (
+          <img alt="" src={settlement.victoryImageUrl} />
+        ) : (
+          <PartyPopper size={36} />
+        )}
       </div>
       <div>
         <p className="section-kicker">Quest Clear</p>

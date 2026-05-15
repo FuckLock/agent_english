@@ -18,6 +18,9 @@ export function EquipmentDropCard({ settlement }: EquipmentDropCardProps) {
 
       {drop ? (
         <div className="equipment-drop__item">
+          {drop.imageUrl ? (
+            <img alt="" className="equipment-drop__art" src={drop.imageUrl} />
+          ) : null}
           <span>{drop.newlyCreated ? "新装备" : "已拥有"}</span>
           <h2>{drop.equipmentName}</h2>
           <p>{drop.expression}</p>
