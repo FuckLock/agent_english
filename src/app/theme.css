@@ -46,3 +46,59 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Phase 12: reduce-motion + 5 key feedback animations */
+
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes feedback-hit {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+@keyframes feedback-clear {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes feedback-equipment-drop {
+  0% { opacity: 0; transform: translateY(-14px) scale(0.9); }
+  60% { transform: translateY(3px) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes feedback-error {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes feedback-click {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.battle-impact strong { animation: feedback-hit 0.4s ease-out; }
+.battle-clear-banner { animation: feedback-clear 0.45s ease-out; }
+.equipment-drop__item { animation: feedback-equipment-drop 0.5s ease-out; }
+.battle-empty-turn em { animation: feedback-error 0.4s ease-out; }
+.game-button:active { animation: feedback-click 0.2s ease-out; }
