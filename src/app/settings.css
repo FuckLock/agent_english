@@ -214,4 +214,80 @@
   .settings-panel {
     padding: 18px;
   }
+
+  .settings-section {
+    padding: 18px;
+  }
+
+  .settings-section__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* Phase 12 fix C: 3 大 section 单列长滚动结构 */
+
+.settings-section {
+  margin: 28px 0 0;
+  padding: 28px 30px;
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-section__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.settings-section__head > svg {
+  color: var(--color-night);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.settings-section__head .section-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+}
+
+.settings-section__head h2 {
+  margin: 4px 0 6px;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.settings-section__head p:not(.section-kicker) {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.usage-details {
+  margin-top: 4px;
+  border: 1px dashed var(--color-line);
+  border-radius: 8px;
+  padding: 14px 18px;
+  background: rgba(120, 130, 140, 0.04);
+}
+
+.usage-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--color-muted);
+}
+
+.usage-details[open] > summary {
+  margin-bottom: 12px;
 }
