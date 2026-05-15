@@ -102,3 +102,57 @@ body.reduce-motion *::after {
 .equipment-drop__item { animation: feedback-equipment-drop 0.5s ease-out; }
 .battle-empty-turn em { animation: feedback-error 0.4s ease-out; }
 .game-button:active { animation: feedback-click 0.2s ease-out; }
+
+/* First-audio prompt: 首次进入应用询问音效 (spec §13.4) */
+.first-audio-prompt {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #1e2545, #2b315a);
+  color: #fff4d6;
+  box-shadow: 0 12px 28px -16px rgba(23, 33, 43, 0.45);
+  animation: feedback-clear 0.35s ease-out;
+}
+
+.first-audio-prompt strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.first-audio-prompt p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: rgba(255, 244, 214, 0.84);
+}
+
+.first-audio-prompt__actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .first-audio-prompt {
+    grid-template-columns: 1fr;
+  }
+
+  .first-audio-prompt__actions {
+    width: 100%;
+  }
+
+  .first-audio-prompt__actions button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Placeholder hooks for muted / low-image / audio-pending (Phase 12 stub).
+   Real audio playback + image quality control will arrive with the audio
+   pipeline; CSS here documents the body classes are wired to layout. */
+body.muted audio { display: none; }
+body.low-image img { image-rendering: auto; }
