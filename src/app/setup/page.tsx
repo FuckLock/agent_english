@@ -46,13 +46,20 @@ export default function SetupPage() {
             <ArrowRight aria-hidden="true" size={17} strokeWidth={2.6} />
           </Link>
           {data.status.hasTextProvider ? (
-            <Link
-              className="settings-link-button settings-link-button--dark"
-              href={`/lessons/${PROLOGUE_LESSON_ID}`}
-            >
-              <Sword aria-hidden="true" size={17} strokeWidth={2.6} />
-              {prologueComplete ? "重打序章副本" : "进入序章副本"}
-            </Link>
+            <>
+              <Link
+                className="settings-link-button settings-link-button--dark"
+                href={`/lessons/${PROLOGUE_LESSON_ID}`}
+              >
+                <Sword aria-hidden="true" size={17} strokeWidth={2.6} />
+                {prologueComplete ? "重打序章副本" : "进入序章副本"}
+              </Link>
+              {prologueComplete ? null : (
+                <p className="setup-skip-hint">
+                  可以先跳过去看地图，但序章会教你 Hello Sword、漫画阅读、中文救援和战斗节奏，错过这些关键玩法会让首次冒险有点迷茫。
+                </p>
+              )}
+            </>
           ) : null}
         </section>
       </div>

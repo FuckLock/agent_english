@@ -44,6 +44,11 @@ export default async function SettlementPage({ params }: SettlementPageProps) {
           {settlement.nextActions.map((item) => (
             <span key={item}>{item}</span>
           ))}
+          {battle.isPrologue ? (
+            <Link className="settings-link-button settings-link-button--dark" href="/">
+              进入主世界地图
+            </Link>
+          ) : null}
           <Link href="/discover">继续找副本</Link>
           <Link href={`/lessons/${battle.lessonId}`}>再读一遍漫画</Link>
         </div>
