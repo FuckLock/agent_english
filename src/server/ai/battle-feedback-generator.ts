@@ -4,6 +4,9 @@ export type ReviewTriggerCandidate = {
   suggestedAction: string;
 };
 
+export type HitType = "miss" | "graze" | "hit" | "critical" | "stagger";
+export type MonsterState = "normal" | "angry" | "near_death" | "dead";
+
 export type BattleFeedback = {
   passed: boolean;
   communicationResult: string;
@@ -13,6 +16,12 @@ export type BattleFeedback = {
   meaningZh: string;
   stuckPoint: string | null;
   reviewTriggerCandidate: ReviewTriggerCandidate | null;
+  damage: number;
+  hitType: HitType;
+  hpDelta: number;
+  comboNext: number;
+  monsterStateBefore: MonsterState;
+  monsterStateAfter: MonsterState;
 };
 
 export type BattleRescue = {
@@ -27,6 +36,9 @@ type FeedbackInput = {
   rescueCount: number;
   targetExpression: string;
   turnOrder: number;
+  hpBefore: number;
+  comboBefore: number;
+  rescueUsedThisRound: boolean;
 };
 
 type RescueInput = {
@@ -47,6 +59,21 @@ export function generateBattleFeedback(input: FeedbackInput): BattleFeedback {
   const passed = !hasChinese && enoughEnglish && soundsNatural;
   const stuckPoint = getStuckPoint({ hasChinese, enoughEnglish, soundsNatural });
   const suggestedExpression = pickSuggestedExpression(input.targetExpression);
+  const hitType = computeHitType({
+    passed,
+    comboBefore: input.comboBefore,
+    rescueUsedThisRound: input.rescueUsedThisRound
+  });
+  const damage = computeDamage(hitType);
+  const hpDelta = -damage;
+  const hpAfter = Math.max(0, input.hpBefore + hpDelta);
+  const comboNext = computeComboNext({
+    passed,
+    comboBefore: input.comboBefore,
+    rescueUsedThisRound: input.rescueUsedThisRound
+  });
+  const monsterStateBefore = computeMonsterState(input.hpBefore);
+  const monsterStateAfter = computeMonsterState(hpAfter);
 
   return {
     passed,
@@ -65,8 +92,58 @@ export function generateBattleFeedback(input: FeedbackInput): BattleFeedback {
       passed,
       rescueCount: input.rescueCount,
       suggestedExpression
-    })
+    }),
+    damage,
+    hitType,
+    hpDelta,
+    comboNext,
+    monsterStateBefore,
+    monsterStateAfter
   };
+}
+
+function computeHitType(input: {
+  passed: boolean;
+  comboBefore: number;
+  rescueUsedThisRound: boolean;
+}): HitType {
+  if (!input.passed) return "miss";
+  if (input.rescueUsedThisRound) return "graze";
+  if (input.comboBefore >= 3) return "stagger";
+  if (input.comboBefore >= 1) return "critical";
+  return "hit";
+}
+
+function computeDamage(hitType: HitType): number {
+  switch (hitType) {
+    case "miss":
+      return 0;
+    case "graze":
+      return 14;
+    case "hit":
+      return 28;
+    case "critical":
+      return 42;
+    case "stagger":
+      return 60;
+  }
+}
+
+function computeComboNext(input: {
+  passed: boolean;
+  comboBefore: number;
+  rescueUsedThisRound: boolean;
+}): number {
+  if (!input.passed) return 0;
+  if (input.rescueUsedThisRound) return 0;
+  return input.comboBefore + 1;
+}
+
+export function computeMonsterState(hp: number): MonsterState {
+  if (hp <= 0) return "dead";
+  if (hp <= 30) return "near_death";
+  if (hp <= 60) return "angry";
+  return "normal";
 }
 
 export function generateBattleRescue(input: RescueInput): BattleRescue {
@@ -90,7 +167,13 @@ export function parseBattleFeedback(value: string): BattleFeedback {
       suggestedExpression: getString(parsed.suggestedExpression) || "Could I say it another way, please?",
       meaningZh: getString(parsed.meaningZh) || "更自然地表达当前意图。",
       stuckPoint: typeof parsed.stuckPoint === "string" ? parsed.stuckPoint : null,
-      reviewTriggerCandidate: parseReviewTrigger(parsed.reviewTriggerCandidate)
+      reviewTriggerCandidate: parseReviewTrigger(parsed.reviewTriggerCandidate),
+      damage: getNumber(parsed.damage),
+      hitType: parseHitType(parsed.hitType),
+      hpDelta: getNumber(parsed.hpDelta),
+      comboNext: getNumber(parsed.comboNext),
+      monsterStateBefore: parseMonsterState(parsed.monsterStateBefore),
+      monsterStateAfter: parseMonsterState(parsed.monsterStateAfter)
     };
   } catch {
     return {
@@ -101,9 +184,29 @@ export function parseBattleFeedback(value: string): BattleFeedback {
       suggestedExpression: "Could I try again, please?",
       meaningZh: "我可以再试一次吗？",
       stuckPoint: "feedback_parse_failed",
-      reviewTriggerCandidate: null
+      reviewTriggerCandidate: null,
+      damage: 0,
+      hitType: "miss",
+      hpDelta: 0,
+      comboNext: 0,
+      monsterStateBefore: "normal",
+      monsterStateAfter: "normal"
     };
   }
+}
+
+function parseHitType(value: unknown): HitType {
+  const allowed: HitType[] = ["miss", "graze", "hit", "critical", "stagger"];
+  return allowed.includes(value as HitType) ? (value as HitType) : "miss";
+}
+
+function parseMonsterState(value: unknown): MonsterState {
+  const allowed: MonsterState[] = ["normal", "angry", "near_death", "dead"];
+  return allowed.includes(value as MonsterState) ? (value as MonsterState) : "normal";
+}
+
+function getNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 function getStuckPoint(input: {

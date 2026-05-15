@@ -4,7 +4,9 @@ import {
   generateBattleRescue,
   parseBattleFeedback,
   type BattleFeedback,
-  type BattleRescue
+  type BattleRescue,
+  type HitType,
+  type MonsterState
 } from "@/server/ai/battle-feedback-generator";
 import { getDb } from "@/server/db/client";
 import {
@@ -35,6 +37,11 @@ export type BattleTurnView = {
   hpDelta: number;
   passed: boolean;
   feedback: BattleFeedback;
+  damage: number;
+  hitType: HitType;
+  comboAfter: number;
+  monsterStateAfter: MonsterState;
+  rescueUsedThisRound: boolean;
 };
 
 export type BattlePageModel = {
@@ -49,6 +56,11 @@ export type BattlePageModel = {
   currentRound: number;
   totalRounds: number;
   hpRemaining: number;
+  comboCount: number;
+  monsterState: MonsterState;
+  rescuePending: boolean;
+  lastHitType: HitType | null;
+  lastDamage: number;
   turns: BattleTurnView[];
   equipment: BattleEquipmentView[];
   rescue: BattleRescue;
@@ -81,6 +93,21 @@ export function getBattlePageModel(battleId: string): BattlePageModel | null {
     .orderBy(asc(battleTurns.turnOrder))
     .all();
 
+  const turnViews: BattleTurnView[] = turns.map((turn) => ({
+    id: turn.id,
+    turnOrder: turn.turnOrder,
+    userAnswer: turn.userAnswer,
+    hpDelta: turn.hpDelta,
+    passed: turn.passed,
+    feedback: parseBattleFeedback(turn.aiFeedbackJson),
+    damage: turn.damage,
+    hitType: normalizeHitType(turn.hitType),
+    comboAfter: turn.comboAfter,
+    monsterStateAfter: normalizeMonsterState(turn.monsterStateAfter),
+    rescueUsedThisRound: turn.rescueUsedThisRound
+  }));
+  const lastTurn = turnViews.at(-1);
+
   return {
     id: session.id,
     status: session.status,
@@ -93,14 +120,12 @@ export function getBattlePageModel(battleId: string): BattlePageModel | null {
     currentRound: session.currentRound,
     totalRounds: session.totalRounds,
     hpRemaining: session.hpRemaining,
-    turns: turns.map((turn) => ({
-      id: turn.id,
-      turnOrder: turn.turnOrder,
-      userAnswer: turn.userAnswer,
-      hpDelta: turn.hpDelta,
-      passed: turn.passed,
-      feedback: parseBattleFeedback(turn.aiFeedbackJson)
-    })),
+    comboCount: session.comboCount,
+    monsterState: normalizeMonsterState(session.monsterState),
+    rescuePending: session.rescuePending,
+    lastHitType: lastTurn?.hitType ?? null,
+    lastDamage: lastTurn?.damage ?? 0,
+    turns: turnViews,
     equipment: getBattleEquipment(lesson.id, draft.expressions),
     rescue: generateBattleRescue({
       objectiveText: dungeon.objectiveText,
@@ -109,6 +134,16 @@ export function getBattlePageModel(battleId: string): BattlePageModel | null {
     isPrologue: Boolean(dungeon.isPrologue),
     monsterImageUrl: dungeon.isPrologue ? PROLOGUE_ASSETS.monsterImageUrl : null
   };
+}
+
+function normalizeHitType(value: string): HitType {
+  const allowed: HitType[] = ["miss", "graze", "hit", "critical", "stagger"];
+  return allowed.includes(value as HitType) ? (value as HitType) : "miss";
+}
+
+function normalizeMonsterState(value: string): MonsterState {
+  const allowed: MonsterState[] = ["normal", "angry", "near_death", "dead"];
+  return allowed.includes(value as MonsterState) ? (value as MonsterState) : "normal";
 }
 
 function getBattleEquipment(

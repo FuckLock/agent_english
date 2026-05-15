@@ -3,6 +3,7 @@ import { gameStatements } from "./0001-game";
 import { providerStatements } from "./0001-providers";
 import { v16ContentStatements } from "./0002-v16-content";
 import { prologueStatements } from "./0003-prologue";
+import { battleStateStatements } from "./0004-battle-state";
 
 export const migrations = [
   {
@@ -16,5 +17,9 @@ export const migrations = [
   {
     id: "0003_prologue_dungeon_flag",
     statements: prologueStatements
+  },
+  {
+    id: "0004_battle_combo_state_machine",
+    statements: battleStateStatements
   }
 ] as const;

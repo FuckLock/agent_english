@@ -34,6 +34,9 @@ export function createBattleFromLesson(input: { dungeonId?: string; lessonId?: s
       currentRound: 1,
       totalRounds: 3,
       hpRemaining: 100,
+      comboCount: 0,
+      monsterState: "normal",
+      rescuePending: false,
       startedAt: timestamp,
       completedAt: null,
       createdAt: timestamp,
@@ -51,7 +54,12 @@ export function requestBattleRescue(battleId: string) {
   const timestamp = nowIso();
   getDb()
     .update(battleSessions)
-    .set({ rescueCount: session.rescueCount + 1, updatedAt: timestamp })
+    .set({
+      rescueCount: session.rescueCount + 1,
+      comboCount: 0,
+      rescuePending: true,
+      updatedAt: timestamp
+    })
     .where(eq(battleSessions.id, battleId))
     .run();
 
@@ -59,20 +67,31 @@ export function requestBattleRescue(battleId: string) {
 }
 
 export function submitBattleTurn(input: { battleId: string; userAnswer: string }) {
+  const session = getDb()
+    .select()
+    .from(battleSessions)
+    .where(eq(battleSessions.id, input.battleId))
+    .get();
+  if (!session || session.status === "completed") return null;
+
   const model = getBattlePageModel(input.battleId);
-  if (!model || model.status === "completed") return null;
+  if (!model) return null;
 
   const timestamp = nowIso();
   const nextTurnOrder = model.turns.length + 1;
   const targetExpression = model.equipment[0]?.expression ?? model.rescue.expression;
+  const rescueUsedThisRound = Boolean(session.rescuePending);
   const feedback = generateBattleFeedback({
     answer: input.userAnswer,
     objectiveText: model.objectiveText,
     rescueCount: model.rescueCount,
     targetExpression,
-    turnOrder: nextTurnOrder
+    turnOrder: nextTurnOrder,
+    hpBefore: session.hpRemaining,
+    comboBefore: session.comboCount,
+    rescueUsedThisRound
   });
-  const nextHp = feedback.passed ? 0 : model.hpRemaining;
+  const nextHp = Math.max(0, session.hpRemaining + feedback.hpDelta);
   const turnId = `turn-${input.battleId}-${nextTurnOrder}`;
 
   getDb()
@@ -83,15 +102,20 @@ export function submitBattleTurn(input: { battleId: string; userAnswer: string }
       turnOrder: nextTurnOrder,
       userAnswer: input.userAnswer.trim(),
       aiFeedbackJson: asJson(feedback as unknown as Record<string, unknown>),
-      hpDelta: nextHp - model.hpRemaining,
+      hpDelta: feedback.hpDelta,
       passed: feedback.passed,
+      damage: feedback.damage,
+      hitType: feedback.hitType,
+      comboAfter: feedback.comboNext,
+      monsterStateAfter: feedback.monsterStateAfter,
+      rescueUsedThisRound,
       createdAt: timestamp,
       updatedAt: timestamp
     })
     .run();
 
   persistFeedback(model.lessonId, turnId, input.userAnswer, feedback, model.rescueCount);
-  updateBattleSessionAfterTurn(input.battleId, model, feedback.passed, nextHp, timestamp);
+  updateBattleSessionAfterTurn(input.battleId, model, feedback, nextHp, timestamp);
 
   return getBattlePageModel(input.battleId);
 }
@@ -198,17 +222,21 @@ function persistFeedback(
 function updateBattleSessionAfterTurn(
   battleId: string,
   model: BattlePageModel,
-  passed: boolean,
+  feedback: BattleFeedback,
   hpRemaining: number,
   timestamp: string
 ) {
+  const completed = feedback.passed || hpRemaining <= 0;
   getDb()
     .update(battleSessions)
     .set({
-      status: passed ? "completed" : "in_progress",
-      currentRound: passed ? model.currentRound : Math.min(model.currentRound + 1, model.totalRounds),
+      status: completed ? "completed" : "in_progress",
+      currentRound: completed ? model.currentRound : Math.min(model.currentRound + 1, model.totalRounds),
       hpRemaining,
-      completedAt: passed ? timestamp : null,
+      comboCount: feedback.comboNext,
+      monsterState: feedback.monsterStateAfter,
+      rescuePending: false,
+      completedAt: completed ? timestamp : null,
       updatedAt: timestamp
     })
     .where(eq(battleSessions.id, battleId))

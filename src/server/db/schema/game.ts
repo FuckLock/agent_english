@@ -45,6 +45,9 @@ export const battleSessions = sqliteTable(
     currentRound: integer("current_round").notNull(),
     totalRounds: integer("total_rounds").notNull(),
     hpRemaining: integer("hp_remaining").notNull(),
+    comboCount: integer("combo_count").notNull().default(0),
+    monsterState: text("monster_state").notNull().default("normal"),
+    rescuePending: integer("rescue_pending", { mode: "boolean" }).notNull().default(false),
     startedAt: text("started_at").notNull(),
     completedAt: text("completed_at"),
     ...timestamps
@@ -64,6 +67,11 @@ export const battleTurns = sqliteTable(
     aiFeedbackJson: text("ai_feedback_json").notNull(),
     hpDelta: integer("hp_delta").notNull(),
     passed: integer("passed", { mode: "boolean" }).notNull(),
+    damage: integer("damage").notNull().default(0),
+    hitType: text("hit_type").notNull().default("miss"),
+    comboAfter: integer("combo_after").notNull().default(0),
+    monsterStateAfter: text("monster_state_after").notNull().default("normal"),
+    rescueUsedThisRound: integer("rescue_used_this_round", { mode: "boolean" }).notNull().default(false),
     ...timestamps
   },
   (table) => [
