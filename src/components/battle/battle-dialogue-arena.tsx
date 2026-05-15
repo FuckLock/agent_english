@@ -24,6 +24,7 @@ export function BattleDialogueArena({ battle }: BattleDialogueArenaProps) {
           <div className="battle-empty-turn">
             <MessageCircle aria-hidden="true" size={20} />
             <p>怪兽正在等你的第一句英文回应。</p>
+            <em>提示：用 4 个以上英文单词组成一句话，再点确认。</em>
           </div>
         ) : null}
 

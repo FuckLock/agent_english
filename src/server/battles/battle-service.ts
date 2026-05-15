@@ -226,12 +226,14 @@ function updateBattleSessionAfterTurn(
   hpRemaining: number,
   timestamp: string
 ) {
-  const completed = feedback.passed || hpRemaining <= 0;
+  const roundsExhausted = model.currentRound >= model.totalRounds;
+  const completed = hpRemaining <= 0 || roundsExhausted;
+  const nextRound = completed ? model.currentRound : model.currentRound + 1;
   getDb()
     .update(battleSessions)
     .set({
       status: completed ? "completed" : "in_progress",
-      currentRound: completed ? model.currentRound : Math.min(model.currentRound + 1, model.totalRounds),
+      currentRound: nextRound,
       hpRemaining,
       comboCount: feedback.comboNext,
       monsterState: feedback.monsterStateAfter,

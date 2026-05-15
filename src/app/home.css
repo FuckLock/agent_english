@@ -243,10 +243,6 @@
     font-size: 28px;
   }
 
-  .challenge-panel {
-    order: -1;
-  }
-
   .map-panel,
   .challenge-panel {
     padding: 18px;

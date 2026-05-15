@@ -141,8 +141,8 @@ function computeComboNext(input: {
 
 export function computeMonsterState(hp: number): MonsterState {
   if (hp <= 0) return "dead";
-  if (hp <= 30) return "near_death";
-  if (hp <= 60) return "angry";
+  if (hp <= 20) return "near_death";
+  if (hp <= 50) return "angry";
   return "normal";
 }
 
