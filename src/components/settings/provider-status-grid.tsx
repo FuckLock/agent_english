@@ -88,7 +88,7 @@ export function ProviderStatusGrid({
   const isInteractive = Boolean(onSelect);
 
   return (
-    <div className="status-grid">
+    <div className="status-grid" role="group" aria-label="Provider 能力配置">
       {items.map((item) => {
         const isActive = item.capability !== null && item.capability === activeCapability;
         const canClick = isInteractive && item.capability !== null;
