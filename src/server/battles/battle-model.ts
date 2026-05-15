@@ -28,6 +28,7 @@ export type BattleEquipmentView = {
   equipmentName: string;
   rarity: string;
   equipped: boolean;
+  useCount: number;
 };
 
 export type BattleTurnView = {
@@ -168,7 +169,8 @@ function getBattleEquipment(
       meaningZh: item.meaningZh,
       equipmentName: equipment?.equipmentName ?? "Story Charm",
       rarity: equipment?.rarity ?? item.status,
-      equipped: equipment?.equipped ?? item.status === "equipped"
+      equipped: equipment?.equipped ?? item.status === "equipped",
+      useCount: equipment?.useCount ?? item.usedCount
     };
   });
   const draftViews = draftExpressions.slice(0, 3).map((item) => ({
@@ -177,7 +179,8 @@ function getBattleEquipment(
     meaningZh: item.meaningZh,
     equipmentName: "Draft Skill",
     rarity: "story",
-    equipped: false
+    equipped: false,
+    useCount: 0
   }));
 
   return dedupeEquipment([...savedViews, ...draftViews]).slice(0, 5);

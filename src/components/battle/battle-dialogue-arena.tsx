@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Bot, CheckCircle2, MessageCircle, Swords } from "lucide-react";
+import { Bot, CheckCircle2, Flame, MessageCircle, Swords, Zap } from "lucide-react";
 
-import type { BattlePageModel } from "@/server/battles/battle-model";
+import type { BattlePageModel, BattleTurnView } from "@/server/battles/battle-model";
+import type { HitType } from "@/server/ai/battle-feedback-generator";
 
 type BattleDialogueArenaProps = {
   battle: BattlePageModel;
@@ -38,6 +39,7 @@ export function BattleDialogueArena({ battle }: BattleDialogueArenaProps) {
                 <Bot aria-hidden="true" size={15} />
                 反馈
               </span>
+              <BattleImpactRow turn={turn} />
               <strong>{turn.feedback.communicationResult}</strong>
               <p>{turn.feedback.explanationZh}</p>
               <div className="battle-rewrite">
@@ -66,6 +68,36 @@ export function BattleDialogueArena({ battle }: BattleDialogueArenaProps) {
       </div>
     </section>
   );
+}
+
+function BattleImpactRow({ turn }: { turn: BattleTurnView }) {
+  return (
+    <div className="battle-impact" aria-label="本回合命中">
+      <span className={`hit-badge hit-badge--${turn.hitType}`}>
+        <Zap aria-hidden="true" size={14} />
+        {formatHitType(turn.hitType)}
+      </span>
+      {turn.damage > 0 ? <strong>-{turn.damage} HP</strong> : null}
+      {turn.comboAfter > 0 ? (
+        <span className="battle-impact__combo">
+          <Flame aria-hidden="true" size={14} />
+          Combo x{turn.comboAfter}
+        </span>
+      ) : null}
+      {turn.rescueUsedThisRound ? <em>救援后伤害减半</em> : null}
+    </div>
+  );
+}
+
+function formatHitType(hitType: HitType): string {
+  const labels: Record<HitType, string> = {
+    miss: "未命中",
+    graze: "擦伤",
+    hit: "命中",
+    critical: "暴击",
+    stagger: "击破"
+  };
+  return labels[hitType];
 }
 
 function formatStuckPoint(value: string) {

@@ -159,3 +159,135 @@
     grid-row: auto;
   }
 }
+
+/* Phase 12: monster state machine + hit badges + equipment skill bar */
+
+.monster-card {
+  transition: box-shadow 0.25s var(--ease-quest, ease-out), border-color 0.25s;
+}
+.monster-card--angry {
+  box-shadow: 0 0 0 1px rgba(255, 132, 70, 0.6), 0 24px 60px -28px rgba(255, 132, 70, 0.55);
+}
+.monster-card--near-death {
+  box-shadow: 0 0 0 1px rgba(244, 67, 54, 0.7), 0 24px 60px -28px rgba(244, 67, 54, 0.7);
+  animation: monster-pulse 1.4s ease-in-out infinite;
+}
+.monster-card--dead {
+  filter: grayscale(0.45);
+  opacity: 0.78;
+}
+@keyframes monster-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(244, 67, 54, 0.7); }
+  50% { box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.35); }
+}
+
+.monster-state-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 8px 0 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.monster-state-label--normal {
+  background: rgba(120, 144, 168, 0.16);
+  color: #4a5a6a;
+}
+.monster-state-label--angry {
+  background: rgba(255, 132, 70, 0.18);
+  color: #c4541a;
+}
+.monster-state-label--near-death {
+  background: rgba(244, 67, 54, 0.18);
+  color: #c0241a;
+}
+.monster-state-label--dead {
+  background: rgba(60, 60, 80, 0.18);
+  color: #3a3a48;
+}
+
+.monster-card__combo {
+  background: rgba(244, 168, 71, 0.18);
+  color: #b8651c;
+  font-weight: 600;
+}
+
+.hit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.hit-badge--miss { background: rgba(120, 130, 140, 0.18); color: #5a6470; }
+.hit-badge--graze { background: rgba(76, 132, 196, 0.18); color: #2b5a8a; }
+.hit-badge--hit { background: rgba(56, 168, 96, 0.18); color: #1f6c40; }
+.hit-badge--critical { background: rgba(255, 132, 40, 0.2); color: #b54a08; }
+.hit-badge--stagger { background: rgba(220, 36, 60, 0.2); color: #8a0e22; }
+
+.battle-impact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  font-size: 0.85rem;
+}
+.battle-impact strong {
+  color: #a3331c;
+  font-weight: 700;
+}
+.battle-impact__combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b8651c;
+  font-weight: 600;
+}
+.battle-impact em {
+  font-style: normal;
+  color: #647088;
+  font-size: 0.78rem;
+}
+
+.equipment-slot--rare { border-color: rgba(76, 132, 196, 0.55); }
+.equipment-slot--common { border-color: rgba(120, 130, 140, 0.35); }
+.equipment-slot--story { border-color: rgba(150, 110, 200, 0.45); }
+.equipment-slot__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.equipment-slot__head em {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: #6b7587;
+  background: rgba(120, 144, 168, 0.16);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.active-skill-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.active-skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px dashed rgba(120, 130, 140, 0.45);
+  background: transparent;
+  color: #6b7587;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: not-allowed;
+}
