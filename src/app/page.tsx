@@ -5,12 +5,14 @@ import {
   Play,
   ShieldCheck,
   Sparkles,
+  Sword,
   Zap
 } from "lucide-react";
 
 import { DungeonMap } from "@/components/home/dungeon-map";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { getHomeOverview, listActiveBattles } from "@/server/repositories/game-repository";
+import { isPrologueComplete, PROLOGUE_LESSON_ID } from "@/server/lessons/prologue-service";
 import { getProviderSetupStatus } from "@/server/repositories/provider-repository";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +21,32 @@ export default function Home() {
   const home = getHomeOverview();
   const activeBattle = listActiveBattles()[0] ?? null;
   const providerStatus = getProviderSetupStatus();
+  const prologueComplete = isPrologueComplete();
+  const showPrologueGuide = providerStatus.hasTextProvider && !prologueComplete;
   const challengeHref = activeBattle ? `/battles/${activeBattle.id}` : "/discover";
   const challengeLabel = activeBattle ? "继续打" : "找新副本";
 
   return (
     <main className="page-shell">
+      {showPrologueGuide ? (
+        <section className="prologue-guide" aria-label="序章引导">
+          <Sword aria-hidden="true" size={22} strokeWidth={2.5} />
+          <div>
+            <strong>先打序章：First Meeting</strong>
+            <p>
+              这关教你用 Hello 招呼怪兽、看漫画、用中文救援、捡 Hello Sword 装备。
+              第一次冒险跳过会让后面有点迷茫。
+            </p>
+          </div>
+          <Link
+            className="game-button game-button--dark game-button--md"
+            href={`/lessons/${PROLOGUE_LESSON_ID}`}
+          >
+            <span>进入序章</span>
+          </Link>
+        </section>
+      ) : null}
+
       <section className="today-strip" aria-labelledby="today-title">
         <div>
           <p className="section-kicker">今日地图</p>
