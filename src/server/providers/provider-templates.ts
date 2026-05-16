@@ -30,6 +30,8 @@ export const builtinProviderTemplates: ProviderTemplateDefinition[] = [
   template("openai-official", "openai", "OpenAI 官方", "text", "官方文字模型入口。", "https://api.openai.com/v1", "gpt-5.2", true, modelField),
   template("google-official", "google", "Google 官方", "text", "Google Gemini 官方文字模型入口。", "https://generativelanguage.googleapis.com", "gemini-2.5-pro", true, modelField),
   template("grsai-compatible", "grsai", "grsai 可配置", "text", "Host、Path、模型名都由用户按 grsai 后台配置。", null, null, true, modelField),
+  template("deepseek-text", "deepseek", "DeepSeek 官方", "text", "DeepSeek 文字模型（OpenAI 协议兼容，国内可直连）。", "https://api.deepseek.com/v1", "deepseek-chat", true, modelField),
+  template("moonshot-text", "moonshot", "Kimi (Moonshot)", "text", "Kimi 文字模型（OpenAI 协议兼容，长上下文场景适配）。", "https://api.moonshot.cn/v1", "moonshot-v1-8k", true, modelField),
   template("openai-compatible", "openai-compatible", "OpenAI-compatible", "text", "兼容 OpenAI Chat/Responses 形态的聚合接口。", null, null, true, modelField),
   template("custom-http", "custom-http", "自定义 HTTP", "text", "完全自定义请求体和响应映射。", null, null, false, modelField),
   template("openai-image", "openai-image", "OpenAI 图片", "image", "OpenAI 官方图片生成或 Responses 图片工具。", "https://api.openai.com/v1", "gpt-image-1", true, modelField),
