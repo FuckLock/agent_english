@@ -2,10 +2,12 @@ export const schemaVersion = 1 as const;
 
 export const BRIDGE_BOOT_EVENT_TYPE = "bridge.boot" as const;
 export const BRIDGE_PING_EVENT_TYPE = "bridge.ping" as const;
+export const PAGE_READY_EVENT_TYPE = "page.ready" as const;
 
 export type BridgeEventType =
   | typeof BRIDGE_BOOT_EVENT_TYPE
-  | typeof BRIDGE_PING_EVENT_TYPE;
+  | typeof BRIDGE_PING_EVENT_TYPE
+  | typeof PAGE_READY_EVENT_TYPE;
 
 export interface BridgeEventError {
   code: string;
@@ -23,6 +25,13 @@ export interface BridgePingPayload {
   sentAt: string;
 }
 
+export interface PageReadyPayload {
+  sessionId: string;
+  url: string;
+  title: string;
+  loadedAt: string;
+}
+
 export interface BridgePingResult {
   acknowledged: boolean;
 }
@@ -30,11 +39,13 @@ export interface BridgePingResult {
 interface BridgeEventPayloadMap {
   [BRIDGE_BOOT_EVENT_TYPE]: BridgeBootPayload;
   [BRIDGE_PING_EVENT_TYPE]: BridgePingPayload;
+  [PAGE_READY_EVENT_TYPE]: PageReadyPayload;
 }
 
 interface BridgeEventResultMap {
   [BRIDGE_BOOT_EVENT_TYPE]: undefined;
   [BRIDGE_PING_EVENT_TYPE]: BridgePingResult;
+  [PAGE_READY_EVENT_TYPE]: undefined;
 }
 
 export interface BridgeEventEnvelope<
@@ -44,6 +55,8 @@ export interface BridgeEventEnvelope<
 > {
   schemaVersion: typeof schemaVersion;
   eventType: TEventType;
+  requestId?: string;
+  pageId?: string;
   payload: TPayload;
   result?: TResult;
   error?: BridgeEventError;
@@ -61,6 +74,8 @@ export function createBridgeEvent<TEventType extends BridgeEventType>(
   eventType: TEventType,
   payload: BridgeEventPayloadMap[TEventType],
   options?: {
+    requestId?: string;
+    pageId?: string;
     result?: BridgeEventResultMap[TEventType];
     error?: BridgeEventError;
   },
@@ -68,6 +83,8 @@ export function createBridgeEvent<TEventType extends BridgeEventType>(
   return {
     schemaVersion,
     eventType,
+    requestId: options?.requestId,
+    pageId: options?.pageId,
     payload,
     result: options?.result,
     error: options?.error,

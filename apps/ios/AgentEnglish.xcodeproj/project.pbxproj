@@ -17,6 +17,13 @@
 		A00200000000000000000108 /* KeychainCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000108 /* KeychainCredentialStore.swift */; };
 		A00200000000000000000109 /* LearningRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000109 /* LearningRecords.swift */; };
 		A00200000000000000000110 /* SampleLearningData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000110 /* SampleLearningData.swift */; };
+		A00200000000000000000112 /* WebBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000112 /* WebBrowserView.swift */; };
+		A00200000000000000000113 /* WebViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000113 /* WebViewContainer.swift */; };
+		A00200000000000000000114 /* WebBridgeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000114 /* WebBridgeController.swift */; };
+		A00200000000000000000115 /* BrowserAgentBootstrapScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000115 /* BrowserAgentBootstrapScript.swift */; };
+		A00200000000000000000116 /* PrivacyDisclosureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000116 /* PrivacyDisclosureView.swift */; };
+		A00200000000000000000117 /* WebsiteDataPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000117 /* WebsiteDataPromptView.swift */; };
+		A00200000000000000000118 /* BridgeEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000118 /* BridgeEvent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +38,13 @@
 		A00100000000000000000109 /* LearningRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningRecords.swift; sourceTree = "<group>"; };
 		A00100000000000000000110 /* SampleLearningData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLearningData.swift; sourceTree = "<group>"; };
 		A00100000000000000000111 /* AgentEnglish.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgentEnglish.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00100000000000000000112 /* WebBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebBrowserView.swift; sourceTree = "<group>"; };
+		A00100000000000000000113 /* WebViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewContainer.swift; sourceTree = "<group>"; };
+		A00100000000000000000114 /* WebBridgeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebBridgeController.swift; sourceTree = "<group>"; };
+		A00100000000000000000115 /* BrowserAgentBootstrapScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAgentBootstrapScript.swift; sourceTree = "<group>"; };
+		A00100000000000000000116 /* PrivacyDisclosureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyDisclosureView.swift; sourceTree = "<group>"; };
+		A00100000000000000000117 /* WebsiteDataPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteDataPromptView.swift; sourceTree = "<group>"; };
+		A00100000000000000000118 /* BridgeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeEvent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +80,8 @@
 			children = (
 				A00000000000000000000021 /* App */,
 				A00000000000000000000022 /* Screens */,
+				A00000000000000000000023 /* Web */,
+				A00000000000000000000024 /* Settings */,
 			);
 			path = AgentEnglish;
 			sourceTree = "<group>";
@@ -83,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				A00100000000000000000103 /* BrowserHomeView.swift */,
+				A00100000000000000000112 /* WebBrowserView.swift */,
 				A00100000000000000000104 /* FavoritesView.swift */,
 				A00100000000000000000105 /* ReviewView.swift */,
 				A00100000000000000000106 /* SettingsView.swift */,
@@ -90,12 +107,40 @@
 			path = Screens;
 			sourceTree = "<group>";
 		};
+		A00000000000000000000023 /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				A00100000000000000000113 /* WebViewContainer.swift */,
+				A00100000000000000000114 /* WebBridgeController.swift */,
+				A00100000000000000000115 /* BrowserAgentBootstrapScript.swift */,
+			);
+			path = Web;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000024 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A00100000000000000000116 /* PrivacyDisclosureView.swift */,
+				A00100000000000000000117 /* WebsiteDataPromptView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		A00000000000000000000030 /* AgentEnglishCore */ = {
 			isa = PBXGroup;
 			children = (
+				A00000000000000000000032 /* Bridge */,
 				A00000000000000000000031 /* Persistence */,
 			);
 			path = AgentEnglishCore/Sources/AgentEnglishCore;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000032 /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				A00100000000000000000118 /* BridgeEvent.swift */,
+			);
+			path = Bridge;
 			sourceTree = "<group>";
 		};
 		A00000000000000000000031 /* Persistence */ = {
@@ -180,10 +225,17 @@
 				A00200000000000000000101 /* AgentEnglishApp.swift in Sources */,
 				A00200000000000000000102 /* RootTabView.swift in Sources */,
 				A00200000000000000000103 /* BrowserHomeView.swift in Sources */,
+				A00200000000000000000112 /* WebBrowserView.swift in Sources */,
 				A00200000000000000000104 /* FavoritesView.swift in Sources */,
 				A00200000000000000000105 /* ReviewView.swift in Sources */,
 				A00200000000000000000106 /* SettingsView.swift in Sources */,
+				A00200000000000000000113 /* WebViewContainer.swift in Sources */,
+				A00200000000000000000114 /* WebBridgeController.swift in Sources */,
+				A00200000000000000000115 /* BrowserAgentBootstrapScript.swift in Sources */,
+				A00200000000000000000116 /* PrivacyDisclosureView.swift in Sources */,
+				A00200000000000000000117 /* WebsiteDataPromptView.swift in Sources */,
 				A00200000000000000000107 /* AppModelContainer.swift in Sources */,
+				A00200000000000000000118 /* BridgeEvent.swift in Sources */,
 				A00200000000000000000108 /* KeychainCredentialStore.swift in Sources */,
 				A00200000000000000000109 /* LearningRecords.swift in Sources */,
 				A00200000000000000000110 /* SampleLearningData.swift in Sources */,

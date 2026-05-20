@@ -10,6 +10,12 @@
 - 生成日期：2026-05-19
 - 覆盖 Spec 功能：14 个 / 总 14 个
 
+**当前进度（2026-05-20）**：
+- Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
+- Phase 2 已完成：iOS 原生 Tab 壳、SwiftData / Keychain 本地学习底座和样例学习闭环可构建 / 测试。
+- Phase 3 已完成：Xcode 工程、WebView 可进入页面、boot / ping / page-ready bridge 解码、Provider disclosure 和 website data 分离提示可构建 / 测试。
+- 下一步进入 Phase 4：通用网页文本扫描、翻译 Provider adapter、翻译缓存和原文 / 双语 / 学习模式。
+
 ---
 
 ## 架构约束摘要
@@ -133,6 +139,8 @@
 - `[新增] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — 浏览页、工具条和页面进入 / 返回流转
 - `[新增] apps/ios/AgentEnglish/Web/WebViewContainer.swift` — `WKWebView` 容器、`WKUserScript` 注入与 message handler 挂载
 - `[新增] apps/ios/AgentEnglish/Web/WebBridgeController.swift` — `WKScriptMessageHandler` 到 contracts 解码的唯一桥接入口
+- `[新增] apps/ios/AgentEnglish/Web/BrowserAgentBootstrapScript.swift` — iOS `WKUserScript` boot / ping / page-ready bootstrap
+- `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/BridgeEvent.swift` — Swift 侧 bridge event 白名单与解码器
 - `[新增] apps/ios/AgentEnglish/Settings/PrivacyDisclosureView.swift` — Provider 文本发送说明与 disclosure 展示
 - `[新增] apps/ios/AgentEnglish/Settings/WebsiteDataPromptView.swift` — website data 独立提示与后果说明
 - `[新增] apps/ios/AgentEnglishTests/WebBridgeControllerTests.swift` — bootstrap 事件解码与 bridge 白名单测试

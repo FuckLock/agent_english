@@ -12,38 +12,47 @@ struct SettingsView: View {
         Form {
             Section("Provider 配置") {
                 ForEach(providerProfiles) { profile in
-                    VStack(alignment: .leading, spacing: 8) {
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(profile.providerName)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+
+                            LabeledContent("Keychain 引用", value: profile.credentialReference)
+                            Text(profile.capabilitySummary)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 4)
+                    } label: {
                         HStack {
-                            Text(profile.displayName)
-                                .font(.headline)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(profile.displayName)
+                                    .font(.headline)
+                                Text(profile.providerName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
                             Spacer()
+
                             if profile.isEnabled {
                                 Text("已启用")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(.secondary)
                             }
                         }
-
-                        Text(profile.providerName)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        LabeledContent("Keychain 引用", value: profile.credentialReference)
-                        Text(profile.capabilitySummary)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
                     }
-                    .padding(.vertical, 4)
                 }
             }
 
             Section("隐私说明") {
                 if let settings = appSettings.first {
-                    LabeledContent("目标语言", value: settings.targetLanguage)
-                    LabeledContent("首选 Provider", value: settings.preferredProviderName)
-                    Text(settings.privacySummary)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    PrivacyDisclosureView(
+                        providerName: settings.preferredProviderName,
+                        targetLanguage: settings.targetLanguage
+                    )
+                    WebsiteDataPromptView()
                 } else {
                     Text("本机设置还未创建。")
                         .foregroundStyle(.secondary)

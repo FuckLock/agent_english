@@ -1,6 +1,7 @@
 export {
   bootstrapBridge,
   createBootEvent,
+  createPageReadyEvent,
   createPingEvent,
   type BridgeBootstrapHandle,
   type BridgeBootstrapOptions,
