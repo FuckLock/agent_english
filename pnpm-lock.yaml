@@ -62,6 +62,14 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/browser-agent:
+    dependencies:
+      '@agent-english/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/contracts: {}
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

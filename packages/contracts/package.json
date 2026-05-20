@@ -1,0 +1,25 @@
+{
+  "name": "@agent-english/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./bridge-events": {
+      "types": "./dist/bridge-events.d.ts",
+      "default": "./dist/bridge-events.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm build && node --test tests/*.test.mjs"
+  }
+}

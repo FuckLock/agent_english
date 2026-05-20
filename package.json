@@ -4,17 +4,13 @@
   "private": true,
   "packageManager": "pnpm@10.33.4",
   "engines": {
-    "node": ">=22.13.0",
+    "node": ">=22.11.0",
     "pnpm": ">=10.33.4"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "tsc --noEmit",
-    "db:migrate": "tsx src/server/db/migrate.ts",
-    "db:seed": "tsx src/server/db/seed.ts",
-    "db:self-test": "tsx src/server/db/self-test.ts"
+    "build": "pnpm -r build",
+    "check": "pnpm -r check",
+    "test": "pnpm -r test"
   },
   "dependencies": {
     "better-sqlite3": "12.9.0",
