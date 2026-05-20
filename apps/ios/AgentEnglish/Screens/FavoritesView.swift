@@ -1,4 +1,6 @@
+#if canImport(AgentEnglishCore)
 import AgentEnglishCore
+#endif
 import SwiftData
 import SwiftUI
 

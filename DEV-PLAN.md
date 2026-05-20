@@ -121,11 +121,15 @@
 ## Phase 3: `WKWebView` 可进入页面 + `BridgeEvent` 入口 + 隐私提示
 
 **交付内容**：
+- 补齐 Xcode iOS App wrapper 与共享 scheme，让当前原生 Tab 壳可在 Xcode 中选择 iPhone Simulator / 真机调试；该 wrapper 只承载现有 SwiftUI 壳和本地学习底座，不提前实现 WebView 业务。
 - 让用户从原生首页进入 `WebBrowserView`，显示可导航的 `WKWebView` 页面与基础前进 / 返回工具条。
 - 把 `browser-agent` bootstrap 注入 `WKWebView`，通过 `WebBridgeController` 接收并解码首批 `BridgeEvent` boot / ping / page-ready 消息，建立唯一 bridge 入口。
 - 在设置页补齐 Provider 数据发送说明和 website data 清理提示，明确学习数据与网站数据分离。
 
 **关键文件**：
+- `[新增] apps/ios/AgentEnglish.xcodeproj/project.pbxproj` — Xcode iOS App wrapper，用于模拟器 / 真机调试
+- `[新增] apps/ios/AgentEnglish.xcodeproj/xcshareddata/xcschemes/AgentEnglish.xcscheme` — 共享 Xcode scheme
+- `[新增] apps/ios/README-Xcode.md` — Xcode 模拟器 / 真机调试说明
 - `[新增] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — 浏览页、工具条和页面进入 / 返回流转
 - `[新增] apps/ios/AgentEnglish/Web/WebViewContainer.swift` — `WKWebView` 容器、`WKUserScript` 注入与 message handler 挂载
 - `[新增] apps/ios/AgentEnglish/Web/WebBridgeController.swift` — `WKScriptMessageHandler` 到 contracts 解码的唯一桥接入口
@@ -149,7 +153,7 @@
 - 如果 `WKUserScript` 注入时机或 bridge 白名单设计不稳，后续翻译和选区事件会产生重复消息或初始化竞态。
 
 **验收标准**：
-- 最低：用户能从首页进入并看见 `WKWebView` 页面，再返回原生首页；`WKScriptMessage` 只通过 `WebBridgeController` 进入 native 层，至少一种 bootstrap 事件可经 tests 或调试入口按 `BridgeEvent` 解码；设置页能看到 Provider disclosure 和独立 website data 清理提示。
+- 最低：Xcode 能打开 `apps/ios/AgentEnglish.xcodeproj` 并构建 `AgentEnglish` scheme；用户能从首页进入并看见 `WKWebView` 页面，再返回原生首页；`WKScriptMessage` 只通过 `WebBridgeController` 进入 native 层，至少一种 bootstrap 事件可经 tests 或调试入口按 `BridgeEvent` 解码；设置页能看到 Provider disclosure 和独立 website data 清理提示。
 - 回归：Phase 2 的原生 Tab 壳、样例收藏 / 复习数据和 Keychain 引用约束仍正常。
 
 ---
