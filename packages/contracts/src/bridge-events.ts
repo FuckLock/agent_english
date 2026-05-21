@@ -3,11 +3,23 @@ export const schemaVersion = 1 as const;
 export const BRIDGE_BOOT_EVENT_TYPE = "bridge.boot" as const;
 export const BRIDGE_PING_EVENT_TYPE = "bridge.ping" as const;
 export const PAGE_READY_EVENT_TYPE = "page.ready" as const;
+export const TRANSLATION_REQUESTED_EVENT_TYPE = "translation.requested" as const;
+export const TRANSLATION_COMPLETED_EVENT_TYPE = "translation.completed" as const;
+export const TRANSLATION_FAILED_EVENT_TYPE = "translation.failed" as const;
+
+import type {
+  TranslationFailurePayload,
+  TranslationRequest,
+  TranslationResult,
+} from "./translation";
 
 export type BridgeEventType =
   | typeof BRIDGE_BOOT_EVENT_TYPE
   | typeof BRIDGE_PING_EVENT_TYPE
-  | typeof PAGE_READY_EVENT_TYPE;
+  | typeof PAGE_READY_EVENT_TYPE
+  | typeof TRANSLATION_REQUESTED_EVENT_TYPE
+  | typeof TRANSLATION_COMPLETED_EVENT_TYPE
+  | typeof TRANSLATION_FAILED_EVENT_TYPE;
 
 export interface BridgeEventError {
   code: string;
@@ -40,12 +52,18 @@ interface BridgeEventPayloadMap {
   [BRIDGE_BOOT_EVENT_TYPE]: BridgeBootPayload;
   [BRIDGE_PING_EVENT_TYPE]: BridgePingPayload;
   [PAGE_READY_EVENT_TYPE]: PageReadyPayload;
+  [TRANSLATION_REQUESTED_EVENT_TYPE]: TranslationRequest;
+  [TRANSLATION_COMPLETED_EVENT_TYPE]: TranslationResult;
+  [TRANSLATION_FAILED_EVENT_TYPE]: TranslationFailurePayload;
 }
 
 interface BridgeEventResultMap {
   [BRIDGE_BOOT_EVENT_TYPE]: undefined;
   [BRIDGE_PING_EVENT_TYPE]: BridgePingResult;
   [PAGE_READY_EVENT_TYPE]: undefined;
+  [TRANSLATION_REQUESTED_EVENT_TYPE]: undefined;
+  [TRANSLATION_COMPLETED_EVENT_TYPE]: undefined;
+  [TRANSLATION_FAILED_EVENT_TYPE]: undefined;
 }
 
 export interface BridgeEventEnvelope<

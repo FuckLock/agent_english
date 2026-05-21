@@ -10,11 +10,12 @@
 - 生成日期：2026-05-19
 - 覆盖 Spec 功能：14 个 / 总 14 个
 
-**当前进度（2026-05-20）**：
+**当前进度（2026-05-21）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
 - Phase 2 已完成：iOS 原生 Tab 壳、SwiftData / Keychain 本地学习底座和样例学习闭环可构建 / 测试。
 - Phase 3 已完成：Xcode 工程、WebView 可进入页面、boot / ping / page-ready bridge 解码、Provider disclosure 和 website data 分离提示可构建 / 测试。
-- 下一步进入 Phase 4：通用网页文本扫描、翻译 Provider adapter、翻译缓存和原文 / 双语 / 学习模式。
+- Phase 4 已完成：通用网页文本扫描、翻译请求 / 回填 bridge、翻译 Provider adapter、缓存和原文 / 双语 / 学习模式可构建 / 测试。
+- 下一步进入 Phase 5：点词点句解释、收藏沉淀和 selection bridge 管线。
 
 ---
 

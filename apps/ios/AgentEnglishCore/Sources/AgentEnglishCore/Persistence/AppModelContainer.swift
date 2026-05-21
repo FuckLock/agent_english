@@ -8,6 +8,7 @@ public enum AppModelContainer {
         ReviewCardRecord.self,
         AppSettingsRecord.self,
         ProviderProfileRecord.self,
+        TranslationCacheRecord.self,
     ])
 
     public static func makeDefaultContainer(seedSampleData: Bool = true) throws -> ModelContainer {

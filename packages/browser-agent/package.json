@@ -18,9 +18,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm --filter @agent-english/contracts build && tsc -p tsconfig.json",
-    "check": "pnpm --filter @agent-english/contracts build && tsc -p tsconfig.json --noEmit",
-    "test": "pnpm build && node --test tests/*.test.mjs"
+    "build": "pnpm --filter @agent-english/contracts build && tsc -p tsconfig.json && node scripts/generate-runtime-swift.mjs",
+    "check": "pnpm --filter @agent-english/contracts build && tsc -p tsconfig.json --noEmit && node scripts/generate-runtime-swift.mjs --check",
+    "test": "pnpm build && node scripts/generate-runtime-swift.mjs --check && node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@agent-english/contracts": "workspace:*"

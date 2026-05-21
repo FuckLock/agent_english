@@ -7,8 +7,15 @@ public enum SampleLearningData {
         let reviewCards = try context.fetch(FetchDescriptor<ReviewCardRecord>())
         let appSettings = try context.fetch(FetchDescriptor<AppSettingsRecord>())
         let providerProfiles = try context.fetch(FetchDescriptor<ProviderProfileRecord>())
+        let translationCaches = try context.fetch(FetchDescriptor<TranslationCacheRecord>())
 
-        guard savedItems.isEmpty, reviewCards.isEmpty, appSettings.isEmpty, providerProfiles.isEmpty else {
+        guard
+            savedItems.isEmpty,
+            reviewCards.isEmpty,
+            appSettings.isEmpty,
+            providerProfiles.isEmpty,
+            translationCaches.isEmpty
+        else {
             return
         }
 
@@ -18,16 +25,16 @@ public enum SampleLearningData {
             providerName: "Custom AI Provider",
             displayName: "每日精读助手",
             credentialReference: KeychainCredentialStore.credentialReference(for: providerProfileId),
-            isEnabled: true,
-            capabilitySummary: "双语解释、例句生成与后续复习联动"
+            isEnabled: false,
+            capabilitySummary: "配置后可启用整页翻译与后续学习能力"
         )
 
         let appSettingsRecord = AppSettingsRecord(
             sourceLanguage: "English",
             targetLanguage: "简体中文",
-            preferredProviderName: providerProfile.displayName,
-            preferredProviderProfileId: providerProfile.providerProfileId,
-            privacySummary: "学习收藏与复习卡保存在本机；网页浏览数据与学习记录分开管理。"
+            preferredProviderName: "未配置翻译 Provider",
+            preferredProviderProfileId: nil,
+            privacySummary: "学习收藏与复习卡保存在本机；配置好 Provider 后才会发送页面文本进行翻译。"
         )
 
         let firstSavedItem = SavedItemRecord(

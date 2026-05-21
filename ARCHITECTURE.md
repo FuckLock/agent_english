@@ -82,6 +82,8 @@
 
 ## Shared Contracts
 
+`packages/contracts` 是 bridge payload 与学习数据命名的事实源。Swift 侧 DTO / decoder 必须与 TypeScript contract 字段等价；每个新增或扩展的 cross-boundary payload 都要有可执行的 contract fixture 或 decoder 测试，至少覆盖字段存在性、字段命名、schema version 和失败分支。Phase 4 引入的 `PageContext`、`PageTextSegment`、`TranslationRequest`、`TranslationResult` 必须在 TypeScript tests 与 Swift `AgentEnglishTests` 中同时验证 `pageId`、`segmentId`、`sourceLanguage`、`targetLanguage`、`displayMode`、`failureReason`、`capabilities` 等跨端字段，不能只验证事件名或 envelope 外壳。
+
 | Contract | Purpose |
 |---|---|
 | `PageContext` | 表示当前页面 URL、标题、站点类型、语言推断和可用能力。 |

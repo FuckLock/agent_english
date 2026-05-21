@@ -64,7 +64,7 @@ final class WebBridgeControllerTests: XCTestCase {
                 """
                 {
                   "schemaVersion": 1,
-                  "eventType": "translation.requested",
+                  "eventType": "translation.unknown",
                   "payload": {}
                 }
                 """.data(using: .utf8)!
@@ -72,7 +72,7 @@ final class WebBridgeControllerTests: XCTestCase {
         ) { error in
             XCTAssertEqual(
                 error as? BridgeEventDecodingError,
-                .unsupportedEventType("translation.requested")
+                .unsupportedEventType("translation.unknown")
             )
         }
     }

@@ -73,7 +73,7 @@ agent_english/
 | `apps/ios/AgentEnglish/Screens/` | create in DEV-PLAN Phase 2, expand in later phases | 浏览首页、收藏、复习、设置等 SwiftUI 页面。 | 直接读写 WebView DOM、直接保存 API Key、临时拼接 bridge message。 |
 | `apps/ios/AgentEnglish/Web/` | create in DEV-PLAN Phase 3 | WKWebView wrapper、toolbar、bottom sheet、message handler 入口和显示模式 UI。 | DOM 扫描算法、站点适配、翻译 Provider 调用。 |
 | `apps/ios/AgentEnglishCore/` | create across DEV-PLAN Phase 2-3, expand later | Swift 无 UI 模块：收藏、历史、复习状态、Provider profile、bridge DTO、错误映射、隐私清理服务、SwiftData repository 接口。 | SwiftUI View、WKWebView DOM 选择器、站点 CSS selector、第三方网页品牌资源。 |
-| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/` | create in DEV-PLAN Phase 3 | `BridgeEvent` decode/encode、schema version、request tracking、错误映射。 | UI 展示、DOM selector、Provider 网络请求。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/` | create in DEV-PLAN Phase 3 | `BridgeEvent` decode/encode、schema version、request tracking、错误映射；Swift DTO 必须用 tests 与 `packages/contracts` 的 payload 字段保持等价。 | UI 展示、DOM selector、Provider 网络请求。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/` | create in DEV-PLAN Phase 2, expand in later phases | SwiftData models、repository implementation、migration、cache 清理；Keychain credential reference。 | 明文 API Key、WebKit cookie 管理、SwiftUI View state。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | create when Provider work starts in DEV-PLAN Phase 4 or later | Provider profile、translation/explanation request、rate-limit、retry、错误归一。 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Review/` | create in DEV-PLAN Phase 6 | 主动回忆卡、复习反馈、下一次复习优先级。 | 游戏化奖励、课程路径、页面 DOM 操作。 |
@@ -87,7 +87,7 @@ agent_english/
 | `packages/browser-agent/src/dom/` | create in DEV-PLAN Phase 4 | 通用文本节点扫描、可见性判断、段落合并、稳定 segment id。 | YouTube 专用规则、native 数据持久化。 |
 | `packages/browser-agent/src/overlay/` | create in DEV-PLAN Phase 4 | 双语翻译层、学习模式折叠、段落状态渲染、轻量错误提示。 | 原生底部抽屉、Provider 调用、收藏数据库。 |
 | `packages/browser-agent/src/site-adapters/` | create in DEV-PLAN Phase 7 | YouTube、Reddit、Wikipedia、AO3、X 等站点适配；每个站点独立文件。 | 通用 bridge 协议、跨站业务规则、平台权限。 |
-| `packages/contracts/` | create in DEV-PLAN Phase 1, expand in later phases | JSON schema、TypeScript 类型、bridge event、数据模型命名、错误码；Swift DTO 必须与这里保持等价。 | UI 组件、平台存储实现、Provider 具体 SDK。 |
+| `packages/contracts/` | create in DEV-PLAN Phase 1, expand in later phases | JSON schema、TypeScript 类型、bridge event、数据模型命名、错误码；Swift DTO 必须与这里保持等价，新增 payload 要配套 TS fixture 与 Swift decoder/DTO 字段等价测试。 | UI 组件、平台存储实现、Provider 具体 SDK。 |
 | `docs/adr/` | current | 架构决策记录。 | 产品需求正文、设计稿源文件、运行时代码。 |
 | `docs/research/` | create when research artifacts exist | 官方政策、平台能力、竞品分析和调研记录。 | 未核实的库版本、临时代码片段。 |
 | `design_export/clean_pencil/` | current | Pencil 设计导出图，用于实现和 review 对齐。 | 应用源码、生成代码、运行时资产。 |
@@ -122,6 +122,7 @@ agent_english/
 - SwiftUI 页面命名以用户任务为准，例如 `BrowserHomeView`、`WebBrowserView`、`FavoritesView`、`ReviewView`、`SettingsView`。
 - Native service 命名以职责为准，例如 `ProviderClient`、`FavoritesStore`、`ReviewScheduler`、`PrivacyDataManager`、`WebBridgeController`。
 - SwiftData model 命名不直接暴露到 JS bridge；bridge 使用 `SavedItem`、`ReviewCard` 等 contracts 名称，SwiftData 可使用 `SavedItemRecord`、`ReviewCardRecord` 作为持久化类型。
+- 跨端 payload 命名以 `packages/contracts` 为事实源；Swift DTO 字段名不允许为方便本地实现而改写，确需别名时必须在 decoder tests 中覆盖映射关系。
 
 ## Migration / Cleanup Notes
 

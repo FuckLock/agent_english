@@ -120,3 +120,50 @@ public final class ProviderProfileRecord {
         self.updatedAt = updatedAt
     }
 }
+
+@Model
+public final class TranslationCacheRecord {
+    @Attribute(.unique) public var translationCacheId: UUID
+    public var pageId: String
+    public var pageHash: String
+    public var segmentId: String
+    public var textHash: String
+    public var sourceLanguage: String
+    public var targetLanguage: String
+    public var displayMode: String
+    public var capabilitiesKey: String
+    public var sourceText: String
+    public var translatedText: String?
+    public var failureReason: String?
+    public var cachedAt: Date
+
+    public init(
+        translationCacheId: UUID = UUID(),
+        pageId: String,
+        pageHash: String,
+        segmentId: String,
+        textHash: String,
+        sourceLanguage: String,
+        targetLanguage: String,
+        displayMode: String,
+        capabilitiesKey: String,
+        sourceText: String,
+        translatedText: String?,
+        failureReason: String?,
+        cachedAt: Date = .now
+    ) {
+        self.translationCacheId = translationCacheId
+        self.pageId = pageId
+        self.pageHash = pageHash
+        self.segmentId = segmentId
+        self.textHash = textHash
+        self.sourceLanguage = sourceLanguage
+        self.targetLanguage = targetLanguage
+        self.displayMode = displayMode
+        self.capabilitiesKey = capabilitiesKey
+        self.sourceText = sourceText
+        self.translatedText = translatedText
+        self.failureReason = failureReason
+        self.cachedAt = cachedAt
+    }
+}

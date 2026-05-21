@@ -44,6 +44,7 @@ Accepted
 ### Constraints
 
 - 首版任何 WebView 与 JS 通信必须通过结构化 `BridgeEvent`，不能由 SwiftUI View 拼接临时业务脚本。
+- `packages/contracts` 是 cross-boundary payload 的事实源；Swift DTO / decoder 必须通过 fixture 或字段等价测试证明与 TypeScript contract 同步，Phase criteria 不能只检查事件名或 envelope 字段。
 - `browser-agent` 不能保存凭证、调用 AI Provider 或写本地数据库。
 - Provider 凭证只能存 Keychain；收藏、历史、复习和翻译缓存进入 SwiftData；网站 cookie/localStorage 归 WebKit website data store 管理。
 - 页面文本发送给第三方 Provider 必须可被用户理解和控制。
@@ -56,5 +57,6 @@ Accepted
 - DEV-PLAN Phase 1-3 共同构成首个实现 tranche：Phase 1 先建立 `packages/contracts`、`packages/browser-agent` 和 workspace 最小可验证骨架；Phase 2 建立 `apps/ios` 原生 Tab 壳、SwiftData model 和 Keychain credential reference；Phase 3 建立 WKWebView 进入流、bridge schema native decode 和 WebKit website data 清理提示。
 - 在 DEV-PLAN Phase 1-3 全部完成前，不得进入站点适配、真实 Provider 调用或网页翻译业务堆叠。
 - 每个 Phase 的 criteria 必须说明是否触碰 native shell、browser-agent、contracts、local data 或 provider adapters。
+- 每个新增 bridge payload 的 criteria 必须包含 TS contract 与 Swift DTO / decoder 等价校验；涉及翻译 payload 时至少覆盖页面上下文、段落 id、语言字段、显示模式、失败原因和页面能力字段。
 - 若后续决定把 Android 提前为当前目标，必须新增 ADR 评估 Kotlin/Compose、Android WebView 注入时机和 contracts 复用方式。
 - 若后续决定增加后端代理或账号同步，必须新增 ADR 评估密钥托管、隐私、数据保留、同步冲突和发布成本。
