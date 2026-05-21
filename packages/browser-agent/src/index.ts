@@ -8,6 +8,22 @@ export {
   type BridgeBootstrapPort,
 } from "./bridge/bootstrap";
 export {
+  createSelectionExplanationCompletedEvent,
+  createSelectionExplanationFailedEvent,
+  createSelectionRequestedEvent,
+  type SelectionEventMetadata,
+} from "./bridge/selection-events";
+export {
+  deriveSelectionKind,
+  extractSelectionContext,
+  type ExtractSelectionOptions,
+  type SelectionDocumentLike,
+  type SelectionElementLike,
+  type SelectionLike,
+  type SelectionNodeLike,
+  type SelectionRangeLike,
+} from "./dom/selection-context";
+export {
   createTranslationCompletedEvent,
   createTranslationFailedEvent,
   createTranslationRequestedEvent,

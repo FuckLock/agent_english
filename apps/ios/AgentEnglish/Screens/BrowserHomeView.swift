@@ -8,16 +8,20 @@ private struct QuickSite: Identifiable {
     let url: URL
 }
 
-private struct BrowserLaunch: Hashable, Identifiable {
+struct BrowserLaunch: Hashable, Identifiable {
     let id = UUID()
     let url: URL
 }
 
 struct BrowserHomeView: View {
     @State private var addressInput = ""
-    @State private var launch: BrowserLaunch?
     @State private var showAddressError = false
     @State private var showSettingsHint = false
+    @Binding private var launch: BrowserLaunch?
+
+    init(launch: Binding<BrowserLaunch?>) {
+        self._launch = launch
+    }
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),

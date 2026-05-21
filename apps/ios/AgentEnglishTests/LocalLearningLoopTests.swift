@@ -29,7 +29,7 @@ final class LocalLearningLoopTests: XCTestCase {
         XCTAssertEqual(reloadedCards.count, 1)
         XCTAssertEqual(reloadedCards.first?.savedItemId, savedItemId)
         XCTAssertEqual(reloadedCards.first?.savedItem?.savedItemId, savedItemId)
-        XCTAssertEqual(reloadedCards.first?.savedItem?.text, "gloss over")
+        XCTAssertEqual(reloadedCards.first?.savedItem?.selectedText, "gloss over")
     }
 
     @MainActor
@@ -42,10 +42,13 @@ final class LocalLearningLoopTests: XCTestCase {
 
         let savedItem = SavedItemRecord(
             savedItemId: savedItemId,
-            text: "gloss over",
-            translation: "轻描淡写地带过",
+            sourceUrl: "https://www.youtube.com/watch?v=sample",
             sourceTitle: "YouTube",
-            sourceURL: "https://www.youtube.com/watch?v=sample",
+            selectedText: "gloss over",
+            contextBefore: "They tried to",
+            contextAfter: "the policy change on camera.",
+            translation: "轻描淡写地带过",
+            explanation: "这里表示故意弱化问题的重要性。",
             kind: "phrase"
         )
         let reviewCard = ReviewCardRecord(

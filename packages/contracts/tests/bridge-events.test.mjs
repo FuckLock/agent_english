@@ -5,6 +5,8 @@ import {
   BRIDGE_BOOT_EVENT_TYPE,
   BRIDGE_PING_EVENT_TYPE,
   PAGE_READY_EVENT_TYPE,
+  SELECTION_EXPLANATION_FAILED_EVENT_TYPE,
+  SELECTION_REQUESTED_EVENT_TYPE,
   createBridgeEvent,
   schemaVersion,
 } from "../dist/index.js";
@@ -74,4 +76,64 @@ test("createBridgeEvent carries page-ready metadata", () => {
     title: "Wikipedia",
     loadedAt: "2026-05-20T00:00:00.000Z",
   });
+});
+
+test("createBridgeEvent preserves a selection payload fixture on the same event", () => {
+  const selectionPayload = {
+    pageId: "page-1",
+    selectionId: "sel-1",
+    selectedText: "gloss over",
+    contextBefore: "They tried to",
+    contextAfter: "the policy change.",
+    sourceUrl: "https://example.com/article",
+    sourceTitle: "Example Article",
+    containerPath: "body>article:nth-of-type(1)>p:nth-of-type(1)",
+    kind: "phrase",
+  };
+  const event = createBridgeEvent(
+    SELECTION_REQUESTED_EVENT_TYPE,
+    selectionPayload,
+    {
+      requestId: "selection-requested-sel-1",
+      pageId: "page-1",
+    },
+  );
+
+  assert.equal(event.schemaVersion, schemaVersion);
+  assert.equal(event.eventType, SELECTION_REQUESTED_EVENT_TYPE);
+  assert.equal(event.requestId, "selection-requested-sel-1");
+  assert.deepEqual(event.payload, selectionPayload);
+});
+
+test("createBridgeEvent preserves selection failure fields on the same payload", () => {
+  const failurePayload = {
+    pageId: "page-1",
+    selectionId: "sel-1",
+    selectedText: "gloss over",
+    contextBefore: "They tried to",
+    contextAfter: "the policy change.",
+    sourceUrl: "https://example.com/article",
+    sourceTitle: "Example Article",
+    containerPath: "body>article:nth-of-type(1)>p:nth-of-type(1)",
+    kind: "phrase",
+    failureReason: "selection-explanation-failed",
+  };
+  const event = createBridgeEvent(
+    SELECTION_EXPLANATION_FAILED_EVENT_TYPE,
+    failurePayload,
+    {
+      requestId: "selection-failed-sel-1",
+      pageId: "page-1",
+      error: {
+        code: "selection.explanation.failed",
+        message: "Provider response was empty.",
+      },
+    },
+  );
+
+  assert.equal(event.schemaVersion, schemaVersion);
+  assert.equal(event.eventType, SELECTION_EXPLANATION_FAILED_EVENT_TYPE);
+  assert.equal(event.payload.selectionId, "sel-1");
+  assert.equal(event.payload.sourceUrl, "https://example.com/article");
+  assert.equal(event.payload.failureReason, "selection-explanation-failed");
 });

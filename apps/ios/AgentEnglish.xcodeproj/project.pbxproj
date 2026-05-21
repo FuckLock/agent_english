@@ -24,6 +24,18 @@
 		A00200000000000000000116 /* PrivacyDisclosureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000116 /* PrivacyDisclosureView.swift */; };
 		A00200000000000000000117 /* WebsiteDataPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000117 /* WebsiteDataPromptView.swift */; };
 		A00200000000000000000118 /* BridgeEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000118 /* BridgeEvent.swift */; };
+		A00200000000000000000119 /* BrowserAgentRuntimeSource.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000119 /* BrowserAgentRuntimeSource.generated.swift */; };
+		A00200000000000000000120 /* ExplanationSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000120 /* ExplanationSheetView.swift */; };
+		A00200000000000000000121 /* WebBridgeController+Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000121 /* WebBridgeController+Recording.swift */; };
+		A00200000000000000000122 /* WebBridgeController+Selection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000122 /* WebBridgeController+Selection.swift */; };
+		A00200000000000000000123 /* WebBridgeController+Translation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000123 /* WebBridgeController+Translation.swift */; };
+		A00200000000000000000124 /* TranslationContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000124 /* TranslationContracts.swift */; };
+		A00200000000000000000125 /* SelectionContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000125 /* SelectionContracts.swift */; };
+		A00200000000000000000126 /* TranslationCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000126 /* TranslationCacheStore.swift */; };
+		A00200000000000000000127 /* TranslationProviderSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000127 /* TranslationProviderSettingsStore.swift */; };
+		A00200000000000000000128 /* SavedItemRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000128 /* SavedItemRepository.swift */; };
+		A00200000000000000000129 /* TranslationProviderClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000129 /* TranslationProviderClient.swift */; };
+		A00200000000000000000130 /* ExplanationProviderClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000130 /* ExplanationProviderClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +57,18 @@
 		A00100000000000000000116 /* PrivacyDisclosureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyDisclosureView.swift; sourceTree = "<group>"; };
 		A00100000000000000000117 /* WebsiteDataPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteDataPromptView.swift; sourceTree = "<group>"; };
 		A00100000000000000000118 /* BridgeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeEvent.swift; sourceTree = "<group>"; };
+		A00100000000000000000119 /* BrowserAgentRuntimeSource.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAgentRuntimeSource.generated.swift; sourceTree = "<group>"; };
+		A00100000000000000000120 /* ExplanationSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplanationSheetView.swift; sourceTree = "<group>"; };
+		A00100000000000000000121 /* WebBridgeController+Recording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBridgeController+Recording.swift"; sourceTree = "<group>"; };
+		A00100000000000000000122 /* WebBridgeController+Selection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBridgeController+Selection.swift"; sourceTree = "<group>"; };
+		A00100000000000000000123 /* WebBridgeController+Translation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBridgeController+Translation.swift"; sourceTree = "<group>"; };
+		A00100000000000000000124 /* TranslationContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationContracts.swift; sourceTree = "<group>"; };
+		A00100000000000000000125 /* SelectionContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionContracts.swift; sourceTree = "<group>"; };
+		A00100000000000000000126 /* TranslationCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationCacheStore.swift; sourceTree = "<group>"; };
+		A00100000000000000000127 /* TranslationProviderSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationProviderSettingsStore.swift; sourceTree = "<group>"; };
+		A00100000000000000000128 /* SavedItemRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedItemRepository.swift; sourceTree = "<group>"; };
+		A00100000000000000000129 /* TranslationProviderClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationProviderClient.swift; sourceTree = "<group>"; };
+		A00100000000000000000130 /* ExplanationProviderClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplanationProviderClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +106,7 @@
 				A00000000000000000000022 /* Screens */,
 				A00000000000000000000023 /* Web */,
 				A00000000000000000000024 /* Settings */,
+				A00000000000000000000025 /* Generated */,
 			);
 			path = AgentEnglish;
 			sourceTree = "<group>";
@@ -101,6 +126,7 @@
 				A00100000000000000000103 /* BrowserHomeView.swift */,
 				A00100000000000000000112 /* WebBrowserView.swift */,
 				A00100000000000000000104 /* FavoritesView.swift */,
+				A00100000000000000000120 /* ExplanationSheetView.swift */,
 				A00100000000000000000105 /* ReviewView.swift */,
 				A00100000000000000000106 /* SettingsView.swift */,
 			);
@@ -112,9 +138,20 @@
 			children = (
 				A00100000000000000000113 /* WebViewContainer.swift */,
 				A00100000000000000000114 /* WebBridgeController.swift */,
+				A00100000000000000000121 /* WebBridgeController+Recording.swift */,
+				A00100000000000000000122 /* WebBridgeController+Selection.swift */,
+				A00100000000000000000123 /* WebBridgeController+Translation.swift */,
 				A00100000000000000000115 /* BrowserAgentBootstrapScript.swift */,
 			);
 			path = Web;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000025 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				A00100000000000000000119 /* BrowserAgentRuntimeSource.generated.swift */,
+			);
+			path = Generated;
 			sourceTree = "<group>";
 		};
 		A00000000000000000000024 /* Settings */ = {
@@ -131,6 +168,7 @@
 			children = (
 				A00000000000000000000032 /* Bridge */,
 				A00000000000000000000031 /* Persistence */,
+				A00000000000000000000033 /* Providers */,
 			);
 			path = AgentEnglishCore/Sources/AgentEnglishCore;
 			sourceTree = "<group>";
@@ -139,6 +177,8 @@
 			isa = PBXGroup;
 			children = (
 				A00100000000000000000118 /* BridgeEvent.swift */,
+				A00100000000000000000124 /* TranslationContracts.swift */,
+				A00100000000000000000125 /* SelectionContracts.swift */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -150,8 +190,20 @@
 				A00100000000000000000108 /* KeychainCredentialStore.swift */,
 				A00100000000000000000109 /* LearningRecords.swift */,
 				A00100000000000000000110 /* SampleLearningData.swift */,
+				A00100000000000000000126 /* TranslationCacheStore.swift */,
+				A00100000000000000000127 /* TranslationProviderSettingsStore.swift */,
+				A00100000000000000000128 /* SavedItemRepository.swift */,
 			);
 			path = Persistence;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000033 /* Providers */ = {
+			isa = PBXGroup;
+			children = (
+				A00100000000000000000129 /* TranslationProviderClient.swift */,
+				A00100000000000000000130 /* ExplanationProviderClient.swift */,
+			);
+			path = Providers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -227,18 +279,30 @@
 				A00200000000000000000103 /* BrowserHomeView.swift in Sources */,
 				A00200000000000000000112 /* WebBrowserView.swift in Sources */,
 				A00200000000000000000104 /* FavoritesView.swift in Sources */,
+				A00200000000000000000120 /* ExplanationSheetView.swift in Sources */,
 				A00200000000000000000105 /* ReviewView.swift in Sources */,
 				A00200000000000000000106 /* SettingsView.swift in Sources */,
 				A00200000000000000000113 /* WebViewContainer.swift in Sources */,
 				A00200000000000000000114 /* WebBridgeController.swift in Sources */,
+				A00200000000000000000121 /* WebBridgeController+Recording.swift in Sources */,
+				A00200000000000000000122 /* WebBridgeController+Selection.swift in Sources */,
+				A00200000000000000000123 /* WebBridgeController+Translation.swift in Sources */,
 				A00200000000000000000115 /* BrowserAgentBootstrapScript.swift in Sources */,
+				A00200000000000000000119 /* BrowserAgentRuntimeSource.generated.swift in Sources */,
 				A00200000000000000000116 /* PrivacyDisclosureView.swift in Sources */,
 				A00200000000000000000117 /* WebsiteDataPromptView.swift in Sources */,
 				A00200000000000000000107 /* AppModelContainer.swift in Sources */,
 				A00200000000000000000118 /* BridgeEvent.swift in Sources */,
+				A00200000000000000000124 /* TranslationContracts.swift in Sources */,
+				A00200000000000000000125 /* SelectionContracts.swift in Sources */,
 				A00200000000000000000108 /* KeychainCredentialStore.swift in Sources */,
 				A00200000000000000000109 /* LearningRecords.swift in Sources */,
 				A00200000000000000000110 /* SampleLearningData.swift in Sources */,
+				A00200000000000000000126 /* TranslationCacheStore.swift in Sources */,
+				A00200000000000000000127 /* TranslationProviderSettingsStore.swift in Sources */,
+				A00200000000000000000128 /* SavedItemRepository.swift in Sources */,
+				A00200000000000000000129 /* TranslationProviderClient.swift in Sources */,
+				A00200000000000000000130 /* ExplanationProviderClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

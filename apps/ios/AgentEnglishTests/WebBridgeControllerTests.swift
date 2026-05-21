@@ -98,4 +98,77 @@ final class WebBridgeControllerTests: XCTestCase {
             )
         }
     }
+
+    func testDecodesSelectionRequestedPayloadFields() throws {
+        let event = try BridgeEventDecoder().decode(
+            """
+            {
+              "schemaVersion": 1,
+              "eventType": "selection.requested",
+              "requestId": "selection-requested-sel-1",
+              "pageId": "page-1",
+              "payload": {
+                "pageId": "page-1",
+                "selectionId": "sel-1",
+                "selectedText": "gloss over",
+                "contextBefore": "They tried to",
+                "contextAfter": "the policy change.",
+                "sourceUrl": "https://example.com/article",
+                "sourceTitle": "Example Article",
+                "containerPath": "body>article:nth-of-type(1)>p:nth-of-type(1)",
+                "kind": "phrase"
+              }
+            }
+            """.data(using: .utf8)!
+        )
+
+        guard case .selectionRequested(let payload) = event.payload else {
+            XCTFail("Expected selectionRequested payload.")
+            return
+        }
+
+        XCTAssertEqual(event.schemaVersion, bridgeSchemaVersion)
+        XCTAssertEqual(event.requestId, "selection-requested-sel-1")
+        XCTAssertEqual(payload.selectionId, "sel-1")
+        XCTAssertEqual(payload.pageId, "page-1")
+        XCTAssertEqual(payload.sourceUrl, "https://example.com/article")
+        XCTAssertEqual(payload.sourceTitle, "Example Article")
+        XCTAssertEqual(payload.contextBefore, "They tried to")
+        XCTAssertEqual(payload.contextAfter, "the policy change.")
+    }
+
+    func testDecodesSelectionFailurePayloadFields() throws {
+        let event = try BridgeEventDecoder().decode(
+            """
+            {
+              "schemaVersion": 1,
+              "eventType": "selection.explanation.failed",
+              "requestId": "selection-failed-sel-1",
+              "pageId": "page-1",
+              "payload": {
+                "pageId": "page-1",
+                "selectionId": "sel-1",
+                "selectedText": "gloss over",
+                "contextBefore": "They tried to",
+                "contextAfter": "the policy change.",
+                "sourceUrl": "https://example.com/article",
+                "sourceTitle": "Example Article",
+                "containerPath": "body>article:nth-of-type(1)>p:nth-of-type(1)",
+                "kind": "phrase",
+                "failureReason": "selection-explanation-failed"
+              }
+            }
+            """.data(using: .utf8)!
+        )
+
+        guard case .selectionExplanationFailed(let payload) = event.payload else {
+            XCTFail("Expected selectionExplanationFailed payload.")
+            return
+        }
+
+        XCTAssertEqual(payload.selectionId, "sel-1")
+        XCTAssertEqual(payload.sourceUrl, "https://example.com/article")
+        XCTAssertEqual(payload.sourceTitle, "Example Article")
+        XCTAssertEqual(payload.failureReason, .selectionExplanationFailed)
+    }
 }

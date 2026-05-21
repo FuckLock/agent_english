@@ -15,7 +15,8 @@
 - Phase 2 已完成：iOS 原生 Tab 壳、SwiftData / Keychain 本地学习底座和样例学习闭环可构建 / 测试。
 - Phase 3 已完成：Xcode 工程、WebView 可进入页面、boot / ping / page-ready bridge 解码、Provider disclosure 和 website data 分离提示可构建 / 测试。
 - Phase 4 已完成：通用网页文本扫描、翻译请求 / 回填 bridge、翻译 Provider adapter、缓存和原文 / 双语 / 学习模式可构建 / 测试。
-- 下一步进入 Phase 5：点词点句解释、收藏沉淀和 selection bridge 管线。
+- Phase 5 已完成：点词点句解释、selection bridge、原生解释抽屉、SavedItem 收藏沉淀、收藏页搜索 / 筛选 / 删除和来源回看可构建 / 测试。
+- 下一步进入 Phase 6：复习、历史、设置与隐私管理。
 
 ---
 

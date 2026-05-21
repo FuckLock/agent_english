@@ -1,15 +1,18 @@
 #if canImport(AgentEnglishCore)
 import AgentEnglishCore
 #endif
+import SwiftData
 import SwiftUI
 import WebKit
 
 struct WebBrowserView: View {
     let initialURL: URL
 
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var navigationState = WebNavigationState()
     @StateObject private var bridgeController = WebBridgeController()
     @State private var webView: WKWebView?
+    @State private var selectedSheetDetent: PresentationDetent = .medium
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,6 +36,33 @@ struct WebBrowserView: View {
             bridgeStatusBar
         }
         .navigationTitle(navigationState.title)
+        .onAppear {
+            bridgeController.configure(modelContext: modelContext)
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { bridgeController.explanationSheet != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        bridgeController.dismissExplanationSheet()
+                    }
+                }
+            )
+        ) {
+            if let explanationSheet = bridgeController.explanationSheet {
+                ExplanationSheetView(
+                    presentation: explanationSheet,
+                    onFavorite: {
+                        bridgeController.saveCurrentExplanation()
+                    }
+                )
+                .presentationDetents(
+                    [.fraction(0.28), .medium, .large],
+                    selection: $selectedSheetDetent
+                )
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+            }
+        }
     }
 
     private var urlStatusBar: some View {

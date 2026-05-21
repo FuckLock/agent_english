@@ -29,7 +29,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AgentEnglishTests",
-            dependencies: ["AgentEnglishCore"],
+            dependencies: ["AgentEnglishCore", "AgentEnglish"],
             path: "AgentEnglishTests"
         ),
     ]

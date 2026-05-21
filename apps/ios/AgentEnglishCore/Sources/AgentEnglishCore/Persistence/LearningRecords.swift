@@ -4,32 +4,41 @@ import SwiftData
 @Model
 public final class SavedItemRecord {
     @Attribute(.unique) public var savedItemId: UUID
-    public var text: String
-    public var translation: String
+    public var sourceUrl: String
     public var sourceTitle: String
-    public var sourceURL: String
+    public var selectedText: String
+    public var contextBefore: String
+    public var contextAfter: String
+    public var translation: String
+    public var explanation: String
     public var kind: String
-    public var savedAt: Date
+    public var createdAt: Date
     @Relationship(deleteRule: .cascade, inverse: \ReviewCardRecord.savedItem)
     public var reviewCards: [ReviewCardRecord]
 
     public init(
         savedItemId: UUID = UUID(),
-        text: String,
-        translation: String,
+        sourceUrl: String,
         sourceTitle: String,
-        sourceURL: String,
+        selectedText: String,
+        contextBefore: String,
+        contextAfter: String,
+        translation: String,
+        explanation: String,
         kind: String,
-        savedAt: Date = .now,
+        createdAt: Date = .now,
         reviewCards: [ReviewCardRecord] = []
     ) {
         self.savedItemId = savedItemId
-        self.text = text
-        self.translation = translation
+        self.sourceUrl = sourceUrl
         self.sourceTitle = sourceTitle
-        self.sourceURL = sourceURL
+        self.selectedText = selectedText
+        self.contextBefore = contextBefore
+        self.contextAfter = contextAfter
+        self.translation = translation
+        self.explanation = explanation
         self.kind = kind
-        self.savedAt = savedAt
+        self.createdAt = createdAt
         self.reviewCards = reviewCards
     }
 }

@@ -38,17 +38,23 @@ public enum SampleLearningData {
         )
 
         let firstSavedItem = SavedItemRecord(
-            text: "serendipity",
-            translation: "意外发现美好事物的能力",
+            sourceUrl: "https://www.wikipedia.org/wiki/Serendipity",
             sourceTitle: "Wikipedia",
-            sourceURL: "https://www.wikipedia.org/wiki/Serendipity",
+            selectedText: "serendipity",
+            contextBefore: "A knack for making",
+            contextAfter: "valuable discoveries by accident.",
+            translation: "意外发现美好事物的能力",
+            explanation: "这里指人在偶然情况下发现有价值事物的能力。",
             kind: "word"
         )
         let secondSavedItem = SavedItemRecord(
-            text: "in the long run",
-            translation: "从长远来看",
+            sourceUrl: "https://www.reddit.com/r/EnglishLearning/",
             sourceTitle: "Reddit",
-            sourceURL: "https://www.reddit.com/r/EnglishLearning/",
+            selectedText: "in the long run",
+            contextBefore: "It helps you stay consistent",
+            contextAfter: "when motivation drops.",
+            translation: "从长远来看",
+            explanation: "这里强调长期结果，而不是眼前的短期变化。",
             kind: "phrase"
         )
 

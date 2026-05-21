@@ -9,6 +9,9 @@ public enum BridgeEventType: String, CaseIterable, Sendable {
     case translationRequested = "translation.requested"
     case translationCompleted = "translation.completed"
     case translationFailed = "translation.failed"
+    case selectionRequested = "selection.requested"
+    case selectionExplanationCompleted = "selection.explanation.completed"
+    case selectionExplanationFailed = "selection.explanation.failed"
 }
 
 public struct BridgeBootPayload: Codable, Equatable, Sendable {
@@ -35,6 +38,9 @@ public enum BridgeEventPayload: Equatable, Sendable {
     case translationRequested(TranslationRequest)
     case translationCompleted(TranslationResult)
     case translationFailed(TranslationFailurePayload)
+    case selectionRequested(SelectionRequest)
+    case selectionExplanationCompleted(SelectionExplanationResult)
+    case selectionExplanationFailed(SelectionExplanationFailurePayload)
 }
 
 public struct BridgeEvent: Equatable, Sendable {
@@ -121,6 +127,33 @@ public struct BridgeEventDecoder: Sendable {
                     requestId: envelope.requestId,
                     pageId: envelope.pageId,
                     payload: .translationFailed(envelope.payload)
+                )
+            case .selectionRequested:
+                let envelope = try decoder.decode(TypedBridgeEventEnvelope<SelectionRequest>.self, from: data)
+                return BridgeEvent(
+                    schemaVersion: envelope.schemaVersion,
+                    eventType: eventType,
+                    requestId: envelope.requestId,
+                    pageId: envelope.pageId,
+                    payload: .selectionRequested(envelope.payload)
+                )
+            case .selectionExplanationCompleted:
+                let envelope = try decoder.decode(TypedBridgeEventEnvelope<SelectionExplanationResult>.self, from: data)
+                return BridgeEvent(
+                    schemaVersion: envelope.schemaVersion,
+                    eventType: eventType,
+                    requestId: envelope.requestId,
+                    pageId: envelope.pageId,
+                    payload: .selectionExplanationCompleted(envelope.payload)
+                )
+            case .selectionExplanationFailed:
+                let envelope = try decoder.decode(TypedBridgeEventEnvelope<SelectionExplanationFailurePayload>.self, from: data)
+                return BridgeEvent(
+                    schemaVersion: envelope.schemaVersion,
+                    eventType: eventType,
+                    requestId: envelope.requestId,
+                    pageId: envelope.pageId,
+                    payload: .selectionExplanationFailed(envelope.payload)
                 )
             }
         } catch {

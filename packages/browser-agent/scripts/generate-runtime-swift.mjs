@@ -11,7 +11,7 @@ const runtimeSourcePath = path.resolve(
 );
 const generatedSwiftPath = path.resolve(
   workspaceRoot,
-  "apps/ios/AgentEnglish/Web/BrowserAgentRuntimeSource.generated.swift",
+  "apps/ios/AgentEnglish/Generated/BrowserAgentRuntimeSource.generated.swift",
 );
 
 const runtimeModuleSource = fs.readFileSync(runtimeSourcePath, "utf8");

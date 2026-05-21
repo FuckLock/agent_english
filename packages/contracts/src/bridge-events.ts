@@ -6,12 +6,22 @@ export const PAGE_READY_EVENT_TYPE = "page.ready" as const;
 export const TRANSLATION_REQUESTED_EVENT_TYPE = "translation.requested" as const;
 export const TRANSLATION_COMPLETED_EVENT_TYPE = "translation.completed" as const;
 export const TRANSLATION_FAILED_EVENT_TYPE = "translation.failed" as const;
+export const SELECTION_REQUESTED_EVENT_TYPE = "selection.requested" as const;
+export const SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE =
+  "selection.explanation.completed" as const;
+export const SELECTION_EXPLANATION_FAILED_EVENT_TYPE =
+  "selection.explanation.failed" as const;
 
 import type {
   TranslationFailurePayload,
   TranslationRequest,
   TranslationResult,
 } from "./translation";
+import type {
+  SelectionExplanationFailurePayload,
+  SelectionExplanationResult,
+  SelectionRequestedPayload,
+} from "./selection";
 
 export type BridgeEventType =
   | typeof BRIDGE_BOOT_EVENT_TYPE
@@ -19,7 +29,10 @@ export type BridgeEventType =
   | typeof PAGE_READY_EVENT_TYPE
   | typeof TRANSLATION_REQUESTED_EVENT_TYPE
   | typeof TRANSLATION_COMPLETED_EVENT_TYPE
-  | typeof TRANSLATION_FAILED_EVENT_TYPE;
+  | typeof TRANSLATION_FAILED_EVENT_TYPE
+  | typeof SELECTION_REQUESTED_EVENT_TYPE
+  | typeof SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE
+  | typeof SELECTION_EXPLANATION_FAILED_EVENT_TYPE;
 
 export interface BridgeEventError {
   code: string;
@@ -55,6 +68,9 @@ interface BridgeEventPayloadMap {
   [TRANSLATION_REQUESTED_EVENT_TYPE]: TranslationRequest;
   [TRANSLATION_COMPLETED_EVENT_TYPE]: TranslationResult;
   [TRANSLATION_FAILED_EVENT_TYPE]: TranslationFailurePayload;
+  [SELECTION_REQUESTED_EVENT_TYPE]: SelectionRequestedPayload;
+  [SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE]: SelectionExplanationResult;
+  [SELECTION_EXPLANATION_FAILED_EVENT_TYPE]: SelectionExplanationFailurePayload;
 }
 
 interface BridgeEventResultMap {
@@ -64,6 +80,9 @@ interface BridgeEventResultMap {
   [TRANSLATION_REQUESTED_EVENT_TYPE]: undefined;
   [TRANSLATION_COMPLETED_EVENT_TYPE]: undefined;
   [TRANSLATION_FAILED_EVENT_TYPE]: undefined;
+  [SELECTION_REQUESTED_EVENT_TYPE]: undefined;
+  [SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE]: undefined;
+  [SELECTION_EXPLANATION_FAILED_EVENT_TYPE]: undefined;
 }
 
 export interface BridgeEventEnvelope<
