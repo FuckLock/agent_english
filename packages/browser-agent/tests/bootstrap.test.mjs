@@ -81,8 +81,8 @@ test("createPageReadyEvent returns page metadata with bridge metadata", () => {
   const event = createPageReadyEvent(
     {
       sessionId: "session-1",
-      url: "https://www.wikipedia.org",
-      title: "Wikipedia",
+      url: "https://example.com/article",
+      title: "Example",
       loadedAt: "2026-05-20T00:00:00.000Z",
     },
     {
@@ -97,8 +97,8 @@ test("createPageReadyEvent returns page metadata with bridge metadata", () => {
   assert.equal(event.pageId, "page-session-1");
   assert.deepEqual(event.payload, {
     sessionId: "session-1",
-    url: "https://www.wikipedia.org",
-    title: "Wikipedia",
+    url: "https://example.com/article",
+    title: "Example",
     loadedAt: "2026-05-20T00:00:00.000Z",
   });
 });
@@ -113,16 +113,16 @@ test("bootstrapBridge posts page-ready events through the provided port", () => 
   });
 
   const event = handle.pageReady({
-    url: "https://www.wikipedia.org",
-    title: "Wikipedia",
+    url: "https://example.com/article",
+    title: "Example",
   });
 
   assert.equal(event.eventType, PAGE_READY_EVENT_TYPE);
   assert.equal(event.pageId, "page-session-1");
   assert.deepEqual(event.payload, {
     sessionId: "session-1",
-    url: "https://www.wikipedia.org",
-    title: "Wikipedia",
+    url: "https://example.com/article",
+    title: "Example",
     loadedAt: "2026-05-20T00:00:00.000Z",
   });
   assert.equal(events.length, 2);

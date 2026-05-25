@@ -29,22 +29,28 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     let createdAtFormatter = ISO8601DateFormatter()
 
     var cacheStore: TranslationCacheStore?
-    var providerSettingsStore: TranslationProviderSettingsStore?
+    var modelServiceSettingsStore: ModelServiceSettingsStore?
     var savedItemRepository: SavedItemRepository?
+    var historyRepository: HistoryRepository?
+    var statisticsRepository: StatisticsRepository?
     weak var webView: WKWebView?
 
     init(
         providerClient: TranslationProviderClient = TranslationProviderClient(),
         explanationProviderClient: ExplanationProviderClient = ExplanationProviderClient(),
         cacheStore: TranslationCacheStore? = nil,
-        providerSettingsStore: TranslationProviderSettingsStore? = nil,
-        savedItemRepository: SavedItemRepository? = nil
+        modelServiceSettingsStore: ModelServiceSettingsStore? = nil,
+        savedItemRepository: SavedItemRepository? = nil,
+        historyRepository: HistoryRepository? = nil,
+        statisticsRepository: StatisticsRepository? = nil
     ) {
         self.providerClient = providerClient
         self.explanationProviderClient = explanationProviderClient
         self.cacheStore = cacheStore
-        self.providerSettingsStore = providerSettingsStore
+        self.modelServiceSettingsStore = modelServiceSettingsStore
         self.savedItemRepository = savedItemRepository
+        self.historyRepository = historyRepository
+        self.statisticsRepository = statisticsRepository
     }
 
     func attach(webView: WKWebView) {
@@ -56,12 +62,20 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
             cacheStore = TranslationCacheStore(modelContext: modelContext)
         }
 
-        if providerSettingsStore == nil {
-            providerSettingsStore = TranslationProviderSettingsStore(modelContext: modelContext)
+        if modelServiceSettingsStore == nil {
+            modelServiceSettingsStore = ModelServiceSettingsStore(modelContext: modelContext)
         }
 
         if savedItemRepository == nil {
             savedItemRepository = SavedItemRepository(modelContext: modelContext)
+        }
+
+        if historyRepository == nil {
+            historyRepository = HistoryRepository(modelContext: modelContext)
+        }
+
+        if statisticsRepository == nil {
+            statisticsRepository = StatisticsRepository(modelContext: modelContext)
         }
     }
 

@@ -6,11 +6,13 @@ Accepted
 
 ## Context
 
-产品已从旧版 English Monster Quest 重大重定义为 iPhone 英语学习浏览器。首版目标是苹果手机端，核心能力是内置浏览器、网页双语翻译、点词点句解释、收藏、复习和隐私设置。后续可能扩展到 Android、macOS、Windows，但当前不能把全平台开发变成首版负担。架构压力集中在三个方面：iOS 需要稳定的原生 WebView、原生持久化和 App Store 交付能力；网页翻译层和站点适配未来应尽量复用；学习数据和 Provider 边界不能散落在 UI 或注入脚本里。
+产品已从旧版 English Monster Quest 重大重定义为 iPhone 英语学习浏览器。首版目标是苹果手机端，核心能力是内置浏览器、网页双语翻译、点词点句解释、收藏、复习和隐私设置。后续可能扩展到 Android、macOS、Windows，但当前不能把全平台开发变成首版负担。架构压力集中在三个方面：iOS 需要稳定的原生 WebView、原生持久化和 App Store 交付能力；网页翻译层和站点适配未来应尽量复用；学习数据和模型服务边界不能散落在 UI 或注入脚本里。
+
+2026-05-22 补充：ADR-0002 已接受，用户自定义 Provider / BYOK 被取消。ADR-0003 已接受，游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端 entitlement 成为模型服务边界的一部分。本文保留 iOS 原生壳 + browser-agent + contracts 的主架构决策；Provider 密钥和模型路由相关约束由 ADR-0002 覆盖，账号会话与权益约束由 ADR-0003 覆盖。
 
 ## Decision
 
-采用“iOS 原生壳 + 可复用 WebView 注入包 + 稳定 contracts”的架构。首版产品入口是 `apps/ios`，使用 SwiftUI、WKWebView、SwiftData、Keychain 和 WebKit website data store 实现原生学习闭环；网页文本识别、翻译层插入、学习模式和站点适配放入 `packages/browser-agent`，编译成 JS 后注入 WKWebView；native 与 injected script 之间只通过 `packages/contracts` 定义的结构化 bridge 消息通信。未来 Android、macOS、Windows 重写平台壳和本地系统能力，但优先复用 `browser-agent`、contracts、Provider 行为约束和学习数据模型命名。
+采用“iOS 原生壳 + 可复用 WebView 注入包 + 稳定 contracts”的架构。首版产品入口是 `apps/ios`，使用 SwiftUI、WKWebView、SwiftData、Keychain 和 WebKit website data store 实现原生学习闭环；网页文本识别、翻译层插入、学习模式和站点适配放入 `packages/browser-agent`，编译成 JS 后注入 WKWebView；native 与 injected script 之间只通过 `packages/contracts` 定义的结构化 bridge 消息通信。未来 Android、macOS、Windows 重写平台壳和本地系统能力，但优先复用 `browser-agent`、contracts、模型服务 API 和学习数据模型命名。
 
 ## Alternatives Considered
 
@@ -21,7 +23,7 @@ Accepted
 | Next.js / PWA / Web App | 与 iPhone 原生学习浏览器和 App Store 交付目标冲突，容易退化成网页套壳或链接集合，无法提供足够稳定的原生收藏、复习和隐私能力。 |
 | Capacitor / Tauri 优先 | 可以包装 Web 技术，但 iOS WebView 浏览器内再套 Web App 会增加桥接层，且当前需要对第三方网页做注入和原生学习工具，不适合先走包装路线。 |
 | Kotlin Multiplatform 或 Rust shared core | 长期可复用性强，但首版会增加构建、桥接、移动端集成和团队认知成本；当前真正跨平台复用点是网页注入脚本和协议，而不是完整业务内核。 |
-| 后端优先代理所有翻译和学习数据 | 有利于统一额度和同步，但首版强调本地、隐私和自用验证；后端会提前引入账号、服务部署、密钥托管和合规成本。 |
+| 后端代理所有学习数据 | 当前只需要模型服务、额度和密钥托管；收藏、历史、复习仍优先本地保存，避免提前引入云同步和数据冲突。 |
 | Core Data / SQLite 作为首版持久化 | 可覆盖更低 iOS 版本，也更成熟，但首版没有账号同步和复杂关系模型；当前按 iOS 17+ TestFlight 自用验证，SwiftData 与 SwiftUI 集成更直接。若后续要求 iOS 16 或更早版本，再新增 ADR 切换。 |
 
 ## Consequences
@@ -30,7 +32,7 @@ Accepted
 
 - iOS 首版可以使用最直接的 SwiftUI、WKWebView、Keychain 和本地存储能力，降低浏览器容器和 App Store 交付风险。
 - `browser-agent` 把 DOM 识别、翻译层和站点适配从 iOS UI 中隔离出来，未来 Android WebView、macOS WKWebView、Windows WebView2 可复用。
-- `contracts` 让 native 与 JS bridge、收藏、复习、Provider 错误码有稳定命名，后续 planner、generator、review 都有明确边界。
+- `contracts` 让 native 与 JS bridge、收藏、复习、模型服务错误码有稳定命名，后续 planner、generator、review 都有明确边界。
 - 不需要为了未来平台牺牲首版 iPhone 体验，也不会把未来平台完全锁死在 Swift 单体里。
 
 ### Negative
@@ -46,17 +48,17 @@ Accepted
 - 首版任何 WebView 与 JS 通信必须通过结构化 `BridgeEvent`，不能由 SwiftUI View 拼接临时业务脚本。
 - `packages/contracts` 是 cross-boundary payload 的事实源；Swift DTO / decoder 必须通过 fixture 或字段等价测试证明与 TypeScript contract 同步，Phase criteria 不能只检查事件名或 envelope 字段。
 - `browser-agent` 不能保存凭证、调用 AI Provider 或写本地数据库。
-- Provider 凭证只能存 Keychain；收藏、历史、复习和翻译缓存进入 SwiftData；网站 cookie/localStorage 归 WebKit website data store 管理。
-- 页面文本发送给第三方 Provider 必须可被用户理解和控制。
+- 第三方 Provider 凭证不进入 iOS App；后端签发的 App session token 可存 Keychain；收藏、历史、复习和翻译缓存进入 SwiftData；网站 cookie/localStorage 归 WebKit website data store 管理。
+- 页面文本发送给自有模型服务并由后端转发给第三方 Provider 的范围必须可被用户理解和控制。
 - YouTube 只做页面文字和可访问字幕的保守学习增强，不修改播放器、不下载媒体、不去广告。
-- 原生收藏、复习、历史、隐私清理和 Provider 设置是 App Store 原生价值边界，不能被开发计划省略。
+- 原生收藏、复习、历史、隐私清理和服务等级 / 模型档位设置是 App Store 原生价值边界，不能被开发计划省略。
 
 ## Follow-Up Rules
 
 - `DEV-PLAN.md` 必须读取 `ARCHITECTURE.md`、`PROJECT-STRUCTURE.md` 和本 ADR 后再拆 Phase。
-- DEV-PLAN Phase 1-3 共同构成首个实现 tranche：Phase 1 先建立 `packages/contracts`、`packages/browser-agent` 和 workspace 最小可验证骨架；Phase 2 建立 `apps/ios` 原生 Tab 壳、SwiftData model 和 Keychain credential reference；Phase 3 建立 WKWebView 进入流、bridge schema native decode 和 WebKit website data 清理提示。
-- 在 DEV-PLAN Phase 1-3 全部完成前，不得进入站点适配、真实 Provider 调用或网页翻译业务堆叠。
-- 每个 Phase 的 criteria 必须说明是否触碰 native shell、browser-agent、contracts、local data 或 provider adapters。
+- DEV-PLAN Phase 1-3 共同构成首个实现 tranche：Phase 1 先建立 `packages/contracts`、`packages/browser-agent` 和 workspace 最小可验证骨架；Phase 2 建立 `apps/ios` 原生 Tab 壳、SwiftData model 和 Keychain 服务令牌边界；Phase 3 建立 WKWebView 进入流、bridge schema native decode 和 WebKit website data 清理提示。
+- 在 DEV-PLAN Phase 1-3 全部完成前，不得进入站点适配、真实模型服务调用或网页翻译业务堆叠。
+- 每个 Phase 的 criteria 必须说明是否触碰 native shell、browser-agent、contracts、local data、model gateway 或 provider adapters。
 - 每个新增 bridge payload 的 criteria 必须包含 TS contract 与 Swift DTO / decoder 等价校验；涉及翻译 payload 时至少覆盖页面上下文、段落 id、语言字段、显示模式、失败原因和页面能力字段。
 - 若后续决定把 Android 提前为当前目标，必须新增 ADR 评估 Kotlin/Compose、Android WebView 注入时机和 contracts 复用方式。
-- 若后续决定增加后端代理或账号同步，必须新增 ADR 评估密钥托管、隐私、数据保留、同步冲突和发布成本。
+- 若后续决定增加订阅支付、云端学习数据同步或正式账号恢复策略，必须新增 ADR 评估隐私、数据保留、同步冲突、StoreKit 和发布成本；不得把这些隐含进 ADR-0003 的测试账号基础里。

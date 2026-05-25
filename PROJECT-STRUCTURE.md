@@ -5,9 +5,9 @@
 | Concern | Decision |
 |---|---|
 | Project type | iPhone-first native mobile app with reusable browser injection packages. |
-| Platform / runtime targets | Current: iOS. Future: Android, macOS, Windows, optional backend. |
-| Chosen structure pattern | `apps/` for platform shells, `packages/` for reusable browser agent and contracts, `docs/` for architecture decisions, root docs for product/design/architecture. |
-| Reason | iOS 原生能力和 App Store 交付是首版关键；网页 DOM 识别与翻译层逻辑天然可跨 WebView 复用，适合放入 TypeScript 包；未来平台不应复用 iOS UI，但应复用协议和注入脚本。 |
+| Platform / runtime targets | Current: iOS + backend model gateway with auth / session / entitlement. Future: Android, macOS, Windows, billing backend expansion and optional learning data sync. |
+| Chosen structure pattern | `apps/` for platform shells, `packages/` for reusable browser agent and contracts, `services/` for backend model gateway/auth/session/entitlement, `docs/` for architecture decisions, root docs for product/design/architecture. |
+| Reason | iOS 原生能力和 App Store 交付是首版关键；网页 DOM 识别与翻译层逻辑天然可跨 WebView 复用，适合放入 TypeScript 包；取消用户 BYOK 后，Provider 密钥、模型目录、会话、权益、额度和 fallback 必须进入后端服务；未来平台不应复用 iOS UI，但应复用协议、注入脚本和模型服务 API。 |
 
 ## Directory Tree
 
@@ -20,6 +20,7 @@ agent_english/
         Screens/
         Web/
         Settings/
+        Account/
         Assets.xcassets/
       AgentEnglishCore/
         Sources/
@@ -28,6 +29,7 @@ agent_english/
             Contracts/
             Persistence/
             Providers/
+            Account/
             Review/
             Privacy/
       AgentEnglishTests/
@@ -49,12 +51,31 @@ agent_english/
       schemas/
       src/
       package.json
+  services/
+    model-gateway/
+      src/
+        auth/
+        sessions/
+        entitlements/
+        catalog/
+        routes/
+        providers/
+        quota/
+        privacy/
+        index.ts
+      package.json
+      tests/
   docs/
     adr/
       ADR-0001-architecture-strategy.md
+      ADR-0002-backend-managed-model-service.md
+      ADR-0003-auth-session-entitlement.md
     research/
   design_export/
     clean_pencil/
+    5mGHS.png
+    bCKWH.png
+    uTNzx.png
   Product-Spec.md
   Design-Brief.md
   ARCHITECTURE.md
@@ -67,30 +88,40 @@ agent_english/
 
 | Path | Status | Responsibility | Forbidden |
 |---|---|---|---|
-| `apps/ios/` | create across DEV-PLAN Phase 2-3 | iOS App 工程、SwiftUI 界面、WKWebView 容器、原生导航、设置、Keychain、local data、Provider adapters。 | 放 Android、Windows、Next 页面或跨平台抽象口号；把 DOM 规则直接写进 SwiftUI View。 |
-| `apps/ios/AgentEnglish/` | create across DEV-PLAN Phase 2-3 | App target、SwiftUI screens、WebView container、toolbars、sheets、navigation、asset catalog。 | 复习算法、Provider 协议细节、JS 注入源码、SwiftData migration 逻辑。 |
-| `apps/ios/AgentEnglish/App/` | create in DEV-PLAN Phase 2 | App 生命周期、依赖注入、Tab navigation、root scene。 | 业务规则、DOM selector、Provider SDK 细节。 |
-| `apps/ios/AgentEnglish/Screens/` | create in DEV-PLAN Phase 2, expand in later phases | 浏览首页、收藏、复习、设置等 SwiftUI 页面。 | 直接读写 WebView DOM、直接保存 API Key、临时拼接 bridge message。 |
-| `apps/ios/AgentEnglish/Web/` | create in DEV-PLAN Phase 3 | WKWebView wrapper、toolbar、bottom sheet、message handler 入口和显示模式 UI。 | DOM 扫描算法、站点适配、翻译 Provider 调用。 |
-| `apps/ios/AgentEnglishCore/` | create across DEV-PLAN Phase 2-3, expand later | Swift 无 UI 模块：收藏、历史、复习状态、Provider profile、bridge DTO、错误映射、隐私清理服务、SwiftData repository 接口。 | SwiftUI View、WKWebView DOM 选择器、站点 CSS selector、第三方网页品牌资源。 |
-| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/` | create in DEV-PLAN Phase 3 | `BridgeEvent` decode/encode、schema version、request tracking、错误映射；Swift DTO 必须用 tests 与 `packages/contracts` 的 payload 字段保持等价。 | UI 展示、DOM selector、Provider 网络请求。 |
-| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/` | create in DEV-PLAN Phase 2, expand in later phases | SwiftData models、repository implementation、migration、cache 清理；Keychain credential reference。 | 明文 API Key、WebKit cookie 管理、SwiftUI View state。 |
-| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | create when Provider work starts in DEV-PLAN Phase 4 or later | Provider profile、translation/explanation request、rate-limit、retry、错误归一。 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码。 |
+| `apps/ios/` | create across DEV-PLAN Phase 2-3; account UI expands in Phase 6.5 | iOS App 工程、SwiftUI 界面、WKWebView 容器、原生导航、设置、账号状态展示、Keychain session token、local data、模型服务客户端。 | 放 Android、Windows、Next 页面或跨平台抽象口号；把 DOM 规则直接写进 SwiftUI View；展示 Provider API Key 配置；让客户端自报 Free / Pro / Max 作为授权。 |
+| `apps/ios/AgentEnglish/` | create across DEV-PLAN Phase 2-3 | App target、SwiftUI screens、WebView container、toolbars、sheets、navigation、asset catalog。 | 复习算法、Provider 协议细节、JS 注入源码、SwiftData migration 逻辑、第三方 Provider 密钥。 |
+| `apps/ios/AgentEnglish/App/` | create in DEV-PLAN Phase 2 | App 生命周期、依赖注入、Tab navigation、root scene。 | 业务规则、DOM selector、Provider SDK 细节、后台模型路由策略。 |
+| `apps/ios/AgentEnglish/Screens/` | create in DEV-PLAN Phase 2, expand in later phases | 浏览首页、收藏、复习、设置等 SwiftUI 页面；设置页只展示账号状态、服务等级、模型档位、用量和隐私。 | 直接读写 WebView DOM、直接保存 API Key、展示自定义 Provider / BYOK 表单、临时拼接 bridge message、显示生产环境测试账号入口。 |
+| `apps/ios/AgentEnglish/Account/` | create in DEV-PLAN Phase 6.5 if UI split is useful | 登录 sheet、游客 / 已登录 / dev 测试账号状态组件、退出登录确认、账号删除入口占位。 | 保存 session token、验证 Apple / Google token、决定后端 entitlement、展示 Provider 技术参数。 |
+| `apps/ios/AgentEnglish/Web/` | create in DEV-PLAN Phase 3 | WKWebView wrapper、toolbar、bottom sheet、message handler 入口和显示模式 UI。 | DOM 扫描算法、站点适配、翻译 Provider 调用或模型服务路由。 |
+| `apps/ios/AgentEnglishCore/` | create across DEV-PLAN Phase 2-3, expand later | Swift 无 UI 模块：收藏、历史、复习状态、账号 / session 状态、模型目录快照、服务等级、bridge DTO、错误映射、隐私清理服务、SwiftData repository 接口、模型服务客户端。 | SwiftUI View、WKWebView DOM 选择器、站点 CSS selector、第三方网页品牌资源、第三方 Provider 密钥、固定生产等级 token。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/` | create in DEV-PLAN Phase 3 | `BridgeEvent` decode/encode、schema version、request tracking、错误映射；Swift DTO 必须用 tests 与 `packages/contracts` 的 payload 字段保持等价。 | UI 展示、DOM selector、Provider 网络请求、模型服务网络实现。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/` | create in DEV-PLAN Phase 2, expand in later phases | SwiftData models、repository implementation、migration、cache 清理；Keychain 只保存后端 session token、App 服务令牌或匿名设备令牌。 | 明文 API Key、第三方 Provider 密钥、固定生产等级 token、WebKit cookie 管理、SwiftUI View state。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | existing provider adapter area, to be narrowed by model gateway refactor | 模型服务客户端、translation/explanation request、service-tier error mapping、retry、错误归一；旧直连 Provider 只能作为迁移前技术债处理。 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码、第三方 Provider 密钥和 Base URL 配置。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Account/` | create in DEV-PLAN Phase 6.5 | `AuthSession` / `AccountStatus` / `EntitlementSnapshot` Swift DTO、session bootstrap、logout、dev/staging login client、Keychain session token 编排。 | 直接验证 Google / Apple identity token、硬编码测试账号密码、保存 Provider 凭证、把客户端选择的等级当授权。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Review/` | create in DEV-PLAN Phase 6 | 主动回忆卡、复习反馈、下一次复习优先级。 | 游戏化奖励、课程路径、页面 DOM 操作。 |
-| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Privacy/` | create in DEV-PLAN Phase 3, expand in Phase 6 | Provider 数据发送提示、学习数据清理、网站数据清理提示策略。 | 悄悄上传浏览历史、替用户同意第三方数据发送。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Privacy/` | create in DEV-PLAN Phase 3, expand in Phase 6 | 模型服务数据发送提示、后端转发说明、学习数据清理、网站数据清理提示策略。 | 悄悄上传浏览历史、替用户同意第三方数据发送。 |
 | `apps/ios/AgentEnglishTests/` | create in DEV-PLAN Phase 2, expand in Phase 3 and later | Native core 单元测试、bridge contract decode 测试、SwiftData repository 测试、复习状态测试。 | 只做快照不验证业务规则。 |
 | `apps/android/` | future documented only | 未来 Android 平台壳位置。 | 首版创建完整工程或复制 iOS 实现。 |
 | `apps/macos/` | future documented only | 未来 macOS 平台壳位置。 | 首版创建桌面窗口或菜单实现。 |
 | `apps/windows/` | future documented only | 未来 Windows 平台壳位置。 | 首版创建 WebView2 工程。 |
-| `packages/browser-agent/` | create in DEV-PLAN Phase 1, expand in Phase 4-7 | TypeScript 注入脚本：DOM 文本识别、节点 id、翻译层插入、学习模式、选区事件、站点适配。 | 保存 API Key、直接调用 AI Provider、写本地数据库、修改 YouTube 播放器核心能力。 |
-| `packages/browser-agent/src/bridge/` | create in DEV-PLAN Phase 1, expand in Phase 3-4 | Native 与 JS 的消息 envelope、版本协商、request/response 映射。 | 站点 DOM selector、Provider adapter、UI 文案。 |
+| `packages/browser-agent/` | create in DEV-PLAN Phase 1, expand in Phase 4-8 | TypeScript 注入脚本：DOM 文本识别、节点 id、翻译层插入、学习模式、选区事件、站点适配。 | 保存 API Key、直接调用 AI Provider 或模型服务、写本地数据库、修改 YouTube 播放器核心能力。 |
+| `packages/browser-agent/src/bridge/` | create in DEV-PLAN Phase 1, expand in Phase 3-4 | Native 与 JS 的消息 envelope、版本协商、request/response 映射。 | 站点 DOM selector、Provider adapter、模型服务客户端、UI 文案。 |
 | `packages/browser-agent/src/dom/` | create in DEV-PLAN Phase 4 | 通用文本节点扫描、可见性判断、段落合并、稳定 segment id。 | YouTube 专用规则、native 数据持久化。 |
-| `packages/browser-agent/src/overlay/` | create in DEV-PLAN Phase 4 | 双语翻译层、学习模式折叠、段落状态渲染、轻量错误提示。 | 原生底部抽屉、Provider 调用、收藏数据库。 |
-| `packages/browser-agent/src/site-adapters/` | create in DEV-PLAN Phase 7 | YouTube、Reddit、Wikipedia、AO3、X 等站点适配；每个站点独立文件。 | 通用 bridge 协议、跨站业务规则、平台权限。 |
-| `packages/contracts/` | create in DEV-PLAN Phase 1, expand in later phases | JSON schema、TypeScript 类型、bridge event、数据模型命名、错误码；Swift DTO 必须与这里保持等价，新增 payload 要配套 TS fixture 与 Swift decoder/DTO 字段等价测试。 | UI 组件、平台存储实现、Provider 具体 SDK。 |
+| `packages/browser-agent/src/overlay/` | create in DEV-PLAN Phase 4 | 双语翻译层、学习模式折叠、段落状态渲染、轻量错误提示。 | 原生底部抽屉、Provider 调用、模型服务调用、收藏数据库。 |
+| `packages/browser-agent/src/site-adapters/` | create in DEV-PLAN Phase 8 | YouTube、Reddit、Wikipedia、AO3、X 等站点适配；每个站点独立文件。 | 通用 bridge 协议、跨站业务规则、平台权限。 |
+| `packages/contracts/` | create in DEV-PLAN Phase 1, expand in later phases | JSON schema、TypeScript 类型、bridge event、账号 / session / entitlement DTO、数据模型命名、错误码；Swift DTO 必须与这里保持等价，新增 payload 要配套 TS fixture 与 Swift decoder/DTO 字段等价测试。 | UI 组件、平台存储实现、Provider 具体 SDK 或 Provider 密钥。 |
+| `services/model-gateway/` | create in model service refactor phase; auth expands in Phase 6.5 | 后端模型服务：游客 session、登录 session、dev/staging 测试账号、entitlement、模型目录、Free / Pro / Max 等级、Provider 密钥读取、Provider adapter、额度、用量、fallback、翻译 / 解释 API。 | App UI、WKWebView DOM 规则、收藏 / 复习本地学习数据、完整浏览历史存储、旧游戏 API、向客户端暴露 Provider 密钥、接受客户端自报服务等级。 |
+| `services/model-gateway/src/auth/` | create in DEV-PLAN Phase 6.5 | Apple / Google identity token 验证边界、dev/staging password login、生产环境 auth feature gate。 | 在生产启用测试账号、信任客户端 user id、把测试密码写入源码。 |
+| `services/model-gateway/src/sessions/` | create in DEV-PLAN Phase 6.5 | 游客 session 创建 / 恢复、登录 session 签发 / 撤销、session token 校验和过期策略。 | 存完整浏览历史、暴露 token 到日志、把 session 逻辑写进 routes 临时代码。 |
+| `services/model-gateway/src/entitlements/` | create in DEV-PLAN Phase 6.5 | Free / Pro / Max 权益判定、测试账号等级映射、模型目录授权过滤、quota 输入。 | 信任客户端 `serviceTier`、处理 StoreKit 交易；订阅支付需后续 ADR。 |
+| `services/model-gateway/src/catalog/` | create in model service refactor phase | 模型目录、模型显示名、等级、能力、上下线状态和 fallback 策略。 | Provider 密钥明文硬编码、用户学习数据。 |
+| `services/model-gateway/src/routes/` | create in model service refactor phase; auth routes expand in Phase 6.5 | `/v1/sessions/guest`、`/v1/auth/dev-login`、`/v1/auth/logout`、`/v1/model-catalog`、`/v1/translate`、`/v1/explain` 等服务 API。 | 网页 DOM 选择器、SwiftUI 状态、无 session 授权的模型调用。 |
+| `services/model-gateway/src/providers/` | create in model service refactor phase | 后端内部 Provider adapter、请求归一、重试、错误映射。 | 暴露 API Key 给客户端、保存完整浏览历史。 |
+| `services/model-gateway/src/quota/` | create in model service refactor phase | Free / Pro / Max 额度、速率限制、用量统计和滥用保护。 | 支付 UI、App Store 订阅流程。 |
 | `docs/adr/` | current | 架构决策记录。 | 产品需求正文、设计稿源文件、运行时代码。 |
 | `docs/research/` | create when research artifacts exist | 官方政策、平台能力、竞品分析和调研记录。 | 未核实的库版本、临时代码片段。 |
-| `design_export/clean_pencil/` | current | Pencil 设计导出图，用于实现和 review 对齐。 | 应用源码、生成代码、运行时资产。 |
+| `design_export/` | current | Pencil 设计导出图，用于实现和 review 对齐；v2.2 账号 / 登录 / 模型服务错误状态稿保存在根层 PNG，旧基础页面在 `clean_pencil/`。 | 应用源码、生成代码、运行时资产。 |
 | `public/assets/prologue/` | legacy cleanup target | 旧 English Monster Quest 资源残留。 | 新产品继续引用这些游戏资源。 |
 | `data/` | legacy cleanup target unless explicitly repurposed | 旧本地数据目录。 | 新产品首版业务数据源。 |
 | `src/` | do not recreate for new product | 旧 Next 产品入口已删除。 | 新产品业务实现、iOS 入口、WebView 注入实现。 |
@@ -103,9 +134,12 @@ agent_english/
 | `ARCHITECTURE.md` | yes | 开发计划必须先读取架构边界。 |
 | `PROJECT-STRUCTURE.md` | yes | 开发计划必须知道目录职责和禁止边界。 |
 | `docs/adr/ADR-0001-architecture-strategy.md` | yes | 技术路线选择需要留痕。 |
-| `packages/contracts/` | no | 由 DEV-PLAN Phase 1 创建，作为 bridge、数据模型和错误码事实源。 |
-| `packages/browser-agent/` | no | 由 DEV-PLAN Phase 1 创建最小 bootstrap 包，后续 Phase 4-7 扩展 DOM、overlay 和站点适配。 |
+| `docs/adr/ADR-0002-backend-managed-model-service.md` | yes | 后台托管模型目录、Provider 密钥和 Free / Pro / Max 路由决策需要留痕。 |
+| `docs/adr/ADR-0003-auth-session-entitlement.md` | yes | 游客会话、可选登录、测试账号和后端 entitlement 决策需要留痕。 |
+| `packages/contracts/` | no | 由 DEV-PLAN Phase 1 创建，作为 bridge、数据模型和错误码事实源；模型服务 refactor 时扩展模型目录、服务等级和额度 contract。 |
+| `packages/browser-agent/` | no | 由 DEV-PLAN Phase 1 创建最小 bootstrap 包，后续 Phase 4-8 扩展 DOM、overlay 和站点适配。 |
 | `apps/ios/` | no | 由 DEV-PLAN Phase 2-3 创建，避免架构阶段混入实现；创建时按 Phase 分别落 SwiftUI shell、SwiftData / Keychain、WKWebView 和 bridge 边界。 |
+| `services/model-gateway/` | no | 已由模型服务 refactor Phase 创建或扩展；后续 Phase 6.5 只补 auth/session/entitlement，不在结构文档阶段写实现。 |
 | `apps/android/` | no | 后续平台，不进入首版实现。 |
 | `apps/macos/` | no | 后续平台，不进入首版实现。 |
 | `apps/windows/` | no | 后续平台，不进入首版实现。 |
@@ -118,9 +152,10 @@ agent_english/
 - 可复用包只放平台无关能力：`packages/browser-agent`、`packages/contracts`。
 - Bridge 事件使用动词或状态前缀，例如 `page.text.detected`、`translation.requested`、`translation.completed`、`selection.changed`、`favorite.created`。
 - 数据模型用稳定英文名，和 `ARCHITECTURE.md` 的 Shared Contracts 保持一致。
+- 账号与权益 DTO 命名固定为 `AuthSession`、`AccountStatus`、`EntitlementSnapshot`；后端内部可以有 `SessionRecord` / `UserEntitlementRecord`，但不得让客户端请求体中的 `serviceTier` 成为授权事实源。
 - 站点适配文件按站点域名或产品名命名，例如 `youtube.ts`、`reddit.ts`、`wikipedia.ts`、`ao3.ts`、`x.ts`。
 - SwiftUI 页面命名以用户任务为准，例如 `BrowserHomeView`、`WebBrowserView`、`FavoritesView`、`ReviewView`、`SettingsView`。
-- Native service 命名以职责为准，例如 `ProviderClient`、`FavoritesStore`、`ReviewScheduler`、`PrivacyDataManager`、`WebBridgeController`。
+- Native service 命名以职责为准，例如 `ModelServiceClient`、`FavoritesStore`、`ReviewScheduler`、`PrivacyDataManager`、`WebBridgeController`。
 - SwiftData model 命名不直接暴露到 JS bridge；bridge 使用 `SavedItem`、`ReviewCard` 等 contracts 名称，SwiftData 可使用 `SavedItemRecord`、`ReviewCardRecord` 作为持久化类型。
 - 跨端 payload 命名以 `packages/contracts` 为事实源；Swift DTO 字段名不允许为方便本地实现而改写，确需别名时必须在 decoder tests 中覆盖映射关系。
 
@@ -131,5 +166,5 @@ agent_english/
 - 当前根目录存在 `.next/`、`data/agent-english.sqlite*` 和 Drizzle 配置，均属于旧 Web/游戏方向或构建残留；后续清理前不得把这些残留当作新 iOS 产品数据源。
 - `public/assets/prologue/` 是旧游戏视觉资产，不能被新产品首页、复习页或设置页引用。
 - `data/` 是否保留取决于是否有非旧游戏资料；如果只保存旧游戏数据，应在清理 Phase 删除或迁移到文档归档。
-- `design_export/clean_pencil/` 只作为设计参照，不进入 App bundle，除非后续明确挑选品牌资产。
+- `design_export/` 只作为设计参照，不进入 App bundle，除非后续明确挑选品牌资产。
 - 新 iOS 工程创建后，`DEV-PLAN.md` 的 affected files 应以 `apps/ios`、`packages/browser-agent`、`packages/contracts` 为主，不应再指向旧 `src/app`。

@@ -7,7 +7,7 @@ enum BrowserAgentBootstrapScript {
         WKUserScript(
             source: makeSource(handlerName: handlerName),
             injectionTime: .atDocumentEnd,
-            forMainFrameOnly: false
+            forMainFrameOnly: true
         )
     }
 

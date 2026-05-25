@@ -7,8 +7,11 @@ public enum AppModelContainer {
         SavedItemRecord.self,
         ReviewCardRecord.self,
         AppSettingsRecord.self,
-        ProviderProfileRecord.self,
+        ModelServiceProfileRecord.self,
         TranslationCacheRecord.self,
+        HistoryEntryRecord.self,
+        DailyStatRecord.self,
+        SiteShortcutRecord.self,
     ])
 
     public static func makeDefaultContainer(seedSampleData: Bool = true) throws -> ModelContainer {

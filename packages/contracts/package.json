@@ -12,6 +12,14 @@
     "./bridge-events": {
       "types": "./dist/bridge-events.d.ts",
       "default": "./dist/bridge-events.js"
+    },
+    "./model-service": {
+      "types": "./dist/model-service.d.ts",
+      "default": "./dist/model-service.js"
+    },
+    "./auth-session": {
+      "types": "./dist/auth-session.d.ts",
+      "default": "./dist/auth-session.js"
     }
   },
   "files": [

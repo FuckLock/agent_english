@@ -6,35 +6,38 @@ public enum SampleLearningData {
         let savedItems = try context.fetch(FetchDescriptor<SavedItemRecord>())
         let reviewCards = try context.fetch(FetchDescriptor<ReviewCardRecord>())
         let appSettings = try context.fetch(FetchDescriptor<AppSettingsRecord>())
-        let providerProfiles = try context.fetch(FetchDescriptor<ProviderProfileRecord>())
+        let modelProfiles = try context.fetch(FetchDescriptor<ModelServiceProfileRecord>())
         let translationCaches = try context.fetch(FetchDescriptor<TranslationCacheRecord>())
+        let historyEntries = try context.fetch(FetchDescriptor<HistoryEntryRecord>())
+        let dailyStats = try context.fetch(FetchDescriptor<DailyStatRecord>())
+        let siteShortcuts = try context.fetch(FetchDescriptor<SiteShortcutRecord>())
 
         guard
             savedItems.isEmpty,
             reviewCards.isEmpty,
             appSettings.isEmpty,
-            providerProfiles.isEmpty,
-            translationCaches.isEmpty
+            modelProfiles.isEmpty,
+            translationCaches.isEmpty,
+            historyEntries.isEmpty,
+            dailyStats.isEmpty,
+            siteShortcuts.isEmpty
         else {
             return
         }
 
-        let providerProfileId = UUID()
-        let providerProfile = ProviderProfileRecord(
-            providerProfileId: providerProfileId,
-            providerName: "Custom AI Provider",
-            displayName: "每日精读助手",
-            credentialReference: KeychainCredentialStore.credentialReference(for: providerProfileId),
-            isEnabled: false,
-            capabilitySummary: "配置后可启用整页翻译与后续学习能力"
+        let modelProfile = ModelServiceProfileRecord(
+            serviceTier: ModelServiceTier.free.rawValue,
+            preferredModelID: "free-translate",
+            preferredModelLabel: "Free 服务 · 轻量翻译",
+            quotaStatus: ModelQuotaStatus.ok.rawValue,
+            quotaUsed: 3,
+            quotaLimit: 20
         )
 
         let appSettingsRecord = AppSettingsRecord(
             sourceLanguage: "English",
             targetLanguage: "简体中文",
-            preferredProviderName: "未配置翻译 Provider",
-            preferredProviderProfileId: nil,
-            privacySummary: "学习收藏与复习卡保存在本机；配置好 Provider 后才会发送页面文本进行翻译。"
+            privacySummary: "学习收藏、历史和复习数据保存在本机；翻译或解释时才会把页面文本发送到自有后端模型服务。"
         )
 
         let firstSavedItem = SavedItemRecord(
@@ -70,13 +73,48 @@ public enum SampleLearningData {
             savedItemId: secondSavedItem.savedItemId,
             savedItem: secondSavedItem
         )
+        let historyEntry = HistoryEntryRecord(
+            url: "https://www.wikipedia.org/wiki/Serendipity",
+            title: "Wikipedia · Serendipity",
+            siteHost: "www.wikipedia.org",
+            visitCount: 2
+        )
+        let dailyStat = DailyStatRecord(
+            dayKey: Self.dayKey(for: .now),
+            translatedPageCount: 1,
+            savedItemCount: 2,
+            reviewCompletedCount: 0
+        )
 
-        context.insert(providerProfile)
+        context.insert(modelProfile)
         context.insert(appSettingsRecord)
         context.insert(firstSavedItem)
         context.insert(secondSavedItem)
         context.insert(firstReviewCard)
         context.insert(secondReviewCard)
+        context.insert(historyEntry)
+        context.insert(dailyStat)
+        for (index, shortcut) in SiteShortcutRepository.defaultShortcuts.enumerated() {
+            context.insert(
+                SiteShortcutRecord(
+                    url: shortcut.url,
+                    name: shortcut.name,
+                    symbol: shortcut.symbol,
+                    note: shortcut.note,
+                    orderIndex: index
+                )
+            )
+        }
         try context.save()
+    }
+
+    private static func dayKey(for date: Date, calendar: Calendar = .current) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(
+            format: "%04d-%02d-%02d",
+            components.year ?? 0,
+            components.month ?? 0,
+            components.day ?? 0
+        )
     }
 }

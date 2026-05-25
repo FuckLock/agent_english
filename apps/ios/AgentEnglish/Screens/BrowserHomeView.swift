@@ -1,12 +1,8 @@
+#if canImport(AgentEnglishCore)
+import AgentEnglishCore
+#endif
+import SwiftData
 import SwiftUI
-
-private struct QuickSite: Identifiable {
-    let id = UUID()
-    let name: String
-    let symbol: String
-    let note: String
-    let url: URL
-}
 
 struct BrowserLaunch: Hashable, Identifiable {
     let id = UUID()
@@ -14,9 +10,13 @@ struct BrowserLaunch: Hashable, Identifiable {
 }
 
 struct BrowserHomeView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \HistoryEntryRecord.lastVisitedAt, order: .reverse) private var historyEntries: [HistoryEntryRecord]
+    @Query(sort: \SiteShortcutRecord.orderIndex, order: .forward) private var siteShortcuts: [SiteShortcutRecord]
+
     @State private var addressInput = ""
     @State private var showAddressError = false
-    @State private var showSettingsHint = false
+    @State private var shortcutStatusMessage: String?
     @Binding private var launch: BrowserLaunch?
 
     init(launch: Binding<BrowserLaunch?>) {
@@ -28,65 +28,38 @@ struct BrowserHomeView: View {
         GridItem(.flexible(), spacing: 12),
     ]
 
-    private let quickSites = [
-        QuickSite(
-            name: "YouTube",
-            symbol: "play.rectangle.fill",
-            note: "视频与字幕",
-            url: URL(string: "https://www.youtube.com")!
-        ),
-        QuickSite(
-            name: "Reddit",
-            symbol: "bubble.left.and.bubble.right.fill",
-            note: "真实讨论",
-            url: URL(string: "https://www.reddit.com/r/EnglishLearning/")!
-        ),
-        QuickSite(
-            name: "Wikipedia",
-            symbol: "book.closed.fill",
-            note: "长文阅读",
-            url: URL(string: "https://www.wikipedia.org")!
-        ),
-        QuickSite(
-            name: "AO3",
-            symbol: "text.book.closed.fill",
-            note: "同人小说",
-            url: URL(string: "https://archiveofourown.org")!
-        ),
-        QuickSite(
-            name: "X",
-            symbol: "bolt.horizontal.fill",
-            note: "短内容流",
-            url: URL(string: "https://x.com")!
-        ),
-    ]
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 headerSection
                 searchField
+                continueSection
                 quickSiteSection
-                phaseSummaryCard
             }
             .padding(20)
         }
         .navigationTitle("浏览首页")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showSettingsHint = true
+                NavigationLink {
+                    HistoryView { url in
+                        launch = BrowserLaunch(url: url)
+                    }
                 } label: {
-                    Image(systemName: "gearshape")
+                    Image(systemName: "clock.arrow.circlepath")
                 }
-                .accessibilityLabel("设置")
+                .accessibilityLabel("浏览历史")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    SiteShortcutEditorView()
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                }
+                .accessibilityLabel("编辑快捷入口")
             }
         }
-        .alert("设置页已准备好", isPresented: $showSettingsHint) {
-            Button("知道了", role: .cancel) {}
-        } message: {
-            Text("四个 Tab 都是原生页面；Provider 信息和隐私说明在设置标签页查看。")
-        }
+        .onAppear(perform: seedDefaultShortcuts)
         .alert("无法打开这个地址", isPresented: $showAddressError) {
             Button("知道了", role: .cancel) {}
         } message: {
@@ -129,41 +102,90 @@ struct BrowserHomeView: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private var quickSiteSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("常用站点")
-                .font(.headline)
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(quickSites) { site in
-                    quickSiteCard(for: site)
+    private var continueSection: some View {
+        Group {
+            if !historyEntries.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("继续学习")
+                        .font(.headline)
+
+                    ForEach(Array(historyEntries.prefix(3))) { entry in
+                        Button {
+                            if let url = URL(string: entry.url) {
+                                launch = BrowserLaunch(url: url)
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(.headline)
+                                    .foregroundStyle(.purple)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(entry.title.isEmpty ? entry.url : entry.title)
+                                        .font(.subheadline.weight(.semibold))
+                                        .lineLimit(1)
+                                    Text(entry.siteHost.isEmpty ? entry.url : entry.siteHost)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.forward")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(14)
+                            .background(
+                                Color.secondary.opacity(0.08),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
     }
 
-    private var phaseSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("原生首页已就位")
-                .font(.headline)
-            Text("现在可以从首页打开真实网页；页面加载后会通过 bridge 向原生层发送启动和 page-ready 事件。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+    private var quickSiteSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("常用站点")
+                    .font(.headline)
+                Spacer()
+                if let shortcutStatusMessage {
+                    Text(shortcutStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(enabledShortcuts) { shortcut in
+                    quickSiteCard(for: shortcut)
+                }
+            }
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    private func quickSiteCard(for site: QuickSite) -> some View {
+    private var enabledShortcuts: [SiteShortcutRecord] {
+        siteShortcuts.filter(\.isEnabled)
+    }
+
+    private func quickSiteCard(for shortcut: SiteShortcutRecord) -> some View {
         Button {
-            launch = BrowserLaunch(url: site.url)
+            if let url = URL(string: shortcut.url) {
+                launch = BrowserLaunch(url: url)
+            }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
-                Image(systemName: site.symbol)
+                Image(systemName: shortcut.symbol)
                     .font(.title3)
-                Text(site.name)
+                Text(shortcut.name)
                     .font(.headline)
-                Text(site.note)
+                Text(shortcut.note)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -172,6 +194,17 @@ struct BrowserHomeView: View {
             .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    private func seedDefaultShortcuts() {
+        do {
+            let createdCount = try SiteShortcutRepository(modelContext: modelContext).seedDefaultsIfNeeded()
+            if createdCount > 0 {
+                shortcutStatusMessage = "已创建默认入口"
+            }
+        } catch {
+            shortcutStatusMessage = "入口加载失败"
+        }
     }
 
     private func openAddressInput() {

@@ -10,12 +10,22 @@ public enum SiteCapability: String, CaseIterable, Codable, Equatable, Sendable {
     case readablePage = "readable-page"
     case inlineTranslation = "inline-translation"
     case selectionFallback = "selection-fallback"
+    case comments
+    case searchResults = "search-results"
+    case longformReading = "longform-reading"
+    case dynamicContent = "dynamic-content"
+    case captionsAvailable = "captions-available"
+    case captionsUnavailable = "captions-unavailable"
 }
 
 public enum TranslationFailureReason: String, CaseIterable, Codable, Equatable, Sendable {
-    case providerNotConfigured = "provider-not-configured"
     case pageUnrecognized = "page-unrecognized"
     case translationFailed = "translation-failed"
+    case quotaExceeded = "quota-exceeded"
+    case tierUnavailable = "tier-unavailable"
+    case serviceUnavailable = "service-unavailable"
+    case contentTooLong = "content-too-long"
+    case providerFallbackFailed = "provider-fallback-failed"
 }
 
 public struct PageContext: Codable, Equatable, Sendable {

@@ -70,6 +70,12 @@ importers:
 
   packages/contracts: {}
 
+  services/model-gateway:
+    dependencies:
+      '@agent-english/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

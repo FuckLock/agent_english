@@ -1,0 +1,92 @@
+{
+  "session": {
+    "sessionToken": "session_fixture_dev_pro",
+    "expiresAt": "2026-06-21T00:00:00Z",
+    "account": {
+      "kind": "dev-pro",
+      "displayName": "Pro 测试账号",
+      "serviceTier": "pro",
+      "email": "test-pro@agentenglish.local",
+      "isTestAccount": true
+    },
+    "entitlement": {
+      "account": {
+        "kind": "dev-pro",
+        "displayName": "Pro 测试账号",
+        "serviceTier": "pro",
+        "email": "test-pro@agentenglish.local",
+        "isTestAccount": true
+      },
+      "serviceTier": "pro",
+      "quota": {
+        "status": "ok",
+        "used": 12,
+        "limit": 200,
+        "remaining": 188,
+        "resetAt": "2026-05-23T00:00:00Z"
+      },
+      "catalog": {
+        "currentTier": "pro",
+        "availableTiers": ["free", "pro", "max"],
+        "defaultModelId": "pro-context",
+        "options": [
+          {
+            "id": "free-translate",
+            "tier": "free",
+            "displayName": "Free 服务 · 轻量翻译",
+            "summary": "适合通用网页翻译和快速释义。",
+            "capabilities": ["translation", "glossary"],
+            "availability": "available",
+            "quota": {
+              "status": "ok",
+              "used": 0,
+              "limit": 20,
+              "remaining": 20,
+              "resetAt": "2026-05-23T00:00:00Z"
+            }
+          },
+          {
+            "id": "pro-context",
+            "tier": "pro",
+            "displayName": "Pro 模型 · 语境精读",
+            "summary": "适合整段语境解释和更稳定的长句处理。",
+            "capabilities": ["translation", "explanation", "examples"],
+            "availability": "available",
+            "quota": {
+              "status": "ok",
+              "used": 12,
+              "limit": 200,
+              "remaining": 188,
+              "resetAt": "2026-05-23T00:00:00Z"
+            }
+          },
+          {
+            "id": "max-mentor",
+            "tier": "max",
+            "displayName": "Max 模型 · 深度讲解",
+            "summary": "适合复杂句深挖、例句扩展和学习建议。",
+            "capabilities": ["translation", "explanation", "examples", "review"],
+            "availability": "requiresTier",
+            "requiredTier": "max",
+            "quota": {
+              "status": "ok",
+              "used": 0,
+              "limit": 800,
+              "remaining": 800,
+              "resetAt": "2026-05-23T00:00:00Z"
+            }
+          }
+        ],
+        "quota": {
+          "status": "ok",
+          "used": 12,
+          "limit": 200,
+          "remaining": 188,
+          "resetAt": "2026-05-23T00:00:00Z"
+        },
+        "lastUpdatedAt": "2026-05-22T00:00:00Z"
+      },
+      "refreshedAt": "2026-05-22T00:00:00Z"
+    }
+  }
+}

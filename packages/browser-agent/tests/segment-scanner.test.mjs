@@ -10,6 +10,8 @@ import {
 function createElement(tagName, options = {}) {
   const element = {
     tagName,
+    id: options.id,
+    className: options.className,
     textContent: options.textContent ?? "",
     parentElement: options.parentElement ?? null,
     children: [],
@@ -20,6 +22,9 @@ function createElement(tagName, options = {}) {
     },
     getBoundingClientRect() {
       return options.rect ?? { width: 320, height: 24 };
+    },
+    getAttribute(name) {
+      return options.attributes?.[name] ?? null;
     },
   };
 
@@ -114,6 +119,7 @@ test("scanPageSegments merges visible paragraph text and ignores hidden nodes", 
   assert.equal(result.segments[0].sourceText, "Hello world.");
   assert.equal(result.segments[0].sourceLanguage, "English");
   assert.equal(result.segments[0].isVisible, true);
+  assert.equal(result.pageContext.siteKind, "generic");
 });
 
 test("createPageContext preserves capabilities and language fields", () => {

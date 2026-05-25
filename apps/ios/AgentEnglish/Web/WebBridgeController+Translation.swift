@@ -61,10 +61,10 @@ extension WebBridgeController {
                 return
             }
 
-            let credentialReference = await self.currentTranslationPreferences().credentialReference
+            let preferences = await self.currentTranslationPreferences()
             let translationResult = await self.providerClient.translate(
                 request,
-                credentialReference: credentialReference
+                preferences: preferences
             )
 
             await MainActor.run {
@@ -102,18 +102,18 @@ extension WebBridgeController {
     func currentTranslationPreferences() async -> TranslationPreferencesSnapshot {
         await MainActor.run {
             do {
-                return try providerSettingsStore?.loadPreferences()
+                return try modelServiceSettingsStore?.loadPreferences()
                     ?? TranslationPreferencesSnapshot(
                         sourceLanguage: "English",
                         targetLanguage: "简体中文",
-                        credentialReference: nil
+                        serviceTier: .free
                     )
             } catch {
                 pushSummary("translation.settings.failed · \(error.localizedDescription)")
                 return TranslationPreferencesSnapshot(
                     sourceLanguage: "English",
                     targetLanguage: "简体中文",
-                    credentialReference: nil
+                    serviceTier: .free
                 )
             }
         }
@@ -123,6 +123,7 @@ extension WebBridgeController {
         displayMode = translationResult.displayMode
         translationStatus = .translated
         translationFailure = nil
+        try? statisticsRepository?.recordTranslatedPage()
 
         if let payload = jsonString(translationResult) {
             evaluateBridgeCommand(named: "applyTranslationResult", argument: payload)

@@ -102,7 +102,7 @@ test("applyTranslationResult renders translated and failed segment overlays", ()
         },
         {
           segmentId: "seg-2",
-          failureReason: "translation-failed",
+          failureReason: "service-unavailable",
         },
       ],
       resultsBySegmentId: {
@@ -112,10 +112,10 @@ test("applyTranslationResult renders translated and failed segment overlays", ()
         },
         "seg-2": {
           segmentId: "seg-2",
-          failureReason: "translation-failed",
+          failureReason: "service-unavailable",
         },
       },
-      failureReason: "translation-failed",
+      failureReason: "service-unavailable",
     },
   );
 
@@ -123,6 +123,6 @@ test("applyTranslationResult renders translated and failed segment overlays", ()
   assert.equal(overlays[0].textContent, "第一段。");
   assert.equal(
     overlays[1].textContent,
-    messageForFailure("translation-failed"),
+    messageForFailure("service-unavailable"),
   );
 });

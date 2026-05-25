@@ -99,7 +99,7 @@ test("createTranslationFailedEvent reports failureReason without UI labels", () 
       targetLanguage: "简体中文",
       displayMode: "bilingual",
       capabilities: ["readable-page", "selection-fallback"],
-      failureReason: "provider-not-configured",
+      failureReason: "service-unavailable",
     },
     {
       requestId: "translation-failed-page-1",
@@ -107,6 +107,6 @@ test("createTranslationFailedEvent reports failureReason without UI labels", () 
     },
   );
 
-  assert.equal(event.payload.failureReason, "provider-not-configured");
+  assert.equal(event.payload.failureReason, "service-unavailable");
   assert.equal(typeof event.payload.failureMessage, "undefined");
 });

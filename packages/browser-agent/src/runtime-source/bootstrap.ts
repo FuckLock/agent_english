@@ -1,0 +1,58 @@
+export const RUNTIME_BOOTSTRAP_SOURCE = String.raw`(() => {
+  const bridge = window.webkit?.messageHandlers?.__HANDLER_NAME__;
+  if (!bridge || window.__agentEnglishBridgeBootstrapped) {
+    return;
+  }
+
+  window.__agentEnglishBridgeBootstrapped = true;
+
+  const schemaVersion = 1;
+  const genericCapabilities = [
+    "readable-page",
+    "inline-translation",
+    "selection-fallback",
+  ];
+  const displayModes = {
+    original: "original",
+    bilingual: "bilingual",
+    learning: "learning",
+  };
+  const blockTags = new Set([
+    "ARTICLE", "ASIDE", "BLOCKQUOTE", "DIV", "FIGCAPTION", "FOOTER",
+    "HEADER", "LI", "MAIN", "NAV", "P", "SECTION",
+  ]);
+  const pageNoticeId = "agent-english-page-notice";
+  const overlayClassName = "agent-english-translation-overlay";
+  const expandedSegmentIds = new Set();
+  const overlaysBySegmentId = new Map();
+  const anchorsBySegmentId = new Map();
+  const sessionId = (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : "session-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  const pageId = "page-" + sessionId;
+  let currentDisplayMode = displayModes.original;
+  let lastSelectionFingerprint = "";
+  let pendingSelectionTimer = null;
+
+  const postBridgeEvent = (eventType, payload, metadata = {}) => {
+    bridge.postMessage({
+      schemaVersion,
+      eventType,
+      requestId: metadata.requestId,
+      pageId,
+      payload,
+      result: metadata.result,
+      error: metadata.error,
+    });
+  };
+
+  const normalizeText = (text) => (text ?? "").replace(/\s+/g, " ").trim();
+  const hashSeed = (prefix, seed) => {
+    let hash = 2166136261;
+    for (let index = 0; index < seed.length; index += 1) {
+      hash ^= seed.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return prefix + "-" + (hash >>> 0).toString(16);
+  };
+`;

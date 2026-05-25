@@ -189,7 +189,7 @@ test("translation failed event preserves failureReason and schemaVersion", () =>
       targetLanguage: "简体中文",
       displayMode: "bilingual",
       capabilities: ["readable-page", "selection-fallback"],
-      failureReason: "translation-failed",
+      failureReason: "service-unavailable",
     },
     {
       requestId: "translation-failed-page-1",
@@ -203,6 +203,6 @@ test("translation failed event preserves failureReason and schemaVersion", () =>
 
   assert.equal(event.schemaVersion, schemaVersion);
   assert.equal(event.eventType, TRANSLATION_FAILED_EVENT_TYPE);
-  assert.equal(event.payload.failureReason, "translation-failed");
+  assert.equal(event.payload.failureReason, "service-unavailable");
   assert.equal(event.error?.code, "translation.failed");
 });

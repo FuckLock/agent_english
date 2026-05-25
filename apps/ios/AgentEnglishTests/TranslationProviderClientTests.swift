@@ -3,36 +3,56 @@ import XCTest
 @testable import AgentEnglishCore
 
 final class TranslationProviderClientTests: XCTestCase {
-    func testRetriesFailedBatchBeforeReturningTranslationResult() async {
-        let transport = FlakyTransport()
-        let client = TranslationProviderClient(
-            transport: transport,
-            configuration: TranslationProviderClientConfiguration(
-                maxSegmentsPerBatch: 1,
-                maxRetryAttempts: 1
+    func testTranslatesSegmentsThroughModelServiceClient() async {
+        let transport = MockModelServiceTransport(
+            translateResponse: .init(
+                pageID: "page-1",
+                serviceTier: .free,
+                model: previewModelOption(),
+                segmentResults: [
+                    .init(segmentID: "seg-1", translatedText: "[简体中文] Hello world.", errorCode: nil),
+                ],
+                quota: previewQuota(),
+                error: nil
             )
         )
-
-        let translationResult = await client.translate(
-            translationRequestFixture(),
-            credentialReference: "keychain.provider.preview"
+        let client = TranslationProviderClient(
+            modelServiceClient: ModelServiceClient(transport: transport)
         )
-        let attemptCount = await transport.attemptCount()
 
-        XCTAssertEqual(attemptCount, 2)
-        XCTAssertEqual(translationResult.segmentResults.first?.translatedText, "[ZH] Hello world.")
-        XCTAssertNil(translationResult.failureReason)
+        let result = await client.translate(
+            translationRequestFixture(),
+            preferences: preferencesFixture()
+        )
+
+        XCTAssertEqual(result.segmentResults.first?.translatedText, "[简体中文] Hello world.")
+        XCTAssertNil(result.failureReason)
     }
 
-    func testReturnsProviderNotConfiguredFailureWithoutCredentialReference() async {
-        let client = TranslationProviderClient()
-        let translationResult = await client.translate(
-            translationRequestFixture(),
-            credentialReference: nil
+    func testMapsQuotaExceededFromModelService() async {
+        let transport = MockModelServiceTransport(
+            translateResponse: .init(
+                pageID: "page-1",
+                serviceTier: .free,
+                model: previewModelOption(),
+                segmentResults: [
+                    .init(segmentID: "seg-1", translatedText: nil, errorCode: .quotaExceeded),
+                ],
+                quota: previewQuota(status: .exhausted, used: 20, limit: 20),
+                error: .init(code: .quotaExceeded, message: "quota", retryable: false, requiredTier: nil)
+            )
+        )
+        let client = TranslationProviderClient(
+            modelServiceClient: ModelServiceClient(transport: transport)
         )
 
-        XCTAssertEqual(translationResult.failureReason, .providerNotConfigured)
-        XCTAssertEqual(translationResult.segmentResults.first?.failureReason, .providerNotConfigured)
+        let result = await client.translate(
+            translationRequestFixture(),
+            preferences: preferencesFixture()
+        )
+
+        XCTAssertEqual(result.failureReason, .quotaExceeded)
+        XCTAssertEqual(result.segmentResults.first?.failureReason, .quotaExceeded)
     }
 
     private func translationRequestFixture() -> TranslationRequest {
@@ -66,34 +86,81 @@ final class TranslationProviderClientTests: XCTestCase {
             segments: [pageTextSegment]
         )
     }
+
+    private func preferencesFixture() -> TranslationPreferencesSnapshot {
+        TranslationPreferencesSnapshot(
+            sourceLanguage: "English",
+            targetLanguage: "简体中文",
+            serviceTier: .free,
+            preferredModelID: "free-translate",
+            preferredModelLabel: "Free 服务 · 轻量翻译",
+            quota: previewQuota(),
+            lastSyncedAt: .now,
+            catalog: .preview(currentTier: .free)
+        )
+    }
 }
 
-private actor FlakyTransport: TranslationProviderTransport {
-    private var attempts = 0
+private func previewModelOption() -> ModelCatalogOption {
+    ModelCatalogOption(
+        id: "free-translate",
+        tier: .free,
+        displayName: "Free 服务 · 轻量翻译",
+        summary: "适合通用网页翻译和快速释义。",
+        capabilities: ["translation"],
+        availability: .available,
+        requiredTier: nil,
+        quota: previewQuota()
+    )
+}
 
-    func translateBatch(
-        request: TranslationRequest,
-        segments: [PageTextSegment],
-        credentialReference: String
-    ) async throws -> [TranslationSegmentResult] {
-        _ = request
-        _ = credentialReference
-        attempts += 1
+private func previewQuota(
+    status: ModelQuotaStatus = .ok,
+    used: Int = 3,
+    limit: Int = 20
+) -> ModelQuotaSnapshot {
+    ModelQuotaSnapshot(
+        status: status,
+        used: used,
+        limit: limit,
+        remaining: max(0, limit - used),
+        resetAt: ISO8601DateFormatter().string(from: .now.addingTimeInterval(86_400))
+    )
+}
 
-        if attempts == 1 {
-            throw NSError(domain: "FlakyTransport", code: 1)
-        }
+private struct MockModelServiceTransport: ModelServiceTransport {
+    var catalogSnapshot: ModelCatalogSnapshot = .preview(currentTier: .free)
+    var translateResponse: ModelServiceTranslateResponse? = nil
+    var explainResponse: ModelServiceExplainResponse? = nil
 
-        return segments.map { segment in
-            TranslationSegmentResult(
-                segmentId: segment.segmentId,
-                translatedText: "[ZH] \(segment.sourceText)",
-                failureReason: nil
-            )
-        }
+    func catalog(for serviceTier: ModelServiceTier) async throws -> ModelCatalogSnapshot {
+        _ = serviceTier
+        return catalogSnapshot
     }
 
-    func attemptCount() -> Int {
-        attempts
+    func translate(_ request: ModelServiceTranslateRequest) async throws -> ModelServiceTranslateResponse {
+        _ = request
+        return translateResponse ?? .init(
+            pageID: request.pageID,
+            serviceTier: request.serviceTier,
+            model: previewModelOption(),
+            segmentResults: [],
+            quota: previewQuota(),
+            error: nil
+        )
+    }
+
+    func explain(_ request: ModelServiceExplainRequest) async throws -> ModelServiceExplainResponse {
+        _ = request
+        return explainResponse ?? .init(
+            pageID: request.pageID,
+            serviceTier: request.serviceTier,
+            model: previewModelOption(),
+            translation: "",
+            explanation: "",
+            examples: [],
+            quota: previewQuota(),
+            error: nil
+        )
     }
 }

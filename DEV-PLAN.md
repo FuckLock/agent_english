@@ -4,54 +4,63 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.0
-- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md
-- 源设计：Design-Brief.md + design_export/clean_pencil/（设计 MCP 不可用，本次以 Brief 和已导出稿为准）
+- 源 Spec：Product-Spec.md v2.2
+- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md
+- 源设计：Design-Brief.md + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）
 - 生成日期：2026-05-19
-- 覆盖 Spec 功能：14 个 / 总 14 个
+- 覆盖 Spec 功能：v2.2 核心范围已映射到 Phase 1-9；新增账号会话与权益由 Phase 6.5 覆盖
 
-**当前进度（2026-05-21）**：
+**当前进度（2026-05-22）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
 - Phase 2 已完成：iOS 原生 Tab 壳、SwiftData / Keychain 本地学习底座和样例学习闭环可构建 / 测试。
 - Phase 3 已完成：Xcode 工程、WebView 可进入页面、boot / ping / page-ready bridge 解码、Provider disclosure 和 website data 分离提示可构建 / 测试。
 - Phase 4 已完成：通用网页文本扫描、翻译请求 / 回填 bridge、翻译 Provider adapter、缓存和原文 / 双语 / 学习模式可构建 / 测试。
 - Phase 5 已完成：点词点句解释、selection bridge、原生解释抽屉、SavedItem 收藏沉淀、收藏页搜索 / 筛选 / 删除和来源回看可构建 / 测试。
-- 下一步进入 Phase 6：复习、历史、设置与隐私管理。
+- Phase 6 已完成到后台模型服务网关、模型目录 contract、iOS 模型服务客户端和设置页服务等级改造；Phase 4-5 的直连 Provider 能力已转为模型服务路径。
+- 产品决策已调整到 v2.2：不强制登录，但必须有游客 Free 会话；Pro / Max 通过后端 entitlement 判定；充值 / 订阅未定前用 dev/staging 测试账号验证高等级路径。
+- 下一步进入 Phase 6.5：账号会话 + 后端权益 + dev/staging Pro / Max 测试账号。Phase 6.5 完成前不得继续 Phase 7 的设置扩展，以免设置页、模型服务和后端授权继续分叉。
 
 ---
 
 ## 架构约束摘要
 
 **当前范围**：
-- 首版只交付 iPhone 原生 App，入口固定为 `apps/ios`，运行时组合固定为 SwiftUI + WKWebView + SwiftData + Keychain。
+- 首版交付 iPhone 原生 App + 轻量模型服务后端；客户端入口固定为 `apps/ios`，模型服务入口固定为 `services/model-gateway`，运行时组合为 SwiftUI + WKWebView + SwiftData + Keychain + Node.js backend。
 - `packages/contracts` 是 native 与 injected script 的协议事实源；`packages/browser-agent` 只承载 DOM 识别、翻译层、学习模式和站点适配。
-- 首版必须交付原生学习闭环：收藏、复习、历史、Provider 设置、隐私清理和基础统计，避免退化成纯 WebView 壳。
+- 首版必须交付原生学习闭环：收藏、复习、历史、服务等级 / 模型档位设置、隐私清理和基础统计，避免退化成纯 WebView 壳。
+- App 不提供用户自定义 Provider、API Key、Base URL、模型名或 BYOK；Provider 密钥、模型目录、会话、entitlement、额度和 fallback 只在后端。
+- App 首次启动必须创建或恢复游客 Free session；后端 session entitlement 是 Free / Pro / Max 授权事实源，客户端自报服务等级不能用于授权。
+- dev/staging 可通过 `ENABLE_DEV_AUTH=true` 启用 Pro / Max 测试账号；生产环境必须隐藏 UI 并拒绝接口。
 
 **后续范围 / Non-goals**：
 - Android、macOS、Windows 仅保留未来接入边界，本计划不创建完整平台工程。
-- 不恢复旧 `src/` Next 入口，不复用旧 Drizzle / SQLite 游戏数据，不引入 RPG、课程化、云同步、浏览器插件、YouTube 替代客户端。
-- 不实现视频下载、去广告、后台播放、无字幕视频实时转写、Netflix / Disney+ / TED / Coursera 支持。
+- 不恢复旧 `src/` Next 入口，不复用旧 Drizzle / SQLite 游戏数据，不引入 RPG、课程化、学习数据云同步、浏览器插件、YouTube 替代客户端。
+- 不在生产环境启用测试账号；不做 Google-only iOS 公开登录；不把固定 Free / Pro / Max token 写进 App 包。
+- 不实现视频下载、去广告、后台播放、无字幕视频实时转写、Netflix / Disney+ / TED / Coursera 支持；不做用户自带模型配置。
 
 **层次边界**：
-- 入口层：`apps/ios` 负责 App 生命周期、SwiftUI 导航、Tab、WKWebView 容器、工具条、底部抽屉、设置页和系统权限；禁止写 DOM 规则、Provider 协议细节或复习调度规则。
-- 核心层：`apps/ios/AgentEnglishCore` 负责收藏、历史、复习、Provider profile、错误映射、隐私策略和 SwiftData repository；禁止直接读写网页 DOM、保存凭证明文或修改播放器。
-- 共享协议：`packages/contracts` 负责 `BridgeEvent`、DTO、错误码、数据模型命名和 schema；禁止放 UI、存储实现或 Provider SDK。
-- 适配层：`packages/browser-agent` 负责 DOM 扫描、overlay、selection、site adapter；native Provider adapter 负责外部请求、重试和错误归一；禁止 JS 直接持久化、持有 API Key 或直接调用第三方 AI。
+- 入口层：`apps/ios` 负责 App 生命周期、SwiftUI 导航、Tab、WKWebView 容器、工具条、底部抽屉、设置页和系统权限；禁止写 DOM 规则、Provider 协议细节、后台路由策略或复习调度规则。
+- 核心层：`apps/ios/AgentEnglishCore` 负责收藏、历史、复习、模型目录快照、服务等级、错误映射、隐私策略、模型服务客户端和 SwiftData repository；禁止直接读写网页 DOM、保存 Provider 密钥或修改播放器。
+- 共享协议：`packages/contracts` 负责 `BridgeEvent`、DTO、错误码、模型目录、服务等级、额度状态、数据模型命名和 schema；禁止放 UI、存储实现或 Provider SDK。
+- 适配层：`packages/browser-agent` 负责 DOM 扫描、overlay、selection、site adapter；`services/model-gateway` 负责 Provider adapter、模型目录、额度、fallback 和错误归一；禁止 JS 或 iOS App 直接持有 API Key 或调用第三方 AI。
 
 **目录职责**：
 | 路径 | 当前状态 | 职责 | 禁止 |
 |------|----------|------|------|
 | `apps/ios/` | placeholder | 首版 iOS App 工程、SwiftUI 页面、WKWebView 容器、原生导航和系统能力接入 | 作为跨平台抽象层；直接承载 DOM 选择器、站点规则或旧 Next 页面 |
-| `apps/ios/AgentEnglishCore/` | placeholder | 收藏、历史、复习、Provider、Bridge DTO、SwiftData、隐私清理等无 UI 核心模块 | 放 SwiftUI View、网页 DOM 逻辑、JS 注入源码 |
-| `packages/contracts/` | placeholder | bridge event、共享 DTO、错误码、数据模型命名、schema version | 放 UI 组件、平台存储实现、Provider SDK |
-| `packages/browser-agent/` | placeholder | 文本识别、overlay、学习模式、selection、站点适配、页面变更监听 | 保存凭证、调用 Provider、写本地数据库、修改 YouTube 播放器 |
+| `apps/ios/AgentEnglishCore/` | placeholder | 收藏、历史、复习、模型服务客户端、Bridge DTO、SwiftData、隐私清理等无 UI 核心模块 | 放 SwiftUI View、网页 DOM 逻辑、JS 注入源码、Provider 密钥 |
+| `packages/contracts/` | placeholder | bridge event、共享 DTO、错误码、模型目录、服务等级、数据模型命名、schema version | 放 UI 组件、平台存储实现、Provider SDK |
+| `packages/browser-agent/` | placeholder | 文本识别、overlay、学习模式、selection、站点适配、页面变更监听 | 保存凭证、调用 Provider / 模型服务、写本地数据库、修改 YouTube 播放器 |
+| `services/model-gateway/` | active | 游客 / 登录 session、dev/staging 测试账号、entitlement、模型目录、Provider 密钥、Free / Pro / Max、额度、用量、fallback、翻译 / 解释 API | App UI、DOM 规则、完整浏览历史、收藏 / 复习学习数据、客户端自报等级授权 |
 | `apps/android/` / `apps/macos/` / `apps/windows/` | future | 未来平台壳位置，仅文档占位 | 首版创建完整工程或复制 iOS 实现 |
 | `src/` | legacy cleanup target | 旧 Next 游戏入口，后续只作为清理对象处理 | 恢复为新产品入口、创建新业务代码 |
 | `data/` | legacy cleanup target | 旧本地 SQLite 残留目录 | 作为新产品 SwiftData 或学习数据来源 |
 
 **ADR 决策摘要**：
 - ADR-0001 固定首版路线为“iOS 原生壳 + `browser-agent` + `contracts`”，因此最早的实现 tranche 仍必须先建立 `apps/ios`、`packages/contracts`、`packages/browser-agent`。
-- ADR-0001 要求所有 WebView 与 JS 通信都通过结构化 `BridgeEvent`，Provider 凭证只能进 Keychain，收藏 / 历史 / 复习 / 翻译缓存进入 SwiftData，网站 cookie 与 learning data 分离管理。
+- ADR-0001 要求所有 WebView 与 JS 通信都通过结构化 `BridgeEvent`，收藏 / 历史 / 复习 / 翻译缓存进入 SwiftData，网站 cookie 与 learning data 分离管理。
+- ADR-0002 要求 App 不保存第三方 Provider 凭证、不展示 API Key 配置；所有翻译 / 解释请求必须通过 `services/model-gateway` 路由到后台模型目录。
+- ADR-0003 要求 App 启动创建或恢复游客 Free session，iOS 只在 Keychain 保存后端 session token，后端以 session entitlement 判定 Free / Pro / Max；dev/staging 测试账号必须由 `ENABLE_DEV_AUTH` 限制，生产关闭。
 - 由于原单体 Phase 1 在 criteria-alignment 第 3 轮被判定 `unverifiable`，本次修订将其拆为新的 Phase 1-3：Phase 1 先验证 workspace + contracts + browser-agent 最小包，Phase 2 验证原生 Tab 壳 + SwiftData / Keychain 本地学习底座，Phase 3 验证 `WKWebView` 可进入页面 + `BridgeEvent` 通信入口 + website data 提示；在 Phase 4 前不得跳过这三个基础 Phase。
 
 ---
@@ -80,7 +89,7 @@
 - 层次边界：只建立共享协议与适配层最小骨架，不在 JS 中写持久化，不在根脚本中恢复旧 Web 产品运行时。
 - 目录职责：允许创建 `packages/contracts`、`packages/browser-agent` 和根 workspace 配置；禁止恢复 `src/` 作为入口，禁止创建 Android / macOS / Windows 完整工程。
 - ADR 约束：本 Phase 只兑现原始首个 implementation tranche 的 contracts / browser-agent 子集；SwiftData、Keychain、原生学习闭环和 website data 提示在紧随其后的 Phase 2-3 收口。
-- 后续范围：不提前实现原生 UI、站点适配、真实翻译 Provider 或导出功能。
+- 后续范围：不提前实现原生 UI、站点适配、真实模型服务调用或导出功能。
 
 **已知风险**：
 - pnpm workspace 与 browser-agent bundle 出口如果在本 Phase 未跑通，后续 `WKUserScript` 注入链会被整体阻塞。
@@ -173,7 +182,7 @@
 **交付内容**：
 - 完成 `browser-agent` 通用文本扫描、稳定 `segmentId`、页面能力上报和 native / JS 翻译请求映射。
 - 完成 native Provider adapter、文本分块、翻译缓存，以及原文 / 双语 / 学习模式切换。
-- 为页面识别失败、Provider 未配置和翻译失败提供明确降级提示，并保留选区翻译入口。
+- 为页面识别失败、模型服务不可用、当前等级不可用和翻译失败提供明确降级提示，并保留选区翻译入口。
 
 **关键文件**：
 - `[新增] packages/contracts/src/translation.ts` — `PageContext`、`PageTextSegment`、`TranslationRequest`、`TranslationResult`
@@ -241,12 +250,100 @@
 
 ---
 
-## Phase 6: 复习、历史、设置与隐私管理
+## Phase 6: 后台模型服务网关 + 服务等级设置
+
+**交付内容**：
+- 新增 `services/model-gateway`，提供模型目录、Free / Pro / Max 等级、翻译 API、解释 API、额度 / 速率限制和 Provider fallback 骨架。
+- 扩展 `packages/contracts`，让 iOS、后端和 browser-agent 共享模型目录、服务等级、额度状态和模型服务错误码。
+- 将 iOS 端 Phase 4-5 的直连 Provider 调用重构为模型服务客户端；设置页移除 API Key、Base URL、模型名和自定义 Provider 配置，只展示当前等级、可用模型档位、用量状态、目标语言和隐私说明。
+
+**关键文件**：
+- `[新增] services/model-gateway/package.json` — 模型服务包配置、脚本和测试入口
+- `[新增] services/model-gateway/src/index.ts` — 后端服务启动入口
+- `[新增] services/model-gateway/src/catalog/model-catalog.ts` — Free / Pro / Max 模型目录、显示名、能力和 fallback 配置
+- `[新增] services/model-gateway/src/routes/translate.ts` — 翻译 API，接收分块请求并返回可映射到 `segmentId` 的结果
+- `[新增] services/model-gateway/src/routes/explain.ts` — 点词点句解释 API，返回释义、语境解释和例句
+- `[新增] services/model-gateway/src/providers/provider-router.ts` — 后端内部 Provider 路由、fallback 和错误归一
+- `[新增] services/model-gateway/src/quota/service-tier.ts` — Free / Pro / Max 额度、速率限制和用量状态
+- `[新增] packages/contracts/src/model-service.ts` — `ModelCatalog`、`ServiceTier`、`ModelQuotaState`、模型服务错误码
+- `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ModelServiceClient.swift` — iOS 模型服务客户端，替代直连 Provider 调用
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/TranslationProviderClient.swift` — 改为调用 `ModelServiceClient`
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ExplanationProviderClient.swift` — 改为调用 `ModelServiceClient`
+- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — 移除 Provider 配置表单，改为服务等级、模型档位、用量和隐私展示
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/TranslationProviderSettingsStore.swift` — 改为服务等级 / 模型偏好快照，不保存 Provider 参数
+
+**依赖前置 Phase**：
+- 依赖 Phase 4（需要翻译请求 / 回填管线）
+- 依赖 Phase 5（需要解释请求和收藏沉淀）
+- 依赖 ADR-0002（后台托管 Provider 密钥与模型目录）
+
+**架构约束映射**：
+- 层次边界：iOS App 只调用模型服务；Provider 密钥、Base URL、真实模型名、成本信息和 fallback 只在后端。
+- 目录职责：允许新增 `services/model-gateway`、扩展 `packages/contracts` 和重构 `AgentEnglishCore/Providers`；禁止把 Provider API Key 放入 App、SwiftData、Keychain 或 browser-agent。
+- ADR 约束：落实 ADR-0002；旧直连 Provider 能力必须降级为迁移前技术债，不能作为最终产品形态继续开发。
+- 后续范围：不在本 Phase 做订阅支付、正式账号恢复或学习数据云同步；本 Phase 若仍存在开发固定等级模拟，只能作为迁移过渡，必须由 Phase 6.5 的 session entitlement 收口。
+
+**已知风险**：
+- 这会改动 Phase 4-5 的 Provider 调用路径，必须保留现有网页翻译、点词解释和收藏流程的回归测试。
+- Free 层成本不可无限开放；即使首版用开发模拟额度，也必须在接口层保留 quota / rate-limit 结构。
+
+**验收标准**：
+- 最低：iOS App 不再要求用户填写 API Key、Base URL 或模型名；设置页只展示服务等级和模型档位；翻译和解释请求通过模型服务客户端完成；模型服务能返回 Free / Pro / Max 目录和可识别错误。
+- 回归：Phase 4 的网页翻译与显示模式、Phase 5 的点词解释和收藏仍可构建 / 测试。
+
+---
+
+## Phase 6.5: 账号会话 + 后端权益 + Dev 测试账号
+
+**交付内容**：
+- 完成游客 Free session：App 首次启动创建或恢复后端游客会话，Keychain 保存后端 session token，设置页显示游客模式 / Free，基础翻译不因未登录被阻断。
+- 完成后端 entitlement 授权：模型目录、翻译和解释 API 以 session entitlement 判定 Free / Pro / Max，忽略客户端请求体自报的 `serviceTier`。
+- 完成 dev/staging Pro / Max 测试账号：`ENABLE_DEV_AUTH=true` 时允许登录 `test-pro@agentenglish.local` / `test-max@agentenglish.local`，生产环境隐藏 UI 并拒绝接口。
+- 补齐设置页账号区和登录状态：游客态、dev Pro、dev Max、退出登录、模型目录同步失败、额度不足和等级不可用状态可见。
+
+**关键文件**：
+- `[新增] packages/contracts/src/auth-session.ts` — `AuthSession`、`AccountStatus`、`EntitlementSnapshot`、dev login request / response、auth 错误码
+- `[新增] services/model-gateway/src/sessions/session-store.ts` — 游客 session 创建 / 恢复、session token 校验、退出登录和过期策略
+- `[新增] services/model-gateway/src/entitlements/entitlement-service.ts` — Free / Pro / Max 权益判定、测试账号等级映射、模型目录授权过滤
+- `[新增] services/model-gateway/src/auth/dev-auth.ts` — dev/staging 测试账号登录、环境变量密码读取、`ENABLE_DEV_AUTH` 防护
+- `[修改] services/model-gateway/src/routes/model-catalog.ts` — 基于 session entitlement 返回可用模型目录和额度状态
+- `[修改] services/model-gateway/src/routes/translate.ts` — 校验 session entitlement，忽略客户端自报等级
+- `[修改] services/model-gateway/src/routes/explain.ts` — 校验 session entitlement，返回等级不可用 / 额度不足等错误
+- `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Account/AccountSessionClient.swift` — session bootstrap、dev login、logout、entitlement refresh
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/KeychainCredentialStore.swift` — 保存后端 session token，不保存固定生产等级 token
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ModelServiceClient.swift` — 所有模型服务请求附带 session token，并处理 auth / entitlement 错误
+- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — 新增账号状态区、登录入口、dev/staging 测试账号状态和退出登录入口
+- `[新增] apps/ios/AgentEnglishTests/AccountSessionClientTests.swift` — 游客 session、dev login、logout 和 Keychain token 替换测试
+- `[新增] services/model-gateway/tests/auth-session.test.mjs` — 后端游客 session、dev auth gate、entitlement 授权和生产拒绝测试
+
+**依赖前置 Phase**：
+- 依赖 Phase 6（需要模型服务网关、模型目录 contract 和 iOS 模型服务客户端）
+- 依赖 ADR-0003（账号会话与权益基础）
+- 依赖 Design-Brief v2.2 和已导出的 v2.2 账号 / 登录 / 模型服务错误状态 PNG
+
+**架构约束映射**：
+- 层次边界：iOS 只展示账号状态并保存后端 session token；Apple / Google identity token 验证、dev password login、entitlement 判定只在后端。
+- 目录职责：允许新增 `AgentEnglishCore/Account/`、`services/model-gateway/src/auth/`、`sessions/`、`entitlements/` 和 contracts auth DTO；禁止把测试账号密码、Provider 密钥或固定生产等级 token 写入 App。
+- ADR 约束：落实 ADR-0003；后端必须拒绝生产环境 dev auth，必须忽略客户端 `serviceTier`，必须把游客 Free 作为默认可用路径。
+- 后续范围：不在本 Phase 做 StoreKit、充值页、订阅管理、正式账号恢复、学习数据云同步或生产 Google-only 登录。
+
+**已知风险**：
+- 如果没有真实后端环境变量和本地 seed，dev/staging Pro / Max 路径无法验证；本 Phase 必须提供可本地运行的 seed 或测试 double。
+- 如果设置页先展示登录而非游客可用，会破坏首屏体验；登录入口必须是可选的，不强制用户进入账号流程。
+
+**验收标准**：
+- 最低：首次启动能获得游客 Free session，设置页显示游客模式 / Free，基础翻译 / 解释请求会带 session token；Pro / Max 测试账号只在 dev/staging 可登录，登录后模型目录和额度刷新；生产配置下测试账号 UI 不出现且接口返回拒绝。
+- 授权：后端模型目录、翻译和解释 API 不信任客户端自报 `serviceTier`；改请求体不能越权获得 Pro / Max 能力。
+- 回归：Phase 6 的模型目录、翻译、解释和设置页服务等级展示仍可构建 / 测试；Phase 4-5 的网页翻译、点词解释和收藏仍可用。
+
+---
+
+## Phase 7: 复习、历史、设置与隐私管理
 
 **交付内容**：
 - 基于收藏生成 `ReviewCard` 队列，支持记住 / 模糊 / 不会反馈并调整近期复习优先级。
 - 提供历史页、继续学习入口和本地统计，覆盖翻译页数、收藏数、复习完成数、连续使用天数。
-- 在 Phase 3 的隐私提示基础上，补全设置页中的 Provider 配置、目标语言、数据保留策略、缓存清理、网站数据清理提示和全量清空能力。
+- 在 Phase 3 与 Phase 6 的隐私提示基础上，补全目标语言、数据保留策略、缓存清理、网站数据清理提示和全量清空能力。
 
 **关键文件**：
 - `[新增] packages/contracts/src/review-card.ts` — `ReviewCard`、反馈状态和调度字段命名
@@ -256,29 +353,31 @@
 - `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Privacy/PrivacyDataManager.swift` — 学习数据清理、website data 提示和隐私开关
 - `[修改] apps/ios/AgentEnglish/Screens/ReviewView.swift` — 主动回忆卡片、答案展开和反馈按钮
 - `[新增] apps/ios/AgentEnglish/Screens/HistoryView.swift` — 最近翻译网页与继续学习入口
-- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — Provider、语言、缓存、网站数据和清理策略设置
+- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — 在 Phase 6.5 账号区基础上补语言、缓存、网站数据和清理策略设置
 
 **依赖前置 Phase**：
 - 依赖 Phase 2（需要 SwiftData / Keychain / 基础页面）
 - 依赖 Phase 4（统计、历史和缓存要消费翻译行为）
 - 依赖 Phase 5（复习卡基于收藏沉淀）
+- 依赖 Phase 6（设置页和隐私说明已从 Provider 配置改为模型服务等级）
+- 依赖 Phase 6.5（设置页账号区、游客 Free session 和后端 entitlement 已收口）
 
 **架构约束映射**：
 - 层次边界：复习调度、历史和统计都在 native core；设置页只做配置与展示，不直接操作网页 DOM 或 Provider SDK。
 - 目录职责：允许新增 `Review/`、`Privacy/`、`Persistence/` 细分模块和对应 SwiftUI 页面；禁止把网站 cookie 清理和学习数据清理混为同一删除动作。
-- ADR 约束：原生收藏、复习、历史和隐私清理是 App Store 价值边界，本 Phase 必须完整成形；Provider 配置元数据写 SwiftData，敏感凭证留 Keychain。
-- 后续范围：不在本 Phase 内做云同步、账号系统或跨设备统计。
+- ADR 约束：原生收藏、复习、历史和隐私清理是 App Store 价值边界，本 Phase 必须完整成形；SwiftData 只保存服务等级快照和用户偏好，不保存 Provider 参数。
+- 后续范围：不在本 Phase 内做 StoreKit、生产账号恢复、学习数据云同步或跨设备统计；账号会话只沿用 Phase 6.5 的基础。
 
 **已知风险**：
 - 复习优先级算法首版只需“可解释、可验证”，避免提前引入复杂 SRS 公式导致调试成本过高。
 
 **验收标准**：
-- 最低：用户能从收藏生成复习卡并提交三种反馈；历史页能回到原网页；设置页能配置 Provider、切换目标语言并分别清理学习数据与 website data。
+- 最低：用户能从收藏生成复习卡并提交三种反馈；历史页能回到原网页；设置页能切换目标语言并分别清理学习数据与 website data。
 - 回归：Phase 5 的解释抽屉、收藏沉淀与搜索筛选，以及 Phase 3 的隐私提示仍正常。
 
 ---
 
-## Phase 7: 站点适配 + YouTube 保守支持 + 快捷入口管理
+## Phase 8: 站点适配 + YouTube 保守支持 + 快捷入口管理
 
 **交付内容**：
 - 为 YouTube、Reddit、Wikipedia、AO3、X 建立独立 site adapter，并保留 generic fallback。
@@ -299,6 +398,7 @@
 - 依赖 Phase 3（需要首页、`WKWebView` 页面进入流和 bridge 入口）
 - 依赖 Phase 4（需要通用翻译与桥接管线）
 - 依赖 Phase 5（需要 selection / 收藏在特定站点仍可工作）
+- 依赖 Phase 7（需要历史与设置回归稳定）
 
 **架构约束映射**：
 - 层次边界：站点规则只进 `packages/browser-agent/src/site-adapters`；YouTube 能力只做保守学习增强，native 层只负责提示与状态展示。
@@ -311,11 +411,11 @@
 
 **验收标准**：
 - 最低：五个核心站点都能在各自主页面结构上获得更稳定的翻译结果；YouTube 字幕失败不会影响页面文字翻译；用户可自定义首页快捷入口顺序。
-- 回归：Phase 4 的 generic 翻译、Phase 5 的点词收藏、Phase 6 的历史与设置仍正常。
+- 回归：Phase 4 的 generic 翻译、Phase 5 的点词收藏、Phase 7 的历史与设置仍正常。
 
 ---
 
-## Phase 8: 导出、回归加固与交付收口
+## Phase 9: 导出、回归加固与交付收口
 
 **交付内容**：
 - 导出收藏为 CSV / Markdown，包含来源 URL、标题、原文上下文、翻译和解释，便于迁移到 Anki 或笔记工具。
@@ -333,20 +433,20 @@
 - `[修改] package.json` — 最终 workspace 校验脚本、browser-agent / contracts 构建脚本和旧入口剥离
 
 **依赖前置 Phase**：
-- 依赖 Phase 1 到 Phase 7（需要完整功能面、回归样本和导出源数据）
+- 依赖 Phase 1 到 Phase 8（需要完整功能面、回归样本和导出源数据）
 
 **架构约束映射**：
 - 层次边界：导出与测试都消费既有 contracts / core / browser-agent，不新增越层捷径；website data 清理仍走 native 隐私模块。
 - 目录职责：允许补齐 `AgentEnglishTests/`、`packages/browser-agent/fixtures/`、`Persistence/` 和 root validation scripts；禁止为了测试方便把业务逻辑挪回 `src/` 或旧 Next 路径。
-- ADR 约束：导出不能泄露 Keychain 凭证；隐私清理必须继续区分学习数据和网站数据；回归检查要覆盖 bridge、SwiftData 和站点 fixture。
-- 后续范围：不在本 Phase 内引入发布后端、账号同步或跨平台共享数据库。
+- ADR 约束：导出不能泄露 Keychain 服务令牌；隐私清理必须继续区分学习数据和网站数据；回归检查要覆盖 bridge、SwiftData、模型服务和站点 fixture。
+- 后续范围：不在本 Phase 内引入账号同步、订阅支付或跨平台共享数据库。
 
 **已知风险**：
 - 导出编码与 fixture 维护成本会随站点数量上升，因此本 Phase 需要先把核心五站点和关键数据字段稳定下来。
 
 **验收标准**：
 - 最低：用户能导出 CSV / Markdown；错误和空状态完整；关键 repository、bridge 和 fixture 回归通过；新构建路径不再依赖旧 Next / Drizzle 产品入口。
-- 回归：Phase 1 到 Phase 7 的全部核心流程仍可编译、启动并使用。
+- 回归：Phase 1 到 Phase 8 的全部核心流程仍可编译、启动并使用。
 
 ---
 
@@ -359,34 +459,40 @@
 | 原生 UI | SwiftUI | iOS 17 SDK | 首页、浏览页、收藏、复习、设置和底部抽屉 |
 | Web 容器 | WebKit `WKWebView` | iOS 17 SDK | 承载真实网页浏览、`WKUserScript` 注入和 bridge 消息 |
 | 本地持久化 | SwiftData | iOS 17+ | 收藏、历史、复习、统计、翻译缓存等非敏感数据 |
-| 凭证存储 | Keychain Services | iOS 17+ | Provider 凭证和敏感引用信息 |
+| 客户端令牌存储 | Keychain Services | iOS 17+ | 后端 session token、App 服务令牌、匿名设备令牌或会话引用；不保存第三方 Provider 凭证或固定生产等级 token |
+| 后端运行时 | Node.js service | >=22.13.0 | `services/model-gateway`，承载游客 / 登录 session、entitlement、模型目录、Provider 密钥、额度和翻译 / 解释 API |
 | 共享脚本语言 | TypeScript | 5.9.3 | `packages/contracts` 与 `packages/browser-agent` 开发语言 |
 | JS 运行时 | Node.js | >=22.13.0 | workspace 构建和脚本运行环境 |
-| 包管理 / Workspace | pnpm | 10.33.4 | 管理 `packages/contracts`、`packages/browser-agent` 和根脚本 |
+| 包管理 / Workspace | pnpm | 10.33.4 | 管理 `packages/contracts`、`packages/browser-agent`、`services/model-gateway` 和根脚本 |
 
 ## 数据库表（如有）
 
 | 表名 | 创建 Phase | 修改记录 | 用途（含外键关系）|
 |------|-----------|---------|------|
-| `app_settings_records` | Phase 2 | Phase 3 增加隐私提示状态；Phase 6 增加目标语言、显示模式默认值、数据保留策略 | 保存本机设置项；与 `provider_profile_records` 关联当前选中的 Provider 配置 |
-| `provider_profile_records` | Phase 2 | Phase 6 增加 disclosure、缓存开关和模型显示名 | 保存 Provider 类型、能力、Keychain 引用键、是否启用；不保存明文凭证 |
+| `app_settings_records` | Phase 2 | Phase 3 增加隐私提示状态；Phase 6 改为服务等级 / 模型偏好快照；Phase 6.5 关联账号状态快照；Phase 7 增加目标语言、显示模式默认值、数据保留策略 | 保存本机设置项；关联当前账号状态、服务等级和模型偏好快照 |
+| `provider_profile_records` | Phase 2 | Phase 6 标记为迁移对象 | 旧直连 Provider 配置记录；Phase 6 后不得作为最终产品配置来源，可迁移为 `model_service_profile_records` 或删除 |
+| `account_state_records` | Phase 6.5 | — | 保存用于展示的账号类型、邮箱脱敏文本、当前 entitlement、额度快照和最后同步时间；真实 session token 只在 Keychain |
+| `model_service_profile_records` | Phase 6 | Phase 6.5 改为由 session entitlement 驱动 | 保存后台下发的服务等级、模型显示名、额度状态、默认模型偏好和最后同步时间；不保存 Provider 密钥、Base URL、真实内部模型名或授权 token |
 | `saved_item_records` | Phase 2 | Phase 5 增加解释、来源上下文、搜索字段 | 收藏词 / 短语 / 句子；可生成 `review_card_records` |
-| `review_card_records` | Phase 2 | Phase 6 增加 `lastReviewedAt`、`nextDueAt`、`feedbackState` | 主动回忆卡片；通过 `savedItemId` 关联 `saved_item_records` |
-| `history_entry_records` | Phase 6 | — | 记录最近翻译网页与继续学习入口；可按站点清理 |
-| `translation_cache_records` | Phase 4 | Phase 6 增加 `historyEntryId` 弱关联 | 以页面 / 文本 hash 关联翻译结果，减少重复请求 |
-| `daily_stat_records` | Phase 6 | — | 保存每日翻译页数、收藏数、复习完成数和连续使用天数聚合结果 |
-| `site_shortcut_records` | Phase 7 | — | 保存首页常用站点入口、图标、排序和启用状态 |
+| `review_card_records` | Phase 2 | Phase 7 增加 `lastReviewedAt`、`nextDueAt`、`feedbackState` | 主动回忆卡片；通过 `savedItemId` 关联 `saved_item_records` |
+| `history_entry_records` | Phase 7 | — | 记录最近翻译网页与继续学习入口；可按站点清理 |
+| `translation_cache_records` | Phase 4 | Phase 7 增加 `historyEntryId` 弱关联 | 以页面 / 文本 hash 关联翻译结果，减少重复请求 |
+| `daily_stat_records` | Phase 7 | — | 保存每日翻译页数、收藏数、复习完成数和连续使用天数聚合结果 |
+| `site_shortcut_records` | Phase 8 | — | 保存首页常用站点入口、图标、排序和启用状态 |
 
 ## 开发规则
 
 **项目特定规则**（dev-builder 通用规则之外的项目约定）：
 - 包管理器：`pnpm`
 - 首版产品入口只能是 `apps/ios`；旧 `src/`、`.next/`、Drizzle 配置和 `data/agent-english.sqlite*` 都视为历史残留，不得复活为新入口或新数据源。
+- 模型服务入口只能是 `services/model-gateway`；不得复活旧 `src/app/api/providers` 或旧游戏 Provider API。
 - `packages/contracts` 是 bridge event、DTO、错误码和数据模型命名的事实源；Swift DTO 必须与其保持等价。
 - 所有 WebView 与 JS 通信都必须经过结构化 `BridgeEvent`，禁止 SwiftUI View 拼接临时业务 JavaScript 处理收藏、翻译或解释。
-- `packages/browser-agent` 只负责 DOM、overlay、selection 和 site adapter；不得持有 API Key、直接调用 Provider、写本地数据库或修改 YouTube 播放器核心行为。
-- SwiftData 只保存非敏感学习数据；Provider 凭证只进 Keychain；website data 与学习数据必须分开提示和清理。
-- 若后续要支持 iOS 16 或更低版本、提前引入 Android / 后端代理 / 账号同步，必须先新增 ADR，再改计划。
+- `packages/browser-agent` 只负责 DOM、overlay、selection 和 site adapter；不得持有 API Key、直接调用 Provider / 模型服务、写本地数据库或修改 YouTube 播放器核心行为。
+- SwiftData 只保存非敏感学习数据、账号展示状态和服务等级快照；Keychain 只保存后端 session token、App 服务令牌或匿名设备令牌；Provider 凭证只在后端；website data 与学习数据必须分开提示和清理。
+- 后端必须以 session entitlement 判定 Free / Pro / Max；iOS 请求体中的 `serviceTier` 不能作为授权依据。
+- dev/staging 测试账号只能由 `ENABLE_DEV_AUTH=true` 启用；生产构建不得显示测试账号入口，生产后端不得接受测试账号登录。
+- 若后续要支持 iOS 16 或更低版本、提前引入 Android / 订阅支付 / 正式账号恢复 / 云端学习数据，必须先新增 ADR，再改计划。
 
 **通用规则**（按 dev-builder [开发规则]）：
 - 详细见 dev-builder SKILL.md，本文件不重复定义

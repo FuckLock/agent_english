@@ -53,7 +53,7 @@ test("createSelectionExplanationFailedEvent carries failureReason", () => {
   const event = createSelectionExplanationFailedEvent(
     {
       ...selectionFixture,
-      failureReason: "provider-not-configured",
+      failureReason: "service-unavailable",
     },
     {
       requestId: "selection-failed-sel-1",
@@ -61,6 +61,6 @@ test("createSelectionExplanationFailedEvent carries failureReason", () => {
     },
   );
 
-  assert.equal(event.payload.failureReason, "provider-not-configured");
+  assert.equal(event.payload.failureReason, "service-unavailable");
   assert.equal(event.payload.contextBefore, "They tried to");
 });

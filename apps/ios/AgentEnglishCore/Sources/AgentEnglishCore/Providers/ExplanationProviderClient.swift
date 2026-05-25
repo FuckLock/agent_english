@@ -5,76 +5,29 @@ public enum SelectionExplanationResponse: Equatable, Sendable {
     case failure(SelectionExplanationFailurePayload)
 }
 
-public protocol ExplanationProviderTransport: Sendable {
-    func explainSelection(
-        request: SelectionRequest,
-        credentialReference: String
-    ) async throws -> SelectionExplanationResult
-}
-
-public struct PreviewExplanationTransport: ExplanationProviderTransport {
-    public init() {}
-
-    public func explainSelection(
-        request: SelectionRequest,
-        credentialReference: String
-    ) async throws -> SelectionExplanationResult {
-        _ = credentialReference
-
-        let translation: String
-        switch request.kind {
-        case .word:
-            translation = "词义：\(request.selectedText)"
-        case .phrase:
-            translation = "短语含义：\(request.selectedText)"
-        case .sentence:
-            translation = "句子大意：\(request.selectedText)"
-        }
-
-        return SelectionExplanationResult(
-            pageId: request.pageId,
-            selectionId: request.selectionId,
-            selectedText: request.selectedText,
-            contextBefore: request.contextBefore,
-            contextAfter: request.contextAfter,
-            sourceUrl: request.sourceUrl,
-            sourceTitle: request.sourceTitle,
-            containerPath: request.containerPath,
-            kind: request.kind,
-            translation: translation,
-            explanation: "结合当前上下文，这里更接近“\(request.selectedText)”在原句里的实际用法。",
-            examples: [
-                "Example: \(request.selectedText) appears naturally in the same context.",
-            ]
-        )
-    }
-}
-
-public struct ExplanationProviderClientConfiguration: Sendable {
-    public let maxRetryAttempts: Int
-
-    public init(maxRetryAttempts: Int = 1) {
-        self.maxRetryAttempts = max(0, maxRetryAttempts)
-    }
-}
+public struct ExplanationProviderClientConfiguration: Sendable { public init() {} }
 
 public actor ExplanationProviderClient {
-    private let transport: any ExplanationProviderTransport
-    private let configuration: ExplanationProviderClientConfiguration
-
-    public init(
-        transport: any ExplanationProviderTransport = PreviewExplanationTransport(),
-        configuration: ExplanationProviderClientConfiguration = .init()
-    ) {
-        self.transport = transport
-        self.configuration = configuration
+    private let modelServiceClient: ModelServiceClient
+    public init(modelServiceClient: ModelServiceClient = ModelServiceClient(), configuration: ExplanationProviderClientConfiguration = .init()) {
+        _ = configuration
+        self.modelServiceClient = modelServiceClient
     }
-
-    public func explain(
-        _ request: SelectionRequest,
-        credentialReference: String?
-    ) async -> SelectionExplanationResponse {
-        guard let credentialReference, !credentialReference.isEmpty else {
+    public func explain(_ request: SelectionRequest, preferences: TranslationPreferencesSnapshot) async -> SelectionExplanationResponse {
+        let response = await modelServiceClient.explain(
+            ModelServiceExplainRequest(
+                pageID: request.pageId,
+                sourceText: [request.contextBefore, request.selectedText, request.contextAfter].joined(separator: " "),
+                selectedText: request.selectedText,
+                contextBefore: request.contextBefore,
+                contextAfter: request.contextAfter,
+                sourceLanguage: "English",
+                targetLanguage: preferences.targetLanguage,
+                serviceTier: preferences.serviceTier,
+                preferredModelID: preferences.preferredModelID
+            )
+        )
+        if let error = response.error {
             return .failure(
                 SelectionExplanationFailurePayload(
                     pageId: request.pageId,
@@ -86,40 +39,34 @@ public actor ExplanationProviderClient {
                     sourceTitle: request.sourceTitle,
                     containerPath: request.containerPath,
                     kind: request.kind,
-                    failureReason: .providerNotConfigured
+                    failureReason: mapErrorCode(error.code)
                 )
             )
         }
-
-        var attempt = 0
-        while true {
-            do {
-                return .success(
-                    try await transport.explainSelection(
-                        request: request,
-                        credentialReference: credentialReference
-                    )
-                )
-            } catch {
-                if attempt >= configuration.maxRetryAttempts {
-                    return .failure(
-                        SelectionExplanationFailurePayload(
-                            pageId: request.pageId,
-                            selectionId: request.selectionId,
-                            selectedText: request.selectedText,
-                            contextBefore: request.contextBefore,
-                            contextAfter: request.contextAfter,
-                            sourceUrl: request.sourceUrl,
-                            sourceTitle: request.sourceTitle,
-                            containerPath: request.containerPath,
-                            kind: request.kind,
-                            failureReason: .selectionExplanationFailed
-                        )
-                    )
-                }
-
-                attempt += 1
-            }
+        return .success(
+            SelectionExplanationResult(
+                pageId: request.pageId,
+                selectionId: request.selectionId,
+                selectedText: request.selectedText,
+                contextBefore: request.contextBefore,
+                contextAfter: request.contextAfter,
+                sourceUrl: request.sourceUrl,
+                sourceTitle: request.sourceTitle,
+                containerPath: request.containerPath,
+                kind: request.kind,
+                translation: response.translation,
+                explanation: response.explanation,
+                examples: response.examples
+            )
+        )
+    }
+    private func mapErrorCode(_ code: ModelServiceErrorCode) -> SelectionExplanationFailureReason {
+        switch code {
+        case .quotaExceeded: return .quotaExceeded
+        case .tierUnavailable: return .tierUnavailable
+        case .serviceUnavailable: return .serviceUnavailable
+        case .contentTooLong: return .contentTooLong
+        case .providerFallbackFailed: return .providerFallbackFailed
         }
     }
 }

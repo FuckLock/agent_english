@@ -24,6 +24,7 @@ extension WebBridgeController {
                     createdAt: createdAtFormatter.string(from: .now)
                 )
             )
+            try? statisticsRepository?.recordSavedItem()
             presentation.isFavoriteSaved = true
             explanationSheet = presentation
             pushSummary("favorite.saved · \(result.selectionId)")
@@ -40,10 +41,10 @@ extension WebBridgeController {
                 return
             }
 
-            let credentialReference = await self.currentTranslationPreferences().credentialReference
+            let preferences = await self.currentTranslationPreferences()
             let response = await self.explanationProviderClient.explain(
                 request,
-                credentialReference: credentialReference
+                preferences: preferences
             )
 
             await MainActor.run {

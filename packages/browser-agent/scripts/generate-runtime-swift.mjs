@@ -1,31 +1,48 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
 
 const checkOnly = process.argv.includes("--check");
+const require = createRequire(import.meta.url);
 
 const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
 const runtimeSourcePath = path.resolve(
   import.meta.dirname,
   "../src/browser-runtime-source.ts",
 );
+const compiledRuntimePath = path.resolve(
+  import.meta.dirname,
+  "../dist/browser-runtime-source.js",
+);
 const generatedSwiftPath = path.resolve(
   workspaceRoot,
   "apps/ios/AgentEnglish/Generated/BrowserAgentRuntimeSource.generated.swift",
 );
 
-const runtimeModuleSource = fs.readFileSync(runtimeSourcePath, "utf8");
-const runtimeMatch = runtimeModuleSource.match(
-  /BROWSER_AGENT_RUNTIME_SOURCE\s*=\s*String\.raw`([\s\S]*)`;/,
-);
+function loadRuntimeSource() {
+  if (fs.existsSync(compiledRuntimePath)) {
+    const runtimeModule = require(compiledRuntimePath);
+    if (typeof runtimeModule.BROWSER_AGENT_RUNTIME_SOURCE === "string") {
+      return runtimeModule.BROWSER_AGENT_RUNTIME_SOURCE;
+    }
+  }
 
-if (!runtimeMatch) {
+  const runtimeModuleSource = fs.readFileSync(runtimeSourcePath, "utf8");
+  const runtimeMatch = runtimeModuleSource.match(
+    /BROWSER_AGENT_RUNTIME_SOURCE\s*=\s*String\.raw`([\s\S]*)`;/,
+  );
+
+  if (runtimeMatch) {
+    return runtimeMatch[1];
+  }
+
   throw new Error(
     `Failed to extract runtime source from ${path.relative(workspaceRoot, runtimeSourcePath)}.`,
   );
 }
 
-const runtimeSource = runtimeMatch[1];
+const runtimeSource = loadRuntimeSource();
 const generatedSwiftSource = [
   "import Foundation",
   "",

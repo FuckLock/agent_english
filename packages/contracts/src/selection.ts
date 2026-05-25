@@ -1,4 +1,5 @@
 import type { SavedItem, SavedItemKind } from "./saved-item";
+import type { ModelServiceErrorCode } from "./model-service";
 
 export interface SelectionContext {
   pageId: string;
@@ -23,12 +24,17 @@ export interface SelectionExplanationResult extends SelectionContext {
 }
 
 export const SELECTION_EXPLANATION_FAILURE_REASONS = [
-  "provider-not-configured",
   "selection-explanation-failed",
+  "quota-exceeded",
+  "tier-unavailable",
+  "service-unavailable",
+  "content-too-long",
+  "provider-fallback-failed",
 ] as const;
 
 export type SelectionExplanationFailureReason =
-  (typeof SELECTION_EXPLANATION_FAILURE_REASONS)[number];
+  (typeof SELECTION_EXPLANATION_FAILURE_REASONS)[number]
+  | ModelServiceErrorCode;
 
 export interface SelectionExplanationFailurePayload extends SelectionContext {
   kind: SavedItemKind;

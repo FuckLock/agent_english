@@ -8,9 +8,13 @@ import {
 export const OVERLAY_STATUS_LABELS = {
   loading: "Translating…",
   translated: "Translation ready",
-  "provider-not-configured": "Configure a provider to translate.",
   "page-unrecognized": "Select text to translate on this page.",
   "translation-failed": "Translation is unavailable right now.",
+  "quota-exceeded": "Daily quota is exhausted for this tier.",
+  "tier-unavailable": "Upgrade your service tier to use this model.",
+  "service-unavailable": "Model service is unavailable right now.",
+  "content-too-long": "Selected text is too long to process.",
+  "provider-fallback-failed": "Model service is unavailable right now.",
 } as const;
 
 export interface OverlayElementLike {

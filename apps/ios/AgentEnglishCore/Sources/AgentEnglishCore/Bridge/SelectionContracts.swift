@@ -115,8 +115,12 @@ public struct SelectionExplanationResult: Codable, Equatable, Sendable {
 }
 
 public enum SelectionExplanationFailureReason: String, CaseIterable, Codable, Equatable, Sendable {
-    case providerNotConfigured = "provider-not-configured"
     case selectionExplanationFailed = "selection-explanation-failed"
+    case quotaExceeded = "quota-exceeded"
+    case tierUnavailable = "tier-unavailable"
+    case serviceUnavailable = "service-unavailable"
+    case contentTooLong = "content-too-long"
+    case providerFallbackFailed = "provider-fallback-failed"
 }
 
 public struct SelectionExplanationFailurePayload: Codable, Equatable, Sendable {

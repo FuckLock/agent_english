@@ -205,10 +205,18 @@ struct ExplanationSheetView: View {
         for failureReason: SelectionExplanationFailureReason
     ) -> String {
         switch failureReason {
-        case .providerNotConfigured:
-            return "还没有可用的解释 Provider，请先到设置页完成配置。"
         case .selectionExplanationFailed:
             return "这次解释请求失败了，可以稍后重试或重新选中内容。"
+        case .quotaExceeded:
+            return "当前服务等级的额度不足，可以稍后再试。"
+        case .tierUnavailable:
+            return "当前服务等级暂不可用，请升级后再试。"
+        case .serviceUnavailable:
+            return "模型服务暂不可用，请稍后重试。"
+        case .contentTooLong:
+            return "本次内容过长，请缩短选择范围后再试。"
+        case .providerFallbackFailed:
+            return "模型服务暂不可用，请稍后重试。"
         }
     }
 }

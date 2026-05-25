@@ -30,6 +30,7 @@ extension WebBridgeController {
             summary = "\(event.eventType.rawValue) · \(payload.sentAt)"
         case .pageReady(let payload):
             summary = "\(event.eventType.rawValue) · \(payload.title.isEmpty ? payload.url : payload.title)"
+            recordPageReady(payload)
         case .translationRequested(let payload):
             summary = "\(event.eventType.rawValue) · \(payload.segments.count)"
             handleTranslationRequest(payload)
@@ -85,5 +86,17 @@ extension WebBridgeController {
         lastEventSummary = summary
         recentEventSummaries.insert(summary, at: 0)
         recentEventSummaries = Array(recentEventSummaries.prefix(6))
+    }
+
+    private func recordPageReady(_ payload: BridgePageReadyPayload) {
+        guard let url = URL(string: payload.url) else {
+            return
+        }
+
+        do {
+            try historyRepository?.recordVisit(url: url, title: payload.title)
+        } catch {
+            pushSummary("history.failed · \(error.localizedDescription)")
+        }
     }
 }

@@ -1,3 +1,13 @@
+import {
+  GENERIC_SITE_CAPABILITIES,
+  SITE_CAPABILITIES,
+  type SiteCapability,
+  type SiteKind,
+} from "./site-capability";
+import type { ModelServiceErrorCode } from "./model-service";
+
+export { GENERIC_SITE_CAPABILITIES, SITE_CAPABILITIES };
+
 export const DISPLAY_MODES = [
   "original",
   "bilingual",
@@ -6,22 +16,18 @@ export const DISPLAY_MODES = [
 
 export type DisplayMode = (typeof DISPLAY_MODES)[number];
 
-export const SITE_CAPABILITIES = [
-  "readable-page",
-  "inline-translation",
-  "selection-fallback",
-] as const;
-
-export type SiteCapability = (typeof SITE_CAPABILITIES)[number];
-
 export const TRANSLATION_FAILURE_REASONS = [
-  "provider-not-configured",
   "page-unrecognized",
   "translation-failed",
+  "quota-exceeded",
+  "tier-unavailable",
+  "service-unavailable",
+  "content-too-long",
+  "provider-fallback-failed",
 ] as const;
 
 export type TranslationFailureReason =
-  (typeof TRANSLATION_FAILURE_REASONS)[number];
+  (typeof TRANSLATION_FAILURE_REASONS)[number] | ModelServiceErrorCode;
 
 export interface PageContext {
   pageId: string;
@@ -31,7 +37,7 @@ export interface PageContext {
   targetLanguage: string;
   displayMode: DisplayMode;
   capabilities: SiteCapability[];
-  siteKind: "generic";
+  siteKind: SiteKind;
 }
 
 export interface PageTextSegment {
