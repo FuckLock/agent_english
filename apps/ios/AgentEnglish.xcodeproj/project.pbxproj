@@ -52,6 +52,12 @@
 		A00200000000000000000144 /* VideoCaptionContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000144 /* VideoCaptionContracts.swift */; };
 		A00200000000000000000145 /* WebBridgeController+VideoCaption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000145 /* WebBridgeController+VideoCaption.swift */; };
 		A00200000000000000000146 /* VideoAudioTranslationContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000146 /* VideoAudioTranslationContracts.swift */; };
+		A00200000000000000000147 /* TranslationProxyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000147 /* TranslationProxyClient.swift */; };
+		A00200000000000000000148 /* TranslationProxyTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000148 /* TranslationProxyTransport.swift */; };
+		A00200000000000000000149 /* VideoSummonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000149 /* VideoSummonView.swift */; };
+		A00200000000000000000150 /* WebBrowserView+FailureCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000150 /* WebBrowserView+FailureCopy.swift */; };
+		A00200000000000000000151 /* WebBridgeController+VideoSummon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000151 /* WebBridgeController+VideoSummon.swift */; };
+		A00200000000000000000152 /* WebBridgeController+VideoAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00100000000000000000152 /* WebBridgeController+VideoAudio.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +107,12 @@
 		A00100000000000000000144 /* VideoCaptionContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCaptionContracts.swift; sourceTree = "<group>"; };
 		A00100000000000000000145 /* WebBridgeController+VideoCaption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBridgeController+VideoCaption.swift"; sourceTree = "<group>"; };
 		A00100000000000000000146 /* VideoAudioTranslationContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAudioTranslationContracts.swift; sourceTree = "<group>"; };
+		A00100000000000000000147 /* TranslationProxyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationProxyClient.swift; sourceTree = "<group>"; };
+		A00100000000000000000148 /* TranslationProxyTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationProxyTransport.swift; sourceTree = "<group>"; };
+		A00100000000000000000149 /* VideoSummonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSummonView.swift; sourceTree = "<group>"; };
+		A00100000000000000000150 /* WebBrowserView+FailureCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBrowserView+FailureCopy.swift"; sourceTree = "<group>"; };
+		A00100000000000000000151 /* WebBridgeController+VideoSummon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBridgeController+VideoSummon.swift"; sourceTree = "<group>"; };
+		A00100000000000000000152 /* WebBridgeController+VideoAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebBridgeController+VideoAudio.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -164,6 +176,8 @@
 				A00100000000000000000136 /* SiteShortcutEditorView.swift */,
 				A00100000000000000000138 /* SettingsClearAction.swift */,
 				A00100000000000000000106 /* SettingsView.swift */,
+				A00100000000000000000149 /* VideoSummonView.swift */,
+				A00100000000000000000150 /* WebBrowserView+FailureCopy.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -177,6 +191,8 @@
 				A00100000000000000000122 /* WebBridgeController+Selection.swift */,
 				A00100000000000000000123 /* WebBridgeController+Translation.swift */,
 				A00100000000000000000145 /* WebBridgeController+VideoCaption.swift */,
+				A00100000000000000000151 /* WebBridgeController+VideoSummon.swift */,
+				A00100000000000000000152 /* WebBridgeController+VideoAudio.swift */,
 				A00100000000000000000115 /* BrowserAgentBootstrapScript.swift */,
 			);
 			path = Web;
@@ -258,6 +274,8 @@
 				A00100000000000000000140 /* OpenAICompatibleProviderTransport.swift */,
 				A00100000000000000000129 /* TranslationProviderClient.swift */,
 				A00100000000000000000130 /* ExplanationProviderClient.swift */,
+				A00100000000000000000147 /* TranslationProxyClient.swift */,
+				A00100000000000000000148 /* TranslationProxyTransport.swift */,
 			);
 			path = Providers;
 			sourceTree = "<group>";
@@ -391,6 +409,12 @@
 				A00200000000000000000130 /* ExplanationProviderClient.swift in Sources */,
 				A00200000000000000000134 /* ReviewScheduler.swift in Sources */,
 				A00200000000000000000135 /* PrivacyDataManager.swift in Sources */,
+				A00200000000000000000147 /* TranslationProxyClient.swift in Sources */,
+				A00200000000000000000148 /* TranslationProxyTransport.swift in Sources */,
+				A00200000000000000000149 /* VideoSummonView.swift in Sources */,
+				A00200000000000000000150 /* WebBrowserView+FailureCopy.swift in Sources */,
+				A00200000000000000000151 /* WebBridgeController+VideoSummon.swift in Sources */,
+				A00200000000000000000152 /* WebBridgeController+VideoAudio.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
