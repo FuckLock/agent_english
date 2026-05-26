@@ -25,6 +25,8 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     @Published var videoCaptionState: VideoCaptionOverlayState?
     @Published var videoAudioState: VideoAudioTranslationState?
     @Published var videoAudioPrivacyAcknowledged = false
+    @Published var isSummonMenuPresented = false
+    @Published var videoBackRequestCount = 0
 
     let decoder = BridgeEventDecoder()
     let providerClient: TranslationProviderClient
