@@ -7,7 +7,7 @@ import {
   SITE_KINDS,
 } from "../dist/index.js";
 
-test("site capability contract includes core Phase 7 sites and caption states", () => {
+test("site capability contract includes core Phase 8 sites and caption states", () => {
   assert.deepEqual(CORE_SITE_KINDS, [
     "youtube",
     "reddit",

@@ -87,16 +87,18 @@ final class TranslationProviderClientTests: XCTestCase {
         )
     }
 
+    // Phase 8.5 起，Free 文本翻译走 translation-proxy；model-gateway 翻译路径由 Pro / Max 承载。
+    // 本测试验证的是 model-gateway 翻译路径与错误映射，因此固定使用 Pro tier。
     private func preferencesFixture() -> TranslationPreferencesSnapshot {
         TranslationPreferencesSnapshot(
             sourceLanguage: "English",
             targetLanguage: "简体中文",
-            serviceTier: .free,
-            preferredModelID: "free-translate",
-            preferredModelLabel: "Free 服务 · 轻量翻译",
+            serviceTier: .pro,
+            preferredModelID: "pro-context",
+            preferredModelLabel: "Pro 服务 · 语境增强",
             quota: previewQuota(),
             lastSyncedAt: .now,
-            catalog: .preview(currentTier: .free)
+            catalog: .preview(currentTier: .pro)
         )
     }
 }

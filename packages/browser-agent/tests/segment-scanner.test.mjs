@@ -122,6 +122,51 @@ test("scanPageSegments merges visible paragraph text and ignores hidden nodes", 
   assert.equal(result.pageContext.siteKind, "generic");
 });
 
+test("scanPageSegments tags core site capabilities by URL", () => {
+  const samples = [
+    {
+      url: "https://www.reddit.com/r/EnglishLearning/comments/1/example/",
+      siteKind: "reddit",
+      capability: "comments",
+    },
+    {
+      url: "https://en.wikipedia.org/wiki/English_language",
+      siteKind: "wikipedia",
+      capability: "longform-reading",
+    },
+    {
+      url: "https://archiveofourown.org/works/123",
+      siteKind: "ao3",
+      capability: "longform-reading",
+    },
+    {
+      url: "https://x.com/example/status/1",
+      siteKind: "x",
+      capability: "dynamic-content",
+    },
+  ];
+
+  for (const sample of samples) {
+    const body = createElement("BODY");
+    const article = createElement("ARTICLE", { parentElement: body });
+    const paragraph = createElement("P", { parentElement: article });
+    const documentLike = createDocument({
+      nodes: [createTextNode("Hello from this site.", paragraph)],
+      url: sample.url,
+    });
+    const result = scanPageSegments(documentLike, {
+      pageId: "page-site-kind",
+      sourceLanguage: "English",
+      targetLanguage: "简体中文",
+      displayMode: "bilingual",
+    });
+
+    assert.equal(result.pageContext.siteKind, sample.siteKind);
+    assert.ok(result.pageContext.capabilities.includes(sample.capability));
+    assert.ok(result.segments[0].capabilities.includes(sample.capability));
+  }
+});
+
 test("createPageContext preserves capabilities and language fields", () => {
   const pageContext = createPageContext(
     createDocument({

@@ -106,14 +106,4 @@ developer_instructions = """[任务]
     完成标准：
     - status ∈ {created, updated, no_signal, failed} 四者之一
     - file_path 按 status 要求填写（空值 = 空字符串而非缺失）
-    - 任何情况必须显式返回——不允许沉默挂起
-
-## Skills
-
-You're allowed to use these skills when working on this task:
-
-- $feedback-writer
-
-## Codex Runtime Notes
-
-Tool lists from the source agent are guidance only; hard permissions come from Codex sandbox and project config. Referenced skills live under `.agents/skills`; read the relevant `SKILL.md` before executing that workflow."""
+    - 任何情况必须显式返回——不允许沉默挂起"""

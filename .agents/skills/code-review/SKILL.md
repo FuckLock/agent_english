@@ -1,25 +1,32 @@
 ---
-name: "code-review"
-description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0\u67e5\u8d28\u91cf\u3001\u9a8c\u8bc1\u529f\u80fd\u662f\u5426\u5b8c\u6574\uff0c\u6216\u9700\u8981\u5bf9\u7167 Product-Spec.md \u548c\u8bbe\u8ba1\u7a3f\u9a8c\u8bc1\u4ee3\u7801\u5b9e\u73b0\u65f6\u4f7f\u7528\u3002\u8f93\u51fa\u7ed3\u6784\u5316\u5ba1\u67e5\u62a5\u544a\uff0c\u6bcf\u9879\u7ed3\u8bba\u9644\u8bc1\u636e\u3002"
+name: code-review
+description: 当用户说要审查代码、检查质量、验证功能是否完整，或需要对照 spec 文档、设计稿和架构文档验证代码实现时使用。输出结构化审查报告，每项结论附证据。
+version: 2.3
+depends_on:
+  - product-spec-builder
 ---
 
 [任务与边界]
-    做：
-    - 对照 Product-Spec.md 输出结构化审查报告
-    - Product-Spec.md 每条功能都要有对应结论（✅/⚠️/❌/❓ 之一）
-    - 报告按 [输出格式] 节定义的统一模板呈现
+    做（按 mode 分支，caller 传入 mode 字段决定）：
+    - implementation-review（默认）：对照 spec 文档走 Stage 1/2 评审 → 每条结论 ✅/⚠️/❌/❓ + "文件:行号"证据
+    - criteria-alignment：评估传入的 criteria 文件四维（可机器验证性 / 覆盖完整性 / spec 一致性 / 架构一致性）
 
-    不做：
-    - 不修改代码
-    - 不决定修复优先级
+    不做（两种 mode 通用）：
+    - 不修改代码 / 不修改 criteria 文件
+    - 不决定修复优先级 / 修订路径
     - 不重构架构
-    - 不审查 Product-Spec.md 之外的代码（除非命中 [Spec 漂移检测]）
+    - implementation-review 模式：不审查 spec 之外的代码（除非命中 [Spec 漂移检测]）
 
     完成标准：
-    - Product-Spec.md 每条功能都被覆盖（无遗漏 = 不合格）
-    - 每个 ⚠️/❌ 附 Product-Spec.md 原文 + 代码证据（文件:行号）
-    - Stage 2 安全扫描全量跑过
-    - 报告按 [输出格式] 模板输出，含开头总览行
+    - implementation-review：
+      - spec 每条功能都被覆盖（无遗漏 = 不合格）
+      - 如提供架构文档，实现不得违反层次边界、目录职责、ADR 和 non-goals
+      - 每个 ⚠️/❌ 附 spec 原文 + 代码证据
+      - Stage 2 安全扫描全量跑过
+      - 报告按 [输出格式] 模板（含开头总览行）
+    - criteria-alignment：
+      - 四维评估全部产出结论 + 每个失败维度附条目列表 + 建议修订
+      - 输出 status: aligned | needs_revision | rejected
 
 [第一性原则]（优先级从高到低，冲突时按序判）
     1. 不信任声明（最高）
@@ -28,33 +35,32 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
 
     2. 证据为王
        说 ✅ 必须附：文件:行号 + 函数/组件名 + 验证方式
-       说 ❌ 必须附：Product-Spec.md 原文 + 搜索范围（证明真的找过）
+       说 ❌ 必须附：spec 原文 + 搜索范围（证明真的找过）
        说 🔴 必须附：文件:行号 + 匹配的危险模式
 
     3. 不放过
-       Product-Spec.md 每条都要查。
-       若 Product-Spec.md 条目数 > 50 → 允许按模块抽样，但必须：
+       spec 每条都要查。
+       若 spec 条目数 > 50 → 允许按模块抽样，但必须：
        - 报告开头注明"本次抽样范围：X 模块（占 Y%）"
        - 被抽到的模块内所有条目仍然不放过
 
 [依赖检测]
-    必需（缺失则终止）：
+    必需（缺失则终止；话术只陈述事实，不跨 Skill 引导）：
 
-    [1] Product-Spec.md 存在且 [功能需求] 章节非空
+    [1] spec 文档存在且 [功能需求] 章节非空
         检测：Read 文件 + Grep 搜索 "功能需求|Functional Requirements"
-        失败话术（一字不改）：
-          "❌ Product-Spec.md 不存在或功能需求为空，请先 /product-spec-builder"
+        失败话术："❌ spec 文档不存在或功能需求为空。"
 
     [2] 项目代码存在
-        检测：Glob "**/package.json|**/Cargo.toml|**/go.mod|**/requirements.txt|**/pyproject.toml|**/Gemfile|**/composer.json"
-        失败话术：
-          "❌ 未识别到项目代码，请先 /dev-builder"
+        检测：Glob 项目入口文件（package.json / Cargo.toml / go.mod / requirements.txt / pyproject.toml / Gemfile / composer.json 等按项目类型）
+        失败话术："❌ 未识别到项目代码。"
 
     可选（缺失则降级，不阻塞）：
-    - DEV-PLAN.md → 有则对照当前 Phase 交付清单
-    - Design-Brief.md → 有则对照视觉规范
+    - 开发计划文档 → 有则对照当前 Phase 交付清单
+    - 架构文档（ARCHITECTURE.md / PROJECT-STRUCTURE.md / ADR）→ 有则对照层次边界、目录职责、ADR 和 non-goals
+    - 设计规范文档 → 有则对照视觉规范
     - 设计工具 MCP（Pencil / Figma 等）→ 有则提取设计数值精确比对
-    - Browser plugin 或 Playwright → 有则做交互流程验证
+    - UI 自动化测试工具（如 Playwright）→ 有则做交互流程验证
     - git → 有则用 git diff 追溯变更范围
 
 [审查维度]
@@ -66,19 +72,18 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
     Stage 1 出现以下任一 → 不进 Stage 2：
     - ❌ 未实现核心功能（≥ 1 项）
     - ⚠️ 部分实现条目数 ≥ 阈值：
-        Product-Spec.md < 20 条 → 阈值 3
-        Product-Spec.md 20-50 条 → 阈值 5
-        Product-Spec.md > 50 条 → 阈值 10
+        spec 条目 < 20 → 阈值 3
+        spec 条目 20-50 → 阈值 5
+        spec 条目 > 50 → 阈值 10
 
-    例外条款：若所有 Stage 1 问题集中在同一模块 → 该模块阻塞，
-    其他模块继续 Stage 2。
+    例外：所有 Stage 1 问题集中在同一模块 → 该模块阻塞，其他模块继续 Stage 2。
 
     ────────────────── Stage 1 ──────────────────
 
     [功能完整性]
-        检查什么：Product-Spec.md 每条功能是否有对应实现且行为正确
+        检查什么：spec 文档每条功能是否有对应实现且行为正确
         怎么做：
-            1. 读 Product-Spec.md 条目（按章节编号 1.1, 1.2, ...）
+            1. 读 spec 条目（按章节编号 1.1, 1.2, ...）
             2. Grep 搜关键词定位代码
             3. Read 验证行为
             4. 输出证据（文件:行号）
@@ -88,7 +93,7 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
             ⚠️ 部分实现核心 → 🔴
             ⚠️ 部分实现辅助 → 🟡
             ✅ 完整实现 → 不打标
-            ❓ Product-Spec.md 歧义 → 不打标，归入"待澄清"章节
+            ❓ spec 歧义 → 不打标，归入"待澄清"章节
 
     [UI 一致性]（如有设计稿）
         容忍度表：
@@ -105,16 +110,16 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
 
     [Spec 漂移检测]
         判定规则（用户可见面测试）：
-            🟢 合理扩展：用户打开 App 看不见
+            🟢 合理扩展：用户打开产品看不见
                 例：日志、错误边界、缓存、CI/CD、连接池
             🔴 Scope Creep：用户在界面上看得见的新功能
-                例：登录、支付、分享、深色模式（若 Product-Spec.md 未要求）
+                例：登录、支付、分享、深色模式（若 spec 未要求）
         Priority 规则：
             🟢 → 只记录，不打标
             🔴 → 🔴 High，单列警告
 
-    [交互流程验证]（如有 Playwright，无则标 ⏭ 跳过）
-        覆盖范围：Product-Spec.md 中标记 P0 的用户故事
+    [交互流程验证]（如有 UI 自动化测试工具如 Playwright，无则标 ⏭ 跳过）
+        覆盖范围：spec 中标记 P0 的用户故事
         测试维度：
             1. 核心路径（创建/编辑/删除/查看）
             2. 错误场景（无效输入/网络错误）
@@ -124,38 +129,27 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
             P0 路径失败 → 🔴
             错误场景未处理 → 🟡
 
+    [架构一致性]（如提供架构文档）
+        检查什么：实现是否符合 ARCHITECTURE.md / PROJECT-STRUCTURE.md / ADR
+        怎么做：
+            1. 读架构文档，提取层次边界、目录职责、当前范围、后续范围、non-goals、ADR 决策
+            2. 对照 review_scope 扫描代码变更路径和依赖方向
+            3. 检查核心逻辑是否误写入入口层、适配层是否侵入领域模型、未来范围是否提前实现
+            4. 输出证据（文件:行号 + 对应架构条目）
+        Priority 规则：
+            违反层次边界 / 目录职责 → 🔴
+            违反 ADR 关键决策 → 🔴
+            把后续范围或 non-goal 做成当前功能 → 🟡 或 🔴（按影响范围）
+            架构文档与 Spec 冲突 → ❓ 待澄清，不自行裁决
+
     ────────────────── Stage 2 ──────────────────
 
     [代码质量]
-        文件大小阈值（按扩展名）：
-            .ts/.tsx/.js/.jsx: 300
-            .py: 500
-            .go: 500
-            .rs: 500
-            .java: 500
-            .css/.scss: 1000
-            .json/.yaml/.sql/.svg: 不限
-        超阈值 → ⚠️ 警告需复核（不直接判错）
-
-        命名规范（按 [工作流程 第一步] 识别的语言选用）：
-            TypeScript / JavaScript:
-              组件 PascalCase / 函数变量 camelCase /
-              文件 kebab-case / 常量 UPPER_SNAKE_CASE
-            Python:
-              类 PascalCase / 函数变量文件 snake_case /
-              常量 UPPER_SNAKE_CASE
-            Go:
-              导出 PascalCase / 包内 camelCase /
-              文件 snake_case
-            Rust:
-              结构体/枚举/Trait PascalCase /
-              函数变量模块 snake_case / 常量 UPPER_SNAKE_CASE
-
-        类型安全（按语言）：
-            TS: 无 any / 无 @ts-ignore / 无 as unknown as X
-            Python: 函数签名有类型注解（PEP 484）
-            Go: 不滥用 interface{}
-            Rust: 不滥用 unwrap() / panic!()
+        判定基线（按项目编码规范文档执行；无文档则按通用基线）：
+        - 命名一致性：按项目语言主流约定（如 PascalCase / camelCase / snake_case 按语言定）
+        - 类型安全：避免 escape hatches（any / @ts-ignore / interface{} / unwrap() / panic! 等）
+        - 文件大小：按项目语言阈值（通用基线：源码 ≤ 300 行 / 动态类型语言酌情上浮）
+        - 重复代码：≥ 3 处即标
 
         Priority 规则：
             超大文件 → 🟡
@@ -163,9 +157,9 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
             重复代码 ≥ 3 处 → 🟡
 
     [安全扫描]（规则源 - 唯一定义处，禁止他处复制）
-        执行方式：用 rg（基于 ripgrep）搜索 src/ 目录
+        执行方式：用 Grep tool 搜索项目源码目录
 
-        规则清单（命中即记录）：
+        规则清单（命中即记录；正则按项目使用的 AI 服务 / 前端框架补充对应模式）：
         | # | 规则           | 正则模式                                              | Priority |
         |---|----------------|-------------------------------------------------------|----------|
         | 1 | 硬编码 AI Key  | `sk-ant-|sk-proj-|ANTHROPIC_API_KEY|OPENAI_API_KEY`   | 🔴       |
@@ -174,60 +168,68 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
         | 4 | XSS-prone      | `dangerouslySetInnerHTML|innerHTML\s*=`               | 🔴       |
         | 5 | SQL 字符串拼接 | `f"SELECT.*\{|\.execute\(.*\+`                        | 🔴       |
         | 6 | 路径泄露       | `/Users/|/home/|C:\\\\`                               | 🟡       |
-        | 7 | 环境变量泄露   | `(VITE_|NEXT_PUBLIC_).*?(KEY|SECRET|TOKEN)`           | 🔴       |
+        | 7 | 前端环境变量泄露 | `(VITE_|NEXT_PUBLIC_|REACT_APP_).*?(KEY|SECRET|TOKEN)` | 🔴       |
         | 8 | 依赖漏洞       | 执行 $AUDIT_CMD                                        | 取决 CVE |
 
-        [条件性联网]（仅以下情况执行 web.run）：
+        [条件性联网]（仅以下情况执行 WebSearch）：
         - Grep 命中模式不在上述清单内 → 联网确认是否已知漏洞
         - 用户明确问到具体 CVE → 联网查最新信息
         其他情况：按内置规则判，不联网
 
     [性能]（必须）
-        前端检查项：
-            - useEffect 依赖数组是否完整（缺依赖 / 多依赖）
-            - 列表 key 是否稳定（不用 index）
-            - 大列表是否虚拟化
-            - 是否有不必要的 re-render（缺 memo/useCallback）
+        前端检查项（按项目实际框架适配；以下以 React 为示例）：
+            - 副作用依赖完整性（如 React useEffect 依赖数组）
+            - 列表渲染 key 稳定性（不用 index）
+            - 大列表虚拟化
+            - 避免不必要的 re-render（缓存 / memo / useCallback）
         后端检查项：
             - N+1 查询（在循环里查 DB）
             - 同步 IO 阻塞事件循环
             - 缺索引的查询
         Priority 规则：
             N+1 查询 → 🟡
-            React 缺 key/memo → 🟡
+            列表缺 key / 重复渲染未缓存 → 🟡
 
-    [可访问性 a11y]（必须）
-        检查项：
+    [可访问性 a11y]（必须；Web/移动 UI 适用，CLI/API 项目跳过）
+        检查项（Web/HTML 示例；其他平台按对应 a11y 规范）：
             - <img> 是否有 alt
             - 交互元素是否有 aria-label / 可读文本
-            - 是否用语义标签（<button> 而不是 <div onClick>）
+            - 用语义标签（<button> 而不是 <div onClick>）
             - 颜色对比度（依赖工具，无则跳过）
             - 键盘可达性（Tab 顺序合理）
         Priority 规则：
             缺 alt/aria-label → 🟡
             用 div 模拟按钮 → 🟡
 
-    [国际化 i18n]（必须）
+    [国际化 i18n]（必须；多语言项目适用，单语言项目跳过）
         检查项：
-            Grep 硬编码非 ASCII 字符串：[\u4e00-\u9fa5]+
-            确认是否在 i18n 函数内（t('...')）或常量定义里
+            Grep 硬编码项目目标语言以外的字符串
+              （中文项目示例正则：[\u4e00-\u9fa5]+；其他语言按需调整）
+            确认是否在 i18n 函数内（t('...') 风格）或常量定义里
         Priority 规则：
             硬编码用户可见文案 → 🟡
             常量定义/日志 → 不打标
 
     [可测试性]（必须）
         检查项：
-            - 是否存在 test/ tests/ spec/ __tests__ 目录
-            - 是否有测试配置（vitest.config / jest.config / pytest.ini / cargo test）
+            - 是否存在测试目录（test/ tests/ spec/ __tests__ 等按项目约定）
+            - 是否有测试配置（按项目技术栈：vitest.config / jest.config / pytest.ini / cargo test / go test 等）
         Priority 规则：
             无任何测试 → 🟡
             有测试目录但内容空 → 🟡
 
 [工作流程]
+    [第〇步] mode 判定
+        读 caller 传入的 mode 字段：
+        - mode=implementation-review（默认）→ 继续下文第一~五步
+        - mode=criteria-alignment → 跳转到末尾 [criteria-alignment 分支]
+        - mode 缺失或值无效 → 按"默认 implementation-review"处理
+
     [第一步] 加载基准 + 识别项目语言
-        - 读 Product-Spec.md → 提取功能需求列表，按章节编号 1.1, 1.2, ...
-        - 如有 DEV-PLAN.md → 读取当前 Phase / Task 的交付清单
-        - 如有 Design-Brief.md → 读取视觉规范
+        - 读 spec 文档 → 提取功能需求列表，按章节编号 1.1, 1.2, ...
+        - 如有开发计划文档 → 读取当前 Phase / Task 的交付清单
+        - 如有架构文档 → 读取层次边界 / 目录职责 / ADR / non-goals
+        - 如有设计规范文档 → 读取视觉规范
         - 如有设计工具 MCP → 提取审查范围对应页面的精确数值
         - 识别项目语言 + 设定动态命令变量：
 
@@ -244,19 +246,19 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
 
           未知语言 → 报告开头警告："⚠️ 项目语言未识别，跳过编译/lint/audit 检查"
 
-        - 确定审查范围：
-            全量审查（/code-review）→ Product-Spec.md 所有功能
-            Phase 审查（dev-builder Phase 触发）→ 当前 Phase 交付清单
-            Task 审查（dev-builder per-Task 触发）→ 当前 Task 交付清单
+        - 确定审查范围（按 caller 传入的 review_scope 参数）：
+            full → spec 所有功能
+            phase → 当前 Phase 交付清单
+            task → 当前 Task 交付清单
 
     [第二步] 扫描代码 → 产出代码地图
         - 遍历项目代码目录
         - 输出 Markdown 表格（格式见 [输出格式] 节的"代码地图（附录）"模板）
-        - 同时记录"Product-Spec.md 之外的文件"用于 [Spec 漂移检测]
+        - 同时记录"spec 之外的文件"用于 [Spec 漂移检测]
 
     [第三步] 执行 [审查维度] Stage 1
         - 按 Stage 1 各维度逐条核对
-        - 遇到 Product-Spec.md 歧义 → 标 ❓ 不猜，记录到"待澄清"章节
+        - 遇到 spec 歧义 → 标 ❓ 不猜，记录到"待澄清"章节
         - 完成后判定 [Stage 门槛]：
             通过 → 进入第四步
             阻塞 → 跳到第五步输出报告，标注"Stage 2 未执行（原因）"
@@ -288,9 +290,9 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
 
     【✅ 23  ⚠️ 4  ❌ 2  🔴 1  ❓ 1  ⏭ 0】/ 总 30
 
-    对照文档：Product-Spec.md [+ DEV-PLAN.md Phase N]
+    对照文档：spec 文档 [+ 开发计划 Phase N]
     项目语言：Python（识别自 requirements.txt）
-    [若 Product-Spec.md > 50 抽样] 抽样范围：X 模块（占 Y%）
+    [若 spec 条目 > 50 抽样] 抽样范围：X 模块（占 Y%）
 
     ---
 
@@ -298,13 +300,13 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
     - 硬编码 API Key：config.py:12 — sk-ant-xxx 出现在源码
 
     ❌ 未实现（2 项）
-    - 1.5 用户能导出数据：Product-Spec.md 原文 "用户能导出 CSV 格式"
+    - 1.5 用户能导出数据：spec 原文 "用户能导出 CSV 格式"
       搜索范围：grep "export|csv" 全项目无匹配
-    - 2.3 任务拖拽排序：Product-Spec.md 原文 "用户能拖拽排序任务"
+    - 2.3 任务拖拽排序：spec 原文 "用户能拖拽排序任务"
 
     ⚠️ 部分实现（4 项）
     - 1.2 记住密码：缺持久化 cookie
-      Product-Spec.md 原文 "下次自动登录"；代码：login.py:67 仅设置 session
+      spec 原文 "下次自动登录"；代码：login.py:67 仅设置 session
     - UI 颜色：header 按钮 #4B91E3 偏离设计 #4A90E2（超容忍）
     - ...
 
@@ -335,11 +337,11 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
     ---
 
     📁 代码地图（附录）
-    | # | Product-Spec.md 条目 | 涉及文件 |
+    | # | spec 条目 | 涉及文件 |
     | 1.1 | 用户登录 | auth/login.py, components/LoginForm.tsx |
     | ... |
 
-    🔍 Product-Spec.md 之外的文件
+    🔍 spec 之外的文件
     | 文件 | 推测用途 | 判定 |
     | utils/logger.py | 日志 | 🟢 合理扩展 |
 
@@ -352,20 +354,74 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u5ba1\u67e5\u4ee3\u7801\u3001\u68c0
 
     [反例 - 明文禁止]
     × "大部分功能已实现"        ✓ "23/30 项完整实现"
-    × "看起来正常"              ✓ "已验证 session-list.tsx:89 的 deleteSession"
-    × "基本符合 Product-Spec.md" ✓ "✅ 23 项 / ⚠️ 4 项 / ❌ 2 项"
-    × "代码质量尚可"            ✓ "编译通过 + 2 处 Any 类型 + 无超大文件"
-    × "其余功能未发现明显问题"  ✓ 列出每个未提及的 Product-Spec.md 条目
+    × "看起来正常"              ✓ "已验证 <文件:行号> 的 <函数名>"
+    × "基本符合 spec"           ✓ "✅ 23 项 / ⚠️ 4 项 / ❌ 2 项"
+    × "代码质量尚可"            ✓ "编译通过 + 2 处 escape hatches + 无超大文件"
+    × "其余功能未发现明显问题"  ✓ 列出每个未提及的 spec 条目
+
+[criteria-alignment 分支]
+
+    触发条件：mode=criteria-alignment
+
+    输入（caller 传入）：
+    - criteria_path：caller 上游产出的 criteria 文件（YAML frontmatter + 三类 criteria 体）
+    - spec_path：spec 文档
+    - plan_path：开发计划文档（用于覆盖完整性比对）
+    - architecture_path / project_structure_path / adr_paths：架构文档（如有，用于架构一致性比对）
+
+    评估四维：
+    1. 可机器验证性：每条 criteria 是否能用 Read/Grep/Bash 实际执行验证
+       - 通过：每条 criteria 注明验证手段
+         （文件存在 / 函数返回 / HTTP 状态 / UI 选择器 / Grep 模式 / 编译输出）
+       - 不通过示例："代码要漂亮" / "用户体验良好" / "性能可以接受"
+    2. 覆盖完整性：phase 交付清单的每一项至少对应一条 criteria
+       - 通过：开发计划文档中该 phase 交付清单 vs criteria 一一对应
+       - 不通过示例：交付 3 项、criteria 只覆盖 2 项
+    3. spec 一致性：criteria spec_refs 引用的 spec 章节实际存在且与 criteria 表达一致
+       - 通过：每个 spec_ref 能在 spec 文档找到，且该章节描述与 criteria 一致
+       - 不通过示例：criteria 写了 spec 没要求的行为；行为与 spec 冲突
+    4. 架构一致性：criteria 是否覆盖当前 phase 相关的架构边界
+       - 通过：涉及目录 / 模块 / 数据流 / 平台边界的交付项，criteria 有可验证的架构约束
+       - 不通过示例：phase 会创建核心模块，但 criteria 未检查目录职责；phase 涉及平台壳却未检查 non-goals 或 ADR 决策
+
+    输出 status 映射：
+    - 四维全通过 → aligned
+    - 任一维度部分通过且可修订 → needs_revision + failure_count
+    - 四维中 ≥2 维严重失败 / 第 3 轮仍不通过 → rejected
+      （rejected 时附 rejection_reason，分类：spec_conflict / coverage_gap / unverifiable / architecture_conflict / ambiguous）
+
+    输出模板：
+    📋 criteria 对齐评估
+    【evaluated_dimensions: verifiable=<bool>  coverage=<bool>  spec_consistency=<bool> architecture_consistency=<bool>】
+
+    输入 criteria: <criteria_path>
+    对照 spec: <criteria 文件 frontmatter 的 spec_refs 列表>
+    对照 plan: <criteria 文件 frontmatter 的 plan_refs 列表>
+    对照 architecture: <architecture / project_structure / adr 路径列表>
+
+    维度 1 - 可机器验证性: <pass | fail + 不通过条目列表 + 建议修订>
+    维度 2 - 覆盖完整性: <pass | fail + 未覆盖 phase 交付项>
+    维度 3 - spec 一致性: <pass | fail + 冲突详情>
+    维度 4 - 架构一致性: <pass | fail + 未覆盖或冲突的架构约束>
+
+    status: <aligned | needs_revision | rejected>
+    failure_count: { unverifiable: N, coverage_gap: N, spec_conflict: N, architecture_conflict: N }
+    [若 rejected] rejection_reason: <spec_conflict | coverage_gap | unverifiable | architecture_conflict | ambiguous>
+
+    aligned 时报告末尾附提示：
+    "✓ aligned，criteria 可由 caller 按约定流程锁定。"
+
+    边界场景：判定规则未定义的灰区 → 标 ❓ 不猜，记入待澄清章节；
+    criteria 文件不存在 → status: skill_failed + "criteria 文件不存在"。
 
 [初始化]
-    AI 被 /code-review 调用时按顺序执行：
+    caller 调用本 skill 时按顺序执行：
 
     1. 输出开场："🔍 开始代码审查"
 
     2. 执行 [依赖检测]
        失败 → 按失败话术终止，不进入审查
 
-    3. 依赖通过 → 输出：
-       "✓ 依赖就绪：Product-Spec.md [+ DEV-PLAN] [+ Design-Brief] [+ MCP] [+ Playwright]"
+    3. 依赖通过 → 输出已就绪的文档清单（spec / 开发计划 / 架构文档 / 设计规范 / MCP / UI 自动化测试工具 等按实际命中）
 
     4. 进入 [工作流程] 第一步

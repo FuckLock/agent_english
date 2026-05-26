@@ -17,6 +17,14 @@
       "types": "./dist/model-service.d.ts",
       "default": "./dist/model-service.js"
     },
+    "./model-catalog": {
+      "types": "./dist/model-catalog.d.ts",
+      "default": "./dist/model-catalog.js"
+    },
+    "./video-audio-translation": {
+      "types": "./dist/video-audio-translation.d.ts",
+      "default": "./dist/video-audio-translation.js"
+    },
     "./auth-session": {
       "types": "./dist/auth-session.d.ts",
       "default": "./dist/auth-session.js"

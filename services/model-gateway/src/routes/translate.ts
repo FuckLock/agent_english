@@ -70,6 +70,8 @@ function statusCodeForError(errorCode: ModelServiceError["code"]): number {
     case "service-unavailable":
     case "provider-fallback-failed":
       return 503;
+    case "privacy-disclosure-required":
+      return 400;
   }
 }
 

@@ -1,6 +1,9 @@
 ---
-name: "design-brief-builder"
-description: "\u5f53\u7528\u6237\u8bf4\u8981\u786e\u5b9a\u8bbe\u8ba1\u98ce\u683c\u3001\u89c6\u89c9\u65b9\u5411\uff0c\u6216\u8bf4'\u6211\u60f3\u8981\u9ad8\u7ea7\u611f/\u7b80\u6d01/\u73b0\u4ee3'\u8fd9\u7c7b\u6a21\u7cca\u63cf\u8ff0\u65f6\u4f7f\u7528\u3002\u901a\u8fc7\u8bbe\u8ba1\u91c7\u8bbf\u5f15\u5bfc\u7528\u6237\u660e\u786e\u89c6\u89c9\u504f\u597d\uff0c\u8f93\u51fa Design-Brief.md\u3002"
+name: design-brief-builder
+description: 当用户说要确定设计风格、视觉方向，或说'我想要高级感/简洁/现代'这类模糊描述时使用。通过设计采访引导用户明确视觉偏好，输出 Design-Brief.md。
+version: 2.0
+depends_on:
+  - product-spec-builder
 ---
 
 [任务与边界]

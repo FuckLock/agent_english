@@ -16,6 +16,11 @@ public enum SiteCapability: String, CaseIterable, Codable, Equatable, Sendable {
     case dynamicContent = "dynamic-content"
     case captionsAvailable = "captions-available"
     case captionsUnavailable = "captions-unavailable"
+    case videoCaptionOverlay = "video-caption-overlay"
+    case videoCaptionFallback = "video-caption-fallback"
+    case audioTranslationBeta = "audio-translation-beta"
+    case videoAudioTranslation = "video-audio-translation"
+    case videoAudioUnavailable = "video-audio-unavailable"
 }
 
 public enum TranslationFailureReason: String, CaseIterable, Codable, Equatable, Sendable {

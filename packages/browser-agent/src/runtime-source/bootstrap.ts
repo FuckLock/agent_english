@@ -23,6 +23,10 @@ export const RUNTIME_BOOTSTRAP_SOURCE = String.raw`(() => {
   ]);
   const pageNoticeId = "agent-english-page-notice";
   const overlayClassName = "agent-english-translation-overlay";
+  const videoCaptionOverlayId = "agent-english-video-caption-overlay";
+  const videoCaptionFallbackId = "agent-english-video-caption-fallback";
+  const videoCaptionOverlayClassName = "agent-english-video-caption-overlay";
+  const videoCaptionFallbackClassName = "agent-english-video-caption-fallback";
   const expandedSegmentIds = new Set();
   const overlaysBySegmentId = new Map();
   const anchorsBySegmentId = new Map();
@@ -32,6 +36,9 @@ export const RUNTIME_BOOTSTRAP_SOURCE = String.raw`(() => {
   const pageId = "page-" + sessionId;
   let currentDisplayMode = displayModes.original;
   let lastSelectionFingerprint = "";
+  let lastVideoCaptionSignature = "";
+  let lastVideoAudioSignature = "";
+  let videoCaptionTimer = null;
   let pendingSelectionTimer = null;
 
   const postBridgeEvent = (eventType, payload, metadata = {}) => {

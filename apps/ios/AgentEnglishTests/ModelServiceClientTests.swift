@@ -79,6 +79,63 @@ final class ModelServiceClientTests: XCTestCase {
             "未连接到模型服务。请先启动模型网关，并在 Xcode Scheme 或 Info.plist 配置 MODEL_SERVICE_ROOT。"
         )
     }
+
+    func testVideoAudioTranslateMapsQuotaExceededAndServiceUnavailable() async {
+        let quotaClient = ModelServiceClient(
+            transport: VideoAudioFailingTransport(code: .quotaExceeded)
+        )
+        let quotaResponse = await quotaClient.videoAudioTranslate(videoAudioRequest(privacyDisclosureAccepted: true))
+        XCTAssertEqual(quotaResponse.error?.code, .quotaExceeded)
+        XCTAssertEqual(quotaResponse.state.status, .quotaExhausted)
+
+        let serviceClient = ModelServiceClient(
+            transport: VideoAudioFailingTransport(code: .serviceUnavailable)
+        )
+        let serviceResponse = await serviceClient.videoAudioTranslate(videoAudioRequest(privacyDisclosureAccepted: true))
+        XCTAssertEqual(serviceResponse.error?.code, .serviceUnavailable)
+        XCTAssertEqual(serviceResponse.state.status, .failed)
+    }
+
+    func testVideoAudioRequestRequiresPrivacyDisclosureState() async {
+        let client = ModelServiceClient(transport: PreviewModelServiceTransport())
+        let response = await client.videoAudioTranslate(
+            videoAudioRequest(privacyDisclosureAccepted: false)
+        )
+
+        XCTAssertEqual(response.error?.code, .privacyDisclosureRequired)
+        XCTAssertEqual(response.state.status, .privacyRequired)
+    }
+
+    func testVideoAudioCatalogDecodesAudioQuotaFields() throws {
+        let payload = """
+        {
+          "currentTier": "free",
+          "availableTiers": ["free", "pro", "max"],
+          "defaultModelId": "free-translate",
+          "options": [],
+          "quota": {
+            "status": "ok",
+            "used": 3,
+            "limit": 20,
+            "remaining": 17,
+            "resetAt": "2026-05-25T00:00:00Z"
+          },
+          "audioQuota": {
+            "status": "ok",
+            "used": 3,
+            "limit": 10,
+            "remaining": 7,
+            "resetAt": "2026-05-25T00:00:00Z"
+          },
+          "lastUpdatedAt": "2026-05-24T00:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let catalog = try JSONDecoder().decode(ModelCatalogSnapshot.self, from: payload)
+
+        XCTAssertEqual(catalog.audioQuota?.limit, 10)
+        XCTAssertEqual(catalog.audioQuota?.remaining, 7)
+    }
 }
 
 private struct FailingCatalogTransport: ModelServiceTransport {
@@ -96,6 +153,50 @@ private struct FailingCatalogTransport: ModelServiceTransport {
         _ = request
         throw ModelServiceTransportError.transport(.serviceUnavailable)
     }
+}
+
+private struct VideoAudioFailingTransport: ModelServiceTransport {
+    let code: ModelServiceErrorCode
+
+    func catalog(for serviceTier: ModelServiceTier) async throws -> ModelCatalogSnapshot {
+        ModelCatalogSnapshot.preview(currentTier: serviceTier)
+    }
+
+    func translate(_ request: ModelServiceTranslateRequest) async throws -> ModelServiceTranslateResponse {
+        _ = request
+        throw ModelServiceTransportError.transport(.serviceUnavailable)
+    }
+
+    func explain(_ request: ModelServiceExplainRequest) async throws -> ModelServiceExplainResponse {
+        _ = request
+        throw ModelServiceTransportError.transport(.serviceUnavailable)
+    }
+
+    func videoAudioTranslate(_ request: ModelServiceVideoAudioTranslateRequest) async throws -> ModelServiceVideoAudioTranslateResponse {
+        _ = request
+        throw ModelServiceTransportError.transport(code)
+    }
+}
+
+private func videoAudioRequest(
+    privacyDisclosureAccepted: Bool
+) -> ModelServiceVideoAudioTranslateRequest {
+    ModelServiceVideoAudioTranslateRequest(
+        pageID: "page-youtube-watch-1",
+        url: "https://m.youtube.com/watch?v=LmFME_-3icE",
+        title: "Hydrogen Peroxide",
+        videoID: "LmFME_-3icE",
+        sourceLanguage: "English",
+        targetLanguage: "简体中文",
+        serviceTier: .free,
+        preferredModelID: "free-translate",
+        audioSegmentID: "vaud-1",
+        audioDurationSeconds: 42,
+        captionText: nil,
+        captionQuality: "unavailable",
+        manualAudioSelection: nil,
+        privacyDisclosureAccepted: privacyDisclosureAccepted
+    )
 }
 
 private func XCTAssertThrowsErrorAsync<T>(

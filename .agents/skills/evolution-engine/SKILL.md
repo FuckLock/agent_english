@@ -1,16 +1,19 @@
 ---
-name: "evolution-engine"
-description: "\u5f53 session \u521d\u59cb\u5316\u65f6\u81ea\u52a8\u89e6\u53d1\uff0c\u6216\u7528\u6237\u8bf4\"\u5e2e\u6211\u770b\u770b\u6709\u6ca1\u6709\u8be5\u5347\u7ea7\u7684\u89c4\u5219\"\u3001\"\u68c0\u67e5\u8fdb\u5316\u5efa\u8bae\"\u65f6\u624b\u52a8\u89e6\u53d1\u3002\u7531 evolution-runner sub-agent \u8c03\u7528\u3002"
+name: evolution-engine
+version: 2.1
+description: 当 session 初始化时自动触发，或用户说"帮我看看有没有该升级的规则"、"检查进化建议"时手动触发。由 evolution-runner sub-agent 调用。
+depends_on:
+  - feedback-writer
 ---
 
 [任务与边界]
     做：
-    - 扫描 .codex/feedback/ 识别 3 类进化信号
+    - 扫描 .claude/feedback/ 识别 3 类进化信号
     - 生成结构化提议（按 [输出格式] 节输出）
     - 返回给主 Agent 由用户确认
 
     不做：
-    - 不直接修改 SKILL.md / AGENTS.md（仅生成提议）
+    - 不直接修改 SKILL.md / CLAUDE.md（仅生成提议）
     - 不删除 feedback 文件（仅标记 skipped/graduated）
     - 不主动创建 Skill（用户确认后调用 skill-builder）
 
@@ -49,12 +52,12 @@ description: "\u5f53 session \u521d\u59cb\u5316\u65f6\u81ea\u52a8\u89e6\u53d1\uf
     【依赖清单】
     | # | 依赖项                              | 必需性 |
     |---|-------------------------------------|--------|
-    | 1 | .codex/feedback/ 目录              | 必需 |
-    | 2 | .codex/feedback/FEEDBACK-INDEX.md  | 必需 |
+    | 1 | .claude/feedback/ 目录              | 必需 |
+    | 2 | .claude/feedback/FEEDBACK-INDEX.md  | 必需 |
     | 3 | feedback 文件（frontmatter 含必需字段） | 必需 |
 
     【检测方法】
-    [1]：Glob ".codex/feedback/" 检查目录存在
+    [1]：Glob ".claude/feedback/" 检查目录存在
     [2]：Read 文件存在性
     [3]：Read 任一 feedback 文件，验证 frontmatter 含：
          - occurrences (number)
@@ -80,7 +83,7 @@ description: "\u5f53 session \u521d\u59cb\u5316\u65f6\u81ea\u52a8\u89e6\u53d1\uf
           （或：skipped == true 且 occurrences >= 上次跳过时的 2 倍）
         - 确定毕业目标：
           - source_skill 明确 → 毕业到对应 SKILL.md
-          - 涉及多个 Skill 或全局性 → 毕业到 AGENTS.md [总体规则]
+          - 涉及多个 Skill 或全局性 → 毕业到 CLAUDE.md [总体规则]
 
     [第二步] 检查 Skill 优化信号（按严重度分级）
         扫描 feedback/ 中的 scores 字段，按 source_skill 分组
@@ -166,7 +169,7 @@ description: "\u5f53 session \u521d\u59cb\u5316\u65f6\u81ea\u52a8\u89e6\u53d1\uf
     3. 用户取消 → 不动
 
     【新 Skill - 用户确认】
-    1. 用户确认 → 进入 [跨 Skill 协调]（见 AGENTS.md）派发 skill-builder
+    1. 用户确认 → 进入 [跨 Skill 协调]（见 CLAUDE.md）派发 skill-builder
     2. skill-builder 创建后 → 标记关联 feedback graduated: true
 
     【跳过】

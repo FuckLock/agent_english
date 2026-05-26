@@ -34,6 +34,14 @@ public protocol ModelServiceTransport: Sendable {
     func catalog(for serviceTier: ModelServiceTier) async throws -> ModelCatalogSnapshot
     func translate(_ request: ModelServiceTranslateRequest) async throws -> ModelServiceTranslateResponse
     func explain(_ request: ModelServiceExplainRequest) async throws -> ModelServiceExplainResponse
+    func videoAudioTranslate(_ request: ModelServiceVideoAudioTranslateRequest) async throws -> ModelServiceVideoAudioTranslateResponse
+}
+
+public extension ModelServiceTransport {
+    func videoAudioTranslate(_ request: ModelServiceVideoAudioTranslateRequest) async throws -> ModelServiceVideoAudioTranslateResponse {
+        _ = request
+        throw ModelServiceTransportError.transport(.serviceUnavailable)
+    }
 }
 
 public struct PreviewModelServiceTransport: ModelServiceTransport {
@@ -50,6 +58,50 @@ public struct PreviewModelServiceTransport: ModelServiceTransport {
         let catalog = ModelCatalogSnapshot.preview(currentTier: request.serviceTier, preferredModelID: request.preferredModelID)
         let model = catalog.option(id: catalog.defaultModelID) ?? catalog.options[0]
         return ModelServiceExplainResponse(pageID: request.pageID, serviceTier: request.serviceTier, model: model, translation: "中文释义：\(request.selectedText)", explanation: "这里结合前后文给出更贴近网页语境的说明。", examples: ["\(request.selectedText) can be reused in the same context."], quota: catalog.quota, error: nil)
+    }
+    public func videoAudioTranslate(_ request: ModelServiceVideoAudioTranslateRequest) async throws -> ModelServiceVideoAudioTranslateResponse {
+        let catalog = ModelCatalogSnapshot.preview(currentTier: request.serviceTier, preferredModelID: request.preferredModelID)
+        let model = catalog.option(id: catalog.defaultModelID) ?? catalog.options[0]
+        let quota = AudioTranslationQuota(
+            serviceTier: request.serviceTier,
+            status: .ok,
+            usedMinutes: 3,
+            limitMinutes: catalog.audioQuota?.limit ?? 10,
+            remainingMinutes: catalog.audioQuota?.remaining ?? 7,
+            resetAt: catalog.audioQuota?.resetAt ?? ISO8601DateFormatter().string(from: .now.addingTimeInterval(86_400))
+        )
+        let segment = VideoAudioSegment(
+            pageId: request.pageID,
+            audioSegmentId: request.audioSegmentID,
+            videoId: request.videoID,
+            source: .audio,
+            sourceText: "Ranking the best ice moments.",
+            translatedText: "[\(request.targetLanguage)] Ranking the best ice moments.",
+            sourceLanguage: request.sourceLanguage,
+            targetLanguage: request.targetLanguage,
+            startTimeSeconds: nil,
+            endTimeSeconds: nil,
+            capturedAt: ISO8601DateFormatter().string(from: .now)
+        )
+        let state = VideoAudioTranslationState(
+            pageId: request.pageID,
+            siteKind: "youtube",
+            pageKind: request.url.contains("/shorts/") ? .youtubeShorts : .youtubeWatch,
+            url: request.url,
+            title: request.title,
+            videoId: request.videoID,
+            captionAvailability: .unavailable,
+            source: .audio,
+            overlayMode: .inlineOverlay,
+            status: .translated,
+            capabilities: [.audioTranslationBeta, .videoAudioTranslation],
+            activeSegment: segment,
+            quota: quota,
+            failureReason: nil,
+            message: nil,
+            updatedAt: ISO8601DateFormatter().string(from: .now)
+        )
+        return ModelServiceVideoAudioTranslateResponse(pageID: request.pageID, serviceTier: request.serviceTier, model: model, segment: segment, quota: quota, state: state, error: nil)
     }
 }
 
@@ -85,6 +137,26 @@ public actor ModelServiceClient {
             )
         }
     }
+    public func videoAudioTranslate(_ request: ModelServiceVideoAudioTranslateRequest) async -> ModelServiceVideoAudioTranslateResponse {
+        guard request.privacyDisclosureAccepted else {
+            return failureVideoAudioResponse(
+                for: request,
+                code: .privacyDisclosureRequired,
+                requiredTier: nil
+            )
+        }
+
+        do {
+            return try await transport.videoAudioTranslate(request)
+        } catch {
+            let context = errorContext(from: error)
+            return failureVideoAudioResponse(
+                for: request,
+                code: context.code,
+                requiredTier: context.requiredTier
+            )
+        }
+    }
     public static func userMessage(for code: ModelServiceErrorCode) -> String {
         switch code {
         case .quotaExceeded: return "今日额度不足，请稍后再试。"
@@ -92,6 +164,7 @@ public actor ModelServiceClient {
         case .serviceUnavailable: return "模型服务暂不可用，请稍后重试。"
         case .contentTooLong: return "本次内容过长，请缩短后再试。"
         case .providerFallbackFailed: return "模型服务暂不可用，请稍后重试。"
+        case .privacyDisclosureRequired: return "开启听音翻译前，请先确认隐私提示。"
         }
     }
     private func errorContext(from error: Error) -> (
@@ -121,6 +194,66 @@ public actor ModelServiceClient {
         let model = catalog.option(id: catalog.defaultModelID) ?? catalog.options[0]
         return ModelServiceExplainResponse(pageID: request.pageID, serviceTier: request.serviceTier, model: model, translation: "", explanation: "", examples: [], quota: catalog.quota, error: .init(code: code, message: Self.userMessage(for: code), retryable: code != .tierUnavailable && code != .contentTooLong, requiredTier: requiredTier))
     }
+    private func failureVideoAudioResponse(
+        for request: ModelServiceVideoAudioTranslateRequest,
+        code: ModelServiceErrorCode,
+        requiredTier: ModelServiceTier?
+    ) -> ModelServiceVideoAudioTranslateResponse {
+        let catalog = ModelCatalogSnapshot.preview(currentTier: request.serviceTier, preferredModelID: request.preferredModelID)
+        let model = catalog.option(id: catalog.defaultModelID) ?? catalog.options[0]
+        let quotaSnapshot = catalog.audioQuota ?? ModelCatalogSnapshot.previewAudioQuota(for: request.serviceTier)
+        let quota = AudioTranslationQuota(
+            serviceTier: request.serviceTier,
+            status: quotaSnapshot.status,
+            usedMinutes: quotaSnapshot.used,
+            limitMinutes: quotaSnapshot.limit,
+            remainingMinutes: quotaSnapshot.remaining,
+            resetAt: quotaSnapshot.resetAt
+        )
+        let state = VideoAudioTranslationState(
+            pageId: request.pageID,
+            siteKind: "youtube",
+            pageKind: request.url.contains("/shorts/") ? .youtubeShorts : .youtubeWatch,
+            url: request.url,
+            title: request.title,
+            videoId: request.videoID,
+            captionAvailability: .unavailable,
+            source: .audio,
+            overlayMode: .inlineOverlay,
+            status: code == .privacyDisclosureRequired ? .privacyRequired : code == .quotaExceeded ? .quotaExhausted : .failed,
+            capabilities: [.audioTranslationBeta, .videoAudioTranslation],
+            activeSegment: nil,
+            quota: quota,
+            failureReason: videoAudioFailureReason(for: code),
+            message: Self.userMessage(for: code),
+            updatedAt: ISO8601DateFormatter().string(from: .now)
+        )
+        return ModelServiceVideoAudioTranslateResponse(
+            pageID: request.pageID,
+            serviceTier: request.serviceTier,
+            model: model,
+            segment: nil,
+            quota: quota,
+            state: state,
+            error: .init(
+                code: code,
+                message: Self.userMessage(for: code),
+                retryable: code != .tierUnavailable && code != .contentTooLong && code != .privacyDisclosureRequired,
+                requiredTier: requiredTier
+            )
+        )
+    }
+
+    private func videoAudioFailureReason(for code: ModelServiceErrorCode) -> VideoAudioFailureReason {
+        switch code {
+        case .quotaExceeded: return .audioQuotaExceeded
+        case .tierUnavailable: return .tierUnavailable
+        case .serviceUnavailable: return .serviceUnavailable
+        case .contentTooLong: return .contentTooLong
+        case .providerFallbackFailed: return .providerFallbackFailed
+        case .privacyDisclosureRequired: return .privacyDisclosureRequired
+        }
+    }
 }
 
 public struct URLSessionModelServiceTransport: ModelServiceTransport {
@@ -147,6 +280,9 @@ public struct URLSessionModelServiceTransport: ModelServiceTransport {
     }
     public func explain(_ request: ModelServiceExplainRequest) async throws -> ModelServiceExplainResponse {
         try await send(path: "/v1/explain", method: "POST", body: request)
+    }
+    public func videoAudioTranslate(_ request: ModelServiceVideoAudioTranslateRequest) async throws -> ModelServiceVideoAudioTranslateResponse {
+        try await send(path: "/v1/video-audio-translate", method: "POST", body: request)
     }
     private func send<TBody: Encodable, TResponse: Decodable>(path: String, method: String, body: TBody?) async throws -> TResponse {
         guard let serviceRoot else {

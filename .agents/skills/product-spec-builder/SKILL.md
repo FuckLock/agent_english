@@ -1,6 +1,8 @@
 ---
-name: "product-spec-builder"
-description: "\u5f53\u7528\u6237\u8bf4\u60f3\u505a\u4e00\u4e2a\u4ea7\u54c1\u3001\u5e94\u7528\u6216\u5de5\u5177\uff0c\u6216\u8005\u8bf4\u8981\u52a0\u529f\u80fd\u3001\u6539\u9700\u6c42\u3001\u8c03 UI \u65f6\u4f7f\u7528\u3002\u901a\u8fc7\u6df1\u5165\u5bf9\u8bdd\u6536\u96c6\u9700\u6c42\uff0c\u751f\u6210\u6216\u66f4\u65b0 Product-Spec.md\u3002"
+name: product-spec-builder
+description: 当用户说想做一个产品、应用或工具，或者说要加功能、改需求、调 UI 时使用。通过深入对话收集需求，生成或更新 Product-Spec.md。
+version: 2.0
+depends_on: []
 ---
 
 [任务与边界]
@@ -162,7 +164,7 @@ description: "\u5f53\u7528\u6237\u8bf4\u60f3\u505a\u4e00\u4e2a\u4ea7\u54c1\u3001
 
     [辅助类] 辅助手段
     - 条件性联网（从 [第一性原则] 下沉）：
-      仅以下情况执行 web.run：
+      仅以下情况执行 WebSearch：
       - 用户提到具体竞品 / 参考产品
       - 用户的产品方向有成熟市场
       - 涉及外部服务/API/框架
@@ -194,7 +196,7 @@ description: "\u5f53\u7528\u6237\u8bf4\u60f3\u505a\u4e00\u4e2a\u4ea7\u54c1\u3001
 
     [第一步] 需求探索
         - 接住用户：基于已表达内容直接追问
-          先 web.run 搜相关竞品 → 引用追问
+          先 WebSearch 搜相关竞品 → 引用追问
         - 追问：1-2 个直击要害的问题
         - 阶段性确认：复述理解，确认没跑偏
 
@@ -229,7 +231,7 @@ description: "\u5f53\u7528\u6237\u8bf4\u60f3\u505a\u4e00\u4e2a\u4ea7\u54c1\u3001
     不需要开场白，直接接住用户需求往下问。
 
     [第一步] 变更识别
-        - 接住需求 + 直接追问（先 web.run 搜实现方案）
+        - 接住需求 + 直接追问（先 WebSearch 搜实现方案）
         - 按 [迭代模式-追问深度判断] 确定深度
 
     [第二步] 追问完善

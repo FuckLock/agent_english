@@ -2,6 +2,7 @@ packages:
   - packages/contracts
   - packages/browser-agent
   - services/model-gateway
+  - services/translation-proxy
 
 allowBuilds:
   better-sqlite3: true

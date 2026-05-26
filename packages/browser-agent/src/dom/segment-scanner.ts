@@ -1,10 +1,11 @@
 import {
-  GENERIC_SITE_CAPABILITIES,
   type DisplayMode,
   type PageContext,
   type PageTextSegment,
   type SiteCapability,
+  type SiteKind,
 } from "@agent-english/contracts";
+import { detectSiteAdapter } from "../site-adapters";
 import {
   createTextWalker,
   describeElementPath,
@@ -29,6 +30,7 @@ export interface ScanPageOptions {
   targetLanguage: string;
   displayMode: DisplayMode;
   capabilities?: SiteCapability[];
+  siteKind?: SiteKind;
 }
 
 interface SegmentAccumulator {
@@ -68,6 +70,8 @@ export function createPageContext(
   documentLike: ScannerDocument,
   options: ScanPageOptions,
 ): PageContext {
+  const siteAdapter = detectSiteAdapter(documentLike.location?.href ?? "");
+
   return {
     pageId: options.pageId ?? derivePageId(documentLike),
     url: documentLike.location?.href ?? "",
@@ -75,8 +79,8 @@ export function createPageContext(
     sourceLanguage: options.sourceLanguage,
     targetLanguage: options.targetLanguage,
     displayMode: options.displayMode,
-    capabilities: [...(options.capabilities ?? GENERIC_SITE_CAPABILITIES)],
-    siteKind: "generic",
+    capabilities: [...(options.capabilities ?? siteAdapter.capabilities)],
+    siteKind: options.siteKind ?? siteAdapter.siteKind,
   };
 }
 

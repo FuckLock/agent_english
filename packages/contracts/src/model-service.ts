@@ -21,6 +21,7 @@ export const MODEL_SERVICE_ERROR_CODES = [
   "service-unavailable",
   "content-too-long",
   "provider-fallback-failed",
+  "privacy-disclosure-required",
 ] as const;
 
 export type ModelServiceErrorCode =
@@ -51,6 +52,7 @@ export interface ModelCatalog {
   defaultModelId: string;
   options: ModelOption[];
   quota: ModelQuotaState;
+  audioQuota: ModelQuotaState;
   lastUpdatedAt: string;
 }
 

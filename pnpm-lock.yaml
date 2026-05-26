@@ -76,6 +76,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/contracts
 
+  services/translation-proxy:
+    dependencies:
+      '@agent-english/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

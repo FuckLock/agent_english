@@ -1,6 +1,8 @@
 ---
-name: "feedback-writer"
-description: "\u5f53\u4e3b Agent \u68c0\u6d4b\u5230\u503c\u5f97\u8bb0\u5f55\u7684\u53cd\u9988\u4fe1\u53f7\uff08\u7528\u6237\u4fee\u6b63 / \u672a\u8986\u76d6\u573a\u666f / \u91cd\u590d\u64cd\u4f5c / \u8d28\u91cf\u95ee\u9898 / Skill \u6548\u80fd\u8bc4\u4f30\uff09\u65f6\u7531\u5176\u8c03\u7528\u3002\u5206\u6790\u4fe1\u53f7\u662f\u5426\u503c\u5f97\u8bb0\u5f55\uff0c\u5199\u5165 feedback \u96c6\u5408\u5e76\u66f4\u65b0\u7d22\u5f15\u3002"
+name: feedback-writer
+version: 2.0
+description: 当主 Agent 检测到值得记录的反馈信号（用户修正 / 未覆盖场景 / 重复操作 / 质量问题 / Skill 效能评估）时由其调用。分析信号是否值得记录，写入 feedback 集合并更新索引。
+depends_on: []
 ---
 
 [任务与边界]
@@ -53,7 +55,7 @@ description: "\u5f53\u4e3b Agent \u68c0\u6d4b\u5230\u503c\u5f97\u8bb0\u5f55\u768
     - $FEEDBACK_DIR/FEEDBACK-INDEX.md → 不存在则首次写入时按模板创建
 
     [路径变量]
-    $FEEDBACK_DIR = 项目的 feedback 集合位置（Codex 默认 .codex/feedback/）
+    $FEEDBACK_DIR = 项目的 feedback 集合位置（Claude Code 默认 .claude/feedback/）
     其他框架/项目按对应约定提供。
 
 [信号知识]

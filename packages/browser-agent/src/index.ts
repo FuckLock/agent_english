@@ -52,5 +52,46 @@ export {
 export {
   DISPLAY_MODE_LABELS,
   DisplayModeController,
+  isTextReadingModeAllowed,
+  type DisplayModeContext,
 } from "./modes/display-mode-controller";
+export {
+  detectSiteAdapter,
+  AO3_SITE_CAPABILITIES,
+  GENERIC_SITE_PROFILE,
+  REDDIT_SITE_CAPABILITIES,
+  WIKIPEDIA_SITE_CAPABILITIES,
+  X_SITE_CAPABILITIES,
+  isAO3URL,
+  isRedditURL,
+  isWikipediaURL,
+  isXURL,
+  type SiteAdapterProfile,
+} from "./site-adapters";
+export {
+  detectYouTubePage,
+  readActiveYouTubeCaptionText,
+  createYouTubeVideoCaptionState,
+  youtubePageCapabilities,
+  type CreateYouTubeVideoCaptionStateOptions,
+  type YouTubeCaptionDocumentLike,
+  type YouTubePageDetection,
+} from "./site-adapters/youtube";
+export {
+  createYouTubeAudioTranslationState,
+  decideYouTubeAudioTranslationSource,
+  type YouTubeAudioTranslationDecision,
+  type YouTubeAudioTranslationDecisionInput,
+} from "./site-adapters/youtube-audio";
+export {
+  VIDEO_CAPTION_FALLBACK_ID,
+  VIDEO_CAPTION_OVERLAY_ID,
+  VIDEO_CAPTION_STATUS_LABELS,
+  VIDEO_AUDIO_STATUS_LABELS,
+  applyVideoCaptionOverlayState,
+  messageForVideoAudioFailure,
+  messageForVideoCaptionFailure,
+  type VideoCaptionOverlayDocumentLike,
+  type VideoCaptionOverlayElementLike,
+} from "./overlay/video-caption-overlay";
 export { BROWSER_AGENT_RUNTIME_SOURCE } from "./browser-runtime-source";

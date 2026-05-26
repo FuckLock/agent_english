@@ -32,6 +32,7 @@ public enum ModelServiceErrorCode: String, CaseIterable, Codable, Equatable, Sen
     case serviceUnavailable = "service-unavailable"
     case contentTooLong = "content-too-long"
     case providerFallbackFailed = "provider-fallback-failed"
+    case privacyDisclosureRequired = "privacy-disclosure-required"
 }
 
 public struct ModelQuotaSnapshot: Codable, Equatable, Sendable {
@@ -93,6 +94,7 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
     public let defaultModelID: String
     public let options: [ModelCatalogOption]
     public let quota: ModelQuotaSnapshot
+    public let audioQuota: ModelQuotaSnapshot?
     public let lastUpdatedAt: String
 
     enum CodingKeys: String, CodingKey {
@@ -101,6 +103,7 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
         case defaultModelID = "defaultModelId"
         case options
         case quota
+        case audioQuota
         case lastUpdatedAt
     }
 
@@ -114,6 +117,7 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
         defaultModelID: String,
         options: [ModelCatalogOption],
         quota: ModelQuotaSnapshot,
+        audioQuota: ModelQuotaSnapshot? = nil,
         lastUpdatedAt: String
     ) {
         self.currentTier = currentTier
@@ -121,6 +125,7 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
         self.defaultModelID = defaultModelID
         self.options = options
         self.quota = quota
+        self.audioQuota = audioQuota
         self.lastUpdatedAt = lastUpdatedAt
     }
 
@@ -175,6 +180,7 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
             defaultModelID: preferred?.id ?? fallback.id,
             options: options,
             quota: quota(for: currentTier, used: used),
+            audioQuota: audioQuota(for: currentTier, used: currentTier == .free ? min(used, 10) : 0),
             lastUpdatedAt: timestamp
         )
     }
@@ -196,6 +202,18 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
             remaining: remaining,
             resetAt: ISO8601DateFormatter().string(from: .now.addingTimeInterval(86_400))
         )
+    }
+
+    public static func previewAudioQuota(for tier: ModelServiceTier, used: Int = 3) -> ModelQuotaSnapshot {
+        audioQuota(for: tier, used: used)
+    }
+
+    private static func audioQuota(for tier: ModelServiceTier, used: Int) -> ModelQuotaSnapshot {
+        switch tier {
+        case .free: return previewQuota(limit: 10, used: min(used, 10))
+        case .pro: return previewQuota(limit: 60, used: min(used, 60))
+        case .max: return previewQuota(limit: 180, used: min(used, 180))
+        }
     }
 }
 
@@ -411,6 +429,110 @@ public struct ModelServiceExplainResponse: Codable, Equatable, Sendable {
     }
 }
 
+public struct ModelServiceVideoAudioTranslateRequest: Codable, Equatable, Sendable {
+    public let pageID: String
+    public let url: String
+    public let title: String
+    public let videoID: String?
+    public let sourceLanguage: String
+    public let targetLanguage: String
+    public let serviceTier: ModelServiceTier
+    public let preferredModelID: String?
+    public let audioSegmentID: String
+    public let audioDurationSeconds: Double
+    public let captionText: String?
+    public let captionQuality: String?
+    public let manualAudioSelection: Bool?
+    public let privacyDisclosureAccepted: Bool
+
+    public init(
+        pageID: String,
+        url: String,
+        title: String,
+        videoID: String?,
+        sourceLanguage: String,
+        targetLanguage: String,
+        serviceTier: ModelServiceTier,
+        preferredModelID: String?,
+        audioSegmentID: String,
+        audioDurationSeconds: Double,
+        captionText: String?,
+        captionQuality: String?,
+        manualAudioSelection: Bool?,
+        privacyDisclosureAccepted: Bool
+    ) {
+        self.pageID = pageID
+        self.url = url
+        self.title = title
+        self.videoID = videoID
+        self.sourceLanguage = sourceLanguage
+        self.targetLanguage = targetLanguage
+        self.serviceTier = serviceTier
+        self.preferredModelID = preferredModelID
+        self.audioSegmentID = audioSegmentID
+        self.audioDurationSeconds = audioDurationSeconds
+        self.captionText = captionText
+        self.captionQuality = captionQuality
+        self.manualAudioSelection = manualAudioSelection
+        self.privacyDisclosureAccepted = privacyDisclosureAccepted
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case pageID = "pageId"
+        case url
+        case title
+        case videoID = "videoId"
+        case sourceLanguage
+        case targetLanguage
+        case serviceTier
+        case preferredModelID = "preferredModelId"
+        case audioSegmentID = "audioSegmentId"
+        case audioDurationSeconds
+        case captionText
+        case captionQuality
+        case manualAudioSelection
+        case privacyDisclosureAccepted
+    }
+}
+
+public struct ModelServiceVideoAudioTranslateResponse: Codable, Equatable, Sendable {
+    public let pageID: String
+    public let serviceTier: ModelServiceTier
+    public let model: ModelCatalogOption
+    public let segment: VideoAudioSegment?
+    public let quota: AudioTranslationQuota
+    public let state: VideoAudioTranslationState
+    public let error: ModelServiceError?
+
+    public init(
+        pageID: String,
+        serviceTier: ModelServiceTier,
+        model: ModelCatalogOption,
+        segment: VideoAudioSegment?,
+        quota: AudioTranslationQuota,
+        state: VideoAudioTranslationState,
+        error: ModelServiceError?
+    ) {
+        self.pageID = pageID
+        self.serviceTier = serviceTier
+        self.model = model
+        self.segment = segment
+        self.quota = quota
+        self.state = state
+        self.error = error
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case pageID = "pageId"
+        case serviceTier
+        case model
+        case segment
+        case quota
+        case state
+        case error
+    }
+}
+
 public enum ModelServiceTransportError: Error, Equatable {
     case service(ModelServiceError)
     case transport(ModelServiceErrorCode)
@@ -460,6 +582,8 @@ extension ModelServiceTransportError: LocalizedError {
             return "未连接到模型服务。请先启动模型网关，并在 Xcode Scheme 或 Info.plist 配置 MODEL_SERVICE_ROOT。"
         case .contentTooLong:
             return "本次内容过长，请缩短后再试。"
+        case .privacyDisclosureRequired:
+            return "开启听音翻译前，请先确认隐私提示。"
         }
     }
 }

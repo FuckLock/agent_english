@@ -5,7 +5,7 @@ import {
   REVIEW_FEEDBACK_STATES,
 } from "../dist/index.js";
 
-test("review feedback states stay scoped to phase 6 scheduler states", () => {
+test("review feedback states stay scoped to phase 7 scheduler states", () => {
   assert.deepEqual(REVIEW_FEEDBACK_STATES, [
     "remembered",
     "fuzzy",

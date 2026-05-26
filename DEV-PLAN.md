@@ -4,21 +4,27 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.2
-- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md
-- 源设计：Design-Brief.md + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）
-- 生成日期：2026-05-19
-- 覆盖 Spec 功能：v2.2 核心范围已映射到 Phase 1-9；新增账号会话与权益由 Phase 6.5 覆盖
+- 源 Spec：Product-Spec.md v2.5
+- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦）
+- 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准
+- 生成日期：2026-05-19（v2.5 修订：2026-05-25）
+- 覆盖 Spec 功能：v2.5 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由新增 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由新增 Phase 8.6 落地
 
-**当前进度（2026-05-22）**：
+**当前进度（2026-05-25，已迭代到 v2.5）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
 - Phase 2 已完成：iOS 原生 Tab 壳、SwiftData / Keychain 本地学习底座和样例学习闭环可构建 / 测试。
 - Phase 3 已完成：Xcode 工程、WebView 可进入页面、boot / ping / page-ready bridge 解码、Provider disclosure 和 website data 分离提示可构建 / 测试。
-- Phase 4 已完成：通用网页文本扫描、翻译请求 / 回填 bridge、翻译 Provider adapter、缓存和原文 / 双语 / 学习模式可构建 / 测试。
+- Phase 4 已完成：通用网页文本扫描、翻译请求 / 回填 bridge、翻译 Provider adapter、缓存和文本型网页原文 / 双语 / 学习阅读模式可构建 / 测试。
 - Phase 5 已完成：点词点句解释、selection bridge、原生解释抽屉、SavedItem 收藏沉淀、收藏页搜索 / 筛选 / 删除和来源回看可构建 / 测试。
 - Phase 6 已完成到后台模型服务网关、模型目录 contract、iOS 模型服务客户端和设置页服务等级改造；Phase 4-5 的直连 Provider 能力已转为模型服务路径。
-- 产品决策已调整到 v2.2：不强制登录，但必须有游客 Free 会话；Pro / Max 通过后端 entitlement 判定；充值 / 订阅未定前用 dev/staging 测试账号验证高等级路径。
-- 下一步进入 Phase 6.5：账号会话 + 后端权益 + dev/staging Pro / Max 测试账号。Phase 6.5 完成前不得继续 Phase 7 的设置扩展，以免设置页、模型服务和后端授权继续分叉。
+- Phase 6.5 已完成：游客 Free session、后端 entitlement、dev/staging Pro / Max 测试账号、设置页账号状态、模型目录同步和 session token 请求路径已构建 / 测试 / review 通过。
+- Phase 6.6 已完成基线：浏览器沉浸 chrome、YouTube watch / Shorts 视频模式、`VideoCaptionSegment` / `VideoCaptionOverlayState`、视频字幕叠层 / 降级状态和相关测试已收口。
+- Phase 6.7 已完成：字幕优先 + 听音翻译 Beta 状态、音频分钟额度、后端 ASR route / quota、iOS 听音隐私提示 / 停止 / 关闭入口和相关测试已收口；Free 每天 10 分钟听音额度由后端授权与 catalog 下发。
+- Phase 7 已完成：收藏生成复习卡、记住 / 模糊 / 不会反馈调度、浏览历史 / 继续学习、本地统计、目标语言保存、翻译缓存 / 学习数据 / website data 分离清理已构建 / 测试。
+- Phase 8 已完成：YouTube、Reddit、Wikipedia、AO3、X 站点能力 adapter、scanner 站点能力下发、YouTube 字幕 / 听音双路径回归和首页快捷入口管理已构建 / 测试。
+- 产品决策已调整到 v2.5（在 v2.4 基础上）：① Free 文本翻译从「统一走大模型 gateway」改为「走独立轻量翻译代理转发第三方通用翻译（Google / 微软）」，大模型后端未就绪时 Free 文本翻译仍开箱可用；② YouTube 视频页砍掉底部常驻工具条，改为 App UI 隐形态（YouTube 独占屏幕 + 双语字幕叠层 + 左侧半透明召唤把手）+ 召唤态（精简胶囊菜单：返回 / 翻译开关 / 字幕·听音切换 / 收藏当前句，用完即隐）；③「不做 BYOK」仅指禁止用户自配大模型，不限制产品集成的通用翻译服务；④ 本版集中把 YouTube 做透，Reddit / Wikipedia / AO3 / X 等其他平台定位不变但延后。听音 ASR 仍走 gateway、Free 每天 10 分钟；Free 文本翻译不限量。
+- 当前现状技术债（v2.5 待收敛）：iOS `ModelServiceClient` 现状所有文本翻译都走大模型 gateway 的 `/v1/translate`；`MODEL_SERVICE_ROOT` 未配置时整体报「未连接到模型服务」，导致 Free 也翻不了——这是「Free 用不了」的根因；现状底部常驻 `videoCaptionToolbar` + `videoCaptionStatusBar`（7 按钮工具条）违反 v2.5「视频页不在底部常驻控件」。两项均在新增 Phase 8.5 / 8.6 收敛。
+- 下一步进入 Phase 8.5：翻译分层重构（新建 `services/translation-proxy`、iOS Providers 按 entitlement 路由、Free 文本翻译解耦大模型后端并补测试、隐私提示分两条数据流）。随后 Phase 8.6：YouTube 视频页 v2.5 隐形态 / 召唤态重构。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
 
 ---
 
@@ -26,9 +32,10 @@
 
 **当前范围**：
 - 首版交付 iPhone 原生 App + 轻量模型服务后端；客户端入口固定为 `apps/ios`，模型服务入口固定为 `services/model-gateway`，运行时组合为 SwiftUI + WKWebView + SwiftData + Keychain + Node.js backend。
-- `packages/contracts` 是 native 与 injected script 的协议事实源；`packages/browser-agent` 只承载 DOM 识别、翻译层、学习模式和站点适配。
+- `packages/contracts` 是 native 与 injected script 的协议事实源；`packages/browser-agent` 只承载 DOM 识别、文本型网页翻译层、学习模式、YouTube 当前字幕句识别、视频字幕 / 听音翻译叠层、降级条和站点适配。
+- 翻译能力分层（ADR-0005）：Free 文本翻译走独立 `services/translation-proxy`（转发第三方通用翻译，按 session 限额），Pro / Max 文本翻译、点词解释、学习卡、YouTube 听音 ASR 走 `services/model-gateway`；两个服务独立部署、互不依赖，大模型 gateway 未配置 / 故障时 Free 文本翻译仍开箱可用。
 - 首版必须交付原生学习闭环：收藏、复习、历史、服务等级 / 模型档位设置、隐私清理和基础统计，避免退化成纯 WebView 壳。
-- App 不提供用户自定义 Provider、API Key、Base URL、模型名或 BYOK；Provider 密钥、模型目录、会话、entitlement、额度和 fallback 只在后端。
+- App 不提供用户自定义 Provider、API Key、Base URL、模型名或 BYOK；Provider 密钥、通用翻译 key、模型目录、会话、entitlement、额度和 fallback 只在后端，不进客户端 / `browser-agent` / App bundle。「不做 BYOK」仅指禁止用户自配大模型，不限制产品自身集成的通用翻译服务（Free 默认翻译）。
 - App 首次启动必须创建或恢复游客 Free session；后端 session entitlement 是 Free / Pro / Max 授权事实源，客户端自报服务等级不能用于授权。
 - dev/staging 可通过 `ENABLE_DEV_AUTH=true` 启用 Pro / Max 测试账号；生产环境必须隐藏 UI 并拒绝接口。
 
@@ -36,22 +43,24 @@
 - Android、macOS、Windows 仅保留未来接入边界，本计划不创建完整平台工程。
 - 不恢复旧 `src/` Next 入口，不复用旧 Drizzle / SQLite 游戏数据，不引入 RPG、课程化、学习数据云同步、浏览器插件、YouTube 替代客户端。
 - 不在生产环境启用测试账号；不做 Google-only iOS 公开登录；不把固定 Free / Pro / Max token 写进 App 包。
-- 不实现视频下载、去广告、后台播放、无字幕视频实时转写、Netflix / Disney+ / TED / Coursera 支持；不做用户自带模型配置。
+- 不实现视频下载、字幕下载、去广告、后台播放、无限制听音识别、后台听音识别、下载音视频后转写、Netflix / Disney+ / TED / Coursera 支持；不做用户自带模型配置；不在 YouTube 视频页展示阅读型“原文 / 双语 / 学习”底部分段控件。
 
 **层次边界**：
 - 入口层：`apps/ios` 负责 App 生命周期、SwiftUI 导航、Tab、WKWebView 容器、工具条、底部抽屉、设置页和系统权限；禁止写 DOM 规则、Provider 协议细节、后台路由策略或复习调度规则。
-- 核心层：`apps/ios/AgentEnglishCore` 负责收藏、历史、复习、模型目录快照、服务等级、错误映射、隐私策略、模型服务客户端和 SwiftData repository；禁止直接读写网页 DOM、保存 Provider 密钥或修改播放器。
-- 共享协议：`packages/contracts` 负责 `BridgeEvent`、DTO、错误码、模型目录、服务等级、额度状态、数据模型命名和 schema；禁止放 UI、存储实现或 Provider SDK。
-- 适配层：`packages/browser-agent` 负责 DOM 扫描、overlay、selection、site adapter；`services/model-gateway` 负责 Provider adapter、模型目录、额度、fallback 和错误归一；禁止 JS 或 iOS App 直接持有 API Key 或调用第三方 AI。
+- 核心层：`apps/ios/AgentEnglishCore` 负责收藏、历史、复习、模型目录快照、服务等级、错误映射、隐私策略、视频翻译来源 / 听音额度状态、模型服务客户端和 SwiftData repository；禁止直接读写网页 DOM、保存 Provider / ASR 密钥或修改播放器。
+- 共享协议：`packages/contracts` 负责 `BridgeEvent`、DTO、错误码、模型目录、服务等级、文本额度、音频分钟额度、视频字幕 / 听音翻译 payload、数据模型命名和 schema；禁止放 UI、存储实现或 Provider / ASR SDK。
+- 适配层：`packages/browser-agent` 负责 DOM 扫描、overlay、selection、site adapter；`services/model-gateway` 负责 session / entitlement、Provider / ASR adapter、模型目录、文本额度、音频分钟额度、fallback 和错误归一；`services/translation-proxy` 负责 Free 文本翻译第三方通用翻译转发、按 session 限额、分块、缓存、通用翻译 fallback 和错误归一（不判定 entitlement 等级、不调用大模型 / ASR）；禁止 JS 或 iOS App 直接持有 API Key / 通用翻译 key 或调用第三方 AI / ASR / 翻译服务。
 
 **目录职责**：
 | 路径 | 当前状态 | 职责 | 禁止 |
 |------|----------|------|------|
 | `apps/ios/` | placeholder | 首版 iOS App 工程、SwiftUI 页面、WKWebView 容器、原生导航和系统能力接入 | 作为跨平台抽象层；直接承载 DOM 选择器、站点规则或旧 Next 页面 |
 | `apps/ios/AgentEnglishCore/` | placeholder | 收藏、历史、复习、模型服务客户端、Bridge DTO、SwiftData、隐私清理等无 UI 核心模块 | 放 SwiftUI View、网页 DOM 逻辑、JS 注入源码、Provider 密钥 |
-| `packages/contracts/` | placeholder | bridge event、共享 DTO、错误码、模型目录、服务等级、数据模型命名、schema version | 放 UI 组件、平台存储实现、Provider SDK |
-| `packages/browser-agent/` | placeholder | 文本识别、overlay、学习模式、selection、站点适配、页面变更监听 | 保存凭证、调用 Provider / 模型服务、写本地数据库、修改 YouTube 播放器 |
-| `services/model-gateway/` | active | 游客 / 登录 session、dev/staging 测试账号、entitlement、模型目录、Provider 密钥、Free / Pro / Max、额度、用量、fallback、翻译 / 解释 API | App UI、DOM 规则、完整浏览历史、收藏 / 复习学习数据、客户端自报等级授权 |
+| `packages/contracts/` | placeholder | bridge event、共享 DTO、错误码、模型目录、服务等级、文本额度、音频分钟额度、视频字幕 / 听音翻译 payload、数据模型命名、schema version | 放 UI 组件、平台存储实现、Provider / ASR SDK |
+| `packages/browser-agent/` | placeholder | 文本识别、文本型网页 overlay、学习模式、selection、YouTube 当前字幕句识别、视频字幕 / 听音翻译叠层、降级条、站点适配、页面变更监听 | 保存凭证、调用 Provider / ASR / 模型服务、写本地数据库、修改 YouTube 播放器、下载完整字幕文件、下载或分离音视频、遮挡 YouTube 控件 |
+| `services/model-gateway/` | active | 游客 / 登录 session、dev/staging 测试账号、entitlement、模型目录、Provider / ASR 密钥、Free / Pro / Max、文本额度、音频分钟额度、用量、fallback、Pro / Max 文本翻译 / 解释 / 听音翻译 API | App UI、DOM 规则、完整浏览历史、完整音频持久化、收藏 / 复习学习数据、客户端自报等级授权 |
+| `services/translation-proxy/` | placeholder（Phase 8.5 创建） | 独立轻量翻译转发服务：Free 文本翻译路由到第三方通用翻译（Google / 微软）、按 session 限额、文本分块、缓存、错误归一、通用翻译 Provider fallback；独立于 model-gateway 部署 | 大模型 / ASR 调用、entitlement 等级判定、完整浏览历史、向客户端暴露翻译 key、页面渲染或本地学习数据持久化 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | active（Phase 8.5 重构为分层路由） | 翻译 / 解释客户端：按 entitlement 把 Free 文本翻译路由到 translation-proxy、Pro / Max 文本翻译 / 解释 / 听音路由到 model-gateway；service-tier / audio-quota 错误映射、重试、错误归一 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码、第三方 Provider / ASR / 通用翻译密钥与 Base URL、把翻译 key 放进客户端 |
 | `apps/android/` / `apps/macos/` / `apps/windows/` | future | 未来平台壳位置，仅文档占位 | 首版创建完整工程或复制 iOS 实现 |
 | `src/` | legacy cleanup target | 旧 Next 游戏入口，后续只作为清理对象处理 | 恢复为新产品入口、创建新业务代码 |
 | `data/` | legacy cleanup target | 旧本地 SQLite 残留目录 | 作为新产品 SwiftData 或学习数据来源 |
@@ -61,6 +70,7 @@
 - ADR-0001 要求所有 WebView 与 JS 通信都通过结构化 `BridgeEvent`，收藏 / 历史 / 复习 / 翻译缓存进入 SwiftData，网站 cookie 与 learning data 分离管理。
 - ADR-0002 要求 App 不保存第三方 Provider 凭证、不展示 API Key 配置；所有翻译 / 解释请求必须通过 `services/model-gateway` 路由到后台模型目录。
 - ADR-0003 要求 App 启动创建或恢复游客 Free session，iOS 只在 Keychain 保存后端 session token，后端以 session entitlement 判定 Free / Pro / Max；dev/staging 测试账号必须由 `ENABLE_DEV_AUTH` 限制，生产关闭。
+- ADR-0004 要求 YouTube watch / Shorts 独立于阅读显示模式：不能展示底部“原文 / 双语 / 学习”控件，字幕翻译必须可关闭、可降级，并避开播放器控件、广告和品牌区域；v2.4 追加字幕优先 + 听音翻译 Beta，Free 每天 10 分钟，听音请求必须经后端 ASR 路由和音频分钟额度控制。
 - 由于原单体 Phase 1 在 criteria-alignment 第 3 轮被判定 `unverifiable`，本次修订将其拆为新的 Phase 1-3：Phase 1 先验证 workspace + contracts + browser-agent 最小包，Phase 2 验证原生 Tab 壳 + SwiftData / Keychain 本地学习底座，Phase 3 验证 `WKWebView` 可进入页面 + `BridgeEvent` 通信入口 + website data 提示；在 Phase 4 前不得跳过这三个基础 Phase。
 
 ---
@@ -177,11 +187,11 @@
 
 ---
 
-## Phase 4: 通用网页翻译 + 显示模式管线
+## Phase 4: 文本型网页翻译 + 阅读显示模式管线
 
 **交付内容**：
 - 完成 `browser-agent` 通用文本扫描、稳定 `segmentId`、页面能力上报和 native / JS 翻译请求映射。
-- 完成 native Provider adapter、文本分块、翻译缓存，以及原文 / 双语 / 学习模式切换。
+- 完成 native Provider adapter、文本分块、翻译缓存，以及文本型网页的原文 / 双语 / 学习模式切换。
 - 为页面识别失败、模型服务不可用、当前等级不可用和翻译失败提供明确降级提示，并保留选区翻译入口。
 
 **关键文件**：
@@ -189,7 +199,7 @@
 - `[新增] packages/browser-agent/src/bridge/translation-events.ts` — 翻译请求、完成、失败事件映射
 - `[新增] packages/browser-agent/src/dom/segment-scanner.ts` — 通用文本节点扫描和稳定段落 id
 - `[新增] packages/browser-agent/src/overlay/translation-overlay.ts` — 双语插入层与失败提示渲染
-- `[新增] packages/browser-agent/src/modes/display-mode-controller.ts` — 原文 / 双语 / 学习模式切换
+- `[新增] packages/browser-agent/src/modes/display-mode-controller.ts` — 文本型网页原文 / 双语 / 学习模式切换
 - `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/TranslationProviderClient.swift` — native 翻译 Provider 调用、重试与错误归一
 - `[修改] apps/ios/AgentEnglish/Web/WebBridgeController.swift` — 翻译请求路由、结果回传和 bridge 生命周期管理
 - `[修改] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — 浏览页工具条、翻译按钮、模式切换与降级提示承载
@@ -203,13 +213,13 @@
 - 层次边界：DOM 扫描和 overlay 只在 `packages/browser-agent`；Provider 调用只在 native adapter；View 只负责交互触发和状态展示。
 - 目录职责：允许修改 `packages/contracts`、`packages/browser-agent`、`apps/ios/AgentEnglish/Web/` 和 native Provider 模块；禁止在 JS 中保存 API Key 或写入 SwiftData。
 - ADR 约束：所有通信必须走 `BridgeEvent`；缓存写入 SwiftData；失败时可降级到选区翻译，但不能伪装成功。
-- 后续范围：不在本 Phase 内实现站点专属规则、收藏解释或复习调度。
+- 后续范围：不在本 Phase 内实现站点专属规则、YouTube 视频沉浸翻译、收藏解释或复习调度。
 
 **已知风险**：
 - 第三方 Provider 的速率限制和文本分块策略会直接影响长文翻译稳定性，需要在本 Phase 先验证缓存与重试行为。
 
 **验收标准**：
-- 最低：用户在通用英文网页上点击翻译后能看到双语插入；三种显示模式可切换；翻译失败能明确提示并保留选区翻译入口。
+- 最低：用户在通用英文文本网页上点击翻译后能看到双语插入；三种阅读显示模式可切换；翻译失败能明确提示并保留选区翻译入口；YouTube 视频页不以本 Phase 的阅读显示模式作为完成标准。
 - 回归：Phase 1-3 的原生 Tab 壳、样例本地学习闭环、`WKWebView` 进入流程和隐私提示仍正常。
 
 ---
@@ -246,7 +256,7 @@
 
 **验收标准**：
 - 最低：用户在通用网页中点词或选句后能看到解释抽屉；可一键收藏并在收藏页检索、筛选、删除；来源 URL 和上下文可回看。
-- 回归：Phase 4 的整页翻译、显示模式和失败降级仍正常。
+- 回归：Phase 4 的整页翻译、阅读显示模式和失败降级仍正常。
 
 ---
 
@@ -289,7 +299,7 @@
 
 **验收标准**：
 - 最低：iOS App 不再要求用户填写 API Key、Base URL 或模型名；设置页只展示服务等级和模型档位；翻译和解释请求通过模型服务客户端完成；模型服务能返回 Free / Pro / Max 目录和可识别错误。
-- 回归：Phase 4 的网页翻译与显示模式、Phase 5 的点词解释和收藏仍可构建 / 测试。
+- 回归：Phase 4 的网页翻译与阅读显示模式、Phase 5 的点词解释和收藏仍可构建 / 测试。
 
 ---
 
@@ -338,6 +348,99 @@
 
 ---
 
+## Phase 6.6: 浏览器沉浸体验修正 + YouTube 视频模式基线
+
+**交付内容**：
+- 修正 WebBrowserView 的浏览状态：进入真实网页后 App 底部 Tab 和阅读模式面板不能长期挤占内容，文本型网页保留可收起工具条。
+- 建立 YouTube watch / Shorts 页面识别和视频沉浸翻译状态机：视频页不展示“原文 / 双语 / 学习”分段控件，只显示极简翻译状态和必要错误提示。
+- 新增 `VideoCaptionSegment` / `VideoCaptionOverlayState` contract 和双端 fixture，为后续完整字幕翻译打基础；本 Phase 只要求可识别视频页、可表达字幕可用 / 不可用 / 降级状态，不强行承诺所有 YouTube 视频翻译成功。
+- 更新设计稿后实现最小 UI：默认播放、字幕翻译中、字幕不可用、降级字幕条和收藏当前句入口的基线状态。
+
+**关键文件**：
+- `[新增] packages/contracts/src/video-caption.ts` — `VideoCaptionSegment`、`VideoCaptionOverlayState`、字幕错误码和状态枚举
+- `[新增] packages/contracts/tests/fixtures/video-caption-youtube-watch.json` — YouTube watch 字幕状态 fixture
+- `[新增] packages/browser-agent/src/site-adapters/youtube.ts` — watch / Shorts 页面识别、页面类型能力上报和字幕状态探测基线
+- `[新增] packages/browser-agent/src/overlay/video-caption-overlay.ts` — 视频安全区域字幕叠层和视频下方降级条渲染基线
+- `[修改] packages/browser-agent/src/modes/display-mode-controller.ts` — 禁止 YouTube 视频页启用文本型阅读模式控件
+- `[修改] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — 进入网页后的沉浸浏览 chrome、YouTube 视频模式状态展示和错误提示
+- `[修改] apps/ios/AgentEnglish/Web/WebBridgeController.swift` — 接收 YouTube 页面类型、字幕状态和 overlay 状态事件
+- `[新增] apps/ios/AgentEnglishTests/VideoCaptionContractTests.swift` — Swift DTO 与 TS fixture 字段等价测试
+
+**依赖前置 Phase**：
+- 依赖 Phase 3（需要 `WKWebView` 进入流和 bridge 入口）
+- 依赖 Phase 4（需要翻译请求 / 回填管线和阅读显示模式基础）
+- 依赖 Phase 6.5（需要模型服务 session token 和后端 entitlement，后续字幕翻译请求必须走同一授权路径）
+- 依赖 v2.3 Design-Brief 和补充后的 YouTube 视频沉浸翻译设计稿
+
+**架构约束映射**：
+- 层次边界：YouTube DOM 和字幕状态识别只在 `packages/browser-agent/src/site-adapters/youtube.ts`；SwiftUI 只承载状态、工具条和错误提示；模型请求仍由 native `ModelServiceClient` 调后端。
+- 目录职责：允许新增 video caption contracts、overlay 和 YouTube adapter；禁止在 SwiftUI 中硬编码 YouTube DOM selector，禁止 JS 直接调用模型服务。
+- ADR / 政策约束：不替换播放器、不下载完整字幕文件、不遮挡 YouTube 控件 / 广告 / 品牌区域；无法安全叠加时必须降级。
+- 后续范围：不在本 Phase 做 Reddit / Wikipedia / AO3 / X 完整站点适配；不在 Phase 6.6 内做听音翻译 Beta；不做 Netflix / Disney+。
+
+**已知风险**：
+- YouTube DOM、字幕节点和 Shorts 布局变化频繁；本 Phase 必须以站点能力声明和降级状态为主，不能把“所有视频都有字幕翻译”写成验收条件。
+- 如果设计稿没有先补 YouTube 视频状态，开发容易继续沿用普通网页工具条，造成同类返工。
+
+**验收标准**：
+- 最低：打开 YouTube watch / Shorts 页面时不再出现“原文 / 双语 / 学习”分段控件；App chrome 不长期挤压视频主体；页面能上报 video mode、字幕可用 / 不可用或降级状态。
+- Contract：`VideoCaptionSegment` / `VideoCaptionOverlayState` 有 TS fixture 与 Swift decoder 等价测试。
+- UX：字幕不可用、额度不足或模型服务失败时只给轻量提示，不中断 YouTube 播放和原站交互。
+- 回归：普通文本网页的 Phase 4 阅读显示模式仍可用；Phase 5 点词解释和 Phase 6.5 session token 请求路径不被破坏。
+
+---
+
+## Phase 6.7: YouTube 听音翻译 Beta + 音频分钟额度
+
+**交付内容**：
+- 在 Phase 6.6 的视频模式基线上增加“字幕优先 + 听音兜底”的来源策略：字幕可用时默认字幕翻译；字幕不可用、质量明显不足或用户手动选择时进入听音翻译 Beta。
+- 扩展 contracts 和 Swift DTO：新增 `VideoAudioSegment`、`VideoAudioTranslationState`、`AudioTranslationQuota`，并让 overlay 能统一渲染字幕源和听音源的双语字幕。
+- 后端模型服务新增听音翻译路由和 ASR adapter 抽象：后端保存 ASR / Provider 密钥、处理短音频片段、完成识别 + 翻译、错误归一和 fallback；iOS / JS 不保存密钥、不直连 ASR。
+- 后端新增音频分钟额度：Free 每天 10 分钟；Pro / Max 由 model catalog / entitlement 下发更高额度；后端以 session entitlement 为授权事实源，忽略客户端自报等级。
+- iOS 设置页和视频页展示听音额度、识别中、停止、额度用完、听音失败和隐私提示；听音翻译必须用户可见、可关闭、可停止。
+
+**关键文件**：
+- `[新增] packages/contracts/src/video-audio-translation.ts` — `VideoAudioSegment`、`VideoAudioTranslationState`、`AudioTranslationQuota`、听音错误码和状态枚举
+- `[新增] packages/contracts/tests/fixtures/video-audio-youtube-watch.json` — YouTube watch 听音翻译状态 fixture
+- `[修改] packages/contracts/src/model-catalog.ts` — 扩展 Free / Pro / Max 的音频分钟额度和 ASR 能力字段
+- `[修改] packages/browser-agent/src/overlay/video-caption-overlay.ts` — 统一渲染字幕源 / 听音源、听音识别中、额度用完和失败状态
+- `[修改] packages/browser-agent/src/site-adapters/youtube.ts` — 在字幕不可用 / 质量低时上报可切换听音状态，不下载或分离音视频
+- `[新增] services/model-gateway/src/routes/video-audio-translate.ts` — 听音翻译 API，必须校验 session 和音频分钟额度
+- `[新增] services/model-gateway/src/providers/asr-provider.ts` — ASR Provider adapter 抽象、错误映射和 fallback 边界
+- `[新增] services/model-gateway/src/quota/audio-minute-quota.ts` — Free 每天 10 分钟、Pro / Max 更高额度、重置时间和滥用保护
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ModelServiceClient.swift` — 新增听音翻译请求、音频额度错误映射和隐私提示状态
+- `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/VideoAudioTranslationContracts.swift` — Swift DTO 与 TS fixture 字段等价
+- `[修改] apps/ios/AgentEnglish/Web/WebBridgeController.swift` — 接收听音翻译状态、音频额度状态和 overlay 状态事件
+- `[修改] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — 视频页显示字幕 / 听音来源、听音识别中、停止、额度用完和失败轻提示
+- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — 服务等级区展示 Free 今日 10 分钟听音额度和剩余分钟
+- `[新增] apps/ios/AgentEnglishTests/VideoAudioTranslationContractTests.swift` — Swift DTO 与 TS fixture 字段等价测试
+
+**依赖前置 Phase**：
+- 依赖 Phase 6.5（需要 session entitlement、model catalog 和 quota 基础）
+- 依赖 Phase 6.6（需要 YouTube 视频模式、视频字幕 overlay 和浏览器沉浸 chrome）
+- 依赖 Product-Spec v2.4 / ADR-0004 amended（明确 Free 也支持听音翻译，每天 10 分钟）
+- 依赖 v2.4 Design-Brief 和已导出的 Pencil 听音状态稿（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）
+
+**架构约束映射**：
+- 层次边界：听音翻译的 ASR、Provider 密钥、音频分钟额度和 fallback 只在 `services/model-gateway`；iOS 只做用户可见控制、隐私提示、短片段请求编排和状态展示；`browser-agent` 只渲染 overlay 与站点能力状态。
+- 目录职责：允许扩展 contracts、browser-agent overlay、model-gateway routes / providers / quota、iOS bridge DTO 和 WebBrowserView；禁止在 JS 中调用 ASR，禁止在 SwiftUI 中硬编码 YouTube DOM selector，禁止保存完整音频。
+- ADR / 政策约束：不替换播放器、不下载完整字幕文件、不下载或分离音视频、不后台听音、不遮挡 YouTube 控件 / 广告 / 品牌区域；无法安全叠加时必须降级。
+- 后续范围：不在本 Phase 做 StoreKit、正式订阅支付、长视频完整转写、字幕文件下载、Netflix / Disney+ / Coursera 支持。
+
+**已知风险**：
+- iOS WKWebView 内的 YouTube 音频可用性、系统权限和平台政策存在不确定性；本 Phase 必须先用可验证的短片段机制打通，无法安全获取音频时要明确失败并回退字幕 / 页面文字翻译。
+- 听音翻译成本和延迟高于字幕翻译；Free 必须严格限制每天 10 分钟，后端必须具备速率限制和用量统计。
+- ASR 质量会受背景音乐、噪声、口音和视频混音影响；错误状态必须是正常产品状态，不能伪装成功。
+
+**验收标准**：
+- 最低：字幕不可用的 YouTube watch / Shorts 页面能出现“听音翻译 Beta”入口；Free 用户能看到今日 10 分钟额度、已用 / 剩余状态；启用后能进入识别中、成功、失败、停止和额度用完状态。
+- Contract：`VideoAudioSegment` / `VideoAudioTranslationState` / `AudioTranslationQuota` 有 TS fixture 与 Swift decoder 等价测试。
+- 后端：听音翻译 API 必须校验 session token 和音频分钟额度；修改请求体中的 `serviceTier` 不能越权获得 Pro / Max 听音额度。
+- 隐私：用户启用听音前能看到音频片段会发送到自有后端并可能转发给 ASR / 模型服务的说明；默认不保存完整音频。
+- 回归：Phase 6.6 的字幕翻译叠层 / 降级条仍可用；普通文本网页翻译、点词解释、收藏和设置页服务等级不被破坏。
+
+---
+
 ## Phase 7: 复习、历史、设置与隐私管理
 
 **交付内容**：
@@ -361,6 +464,8 @@
 - 依赖 Phase 5（复习卡基于收藏沉淀）
 - 依赖 Phase 6（设置页和隐私说明已从 Provider 配置改为模型服务等级）
 - 依赖 Phase 6.5（设置页账号区、游客 Free session 和后端 entitlement 已收口）
+- 依赖 Phase 6.6（浏览器沉浸体验和 YouTube 视频模式基线已收口，避免历史 / 继续学习记录错误页面状态）
+- 依赖 Phase 6.7（YouTube 听音翻译 Beta 和音频分钟额度已收口，避免历史 / 统计漏记视频听音学习状态）
 
 **架构约束映射**：
 - 层次边界：复习调度、历史和统计都在 native core；设置页只做配置与展示，不直接操作网页 DOM 或 Provider SDK。
@@ -377,16 +482,19 @@
 
 ---
 
-## Phase 8: 站点适配 + YouTube 保守支持 + 快捷入口管理
+## Phase 8: 站点适配 + YouTube 视频沉浸翻译完善 + 快捷入口管理
 
 **交付内容**：
 - 为 YouTube、Reddit、Wikipedia、AO3、X 建立独立 site adapter，并保留 generic fallback。
-- 支持 YouTube 标题、简介、评论、搜索结果翻译；有可访问字幕时尝试双语字幕，无字幕或字幕不可访问时明确提示但不影响页面文字翻译。
+- 在 Phase 6.6 / 6.7 的视频模式基线上，完善 YouTube 标题、简介、评论、搜索结果翻译；watch / Shorts 有可访问字幕或可见字幕文本时优先使用字幕翻译；无字幕、字幕质量低或用户选择听音时使用听音翻译 Beta；安全区域不足时明确提示或降级，不影响页面文字翻译和播放。
 - 支持首页常用站点快捷入口的添加、删除和排序，让浏览首页可按个人习惯定制。
 
 **关键文件**：
 - `[新增] packages/contracts/src/site-capability.ts` — 站点能力声明与 adapter 能力枚举
-- `[新增] packages/browser-agent/src/site-adapters/youtube.ts` — YouTube 页面文字和可访问字幕适配
+- `[修改] packages/contracts/src/video-caption.ts` — 扩展 Phase 6.6 的字幕状态，补齐收藏当前字幕句、时间位置和失败原因
+- `[修改] packages/contracts/src/video-audio-translation.ts` — 扩展 Phase 6.7 的听音状态，补齐收藏当前听音句、失败原因和额度展示字段
+- `[修改] packages/browser-agent/src/site-adapters/youtube.ts` — YouTube 页面文字、watch / Shorts 字幕状态和视频沉浸翻译完善
+- `[修改] packages/browser-agent/src/overlay/video-caption-overlay.ts` — 双语字幕叠层、听音翻译叠层、降级字幕条、字幕不可用、听音失败和收藏反馈状态
 - `[新增] packages/browser-agent/src/site-adapters/reddit.ts` — Reddit 帖子与评论适配
 - `[新增] packages/browser-agent/src/site-adapters/wikipedia.ts` — Wikipedia 长文段落适配
 - `[新增] packages/browser-agent/src/site-adapters/ao3.ts` — AO3 阅读页适配
@@ -398,20 +506,110 @@
 - 依赖 Phase 3（需要首页、`WKWebView` 页面进入流和 bridge 入口）
 - 依赖 Phase 4（需要通用翻译与桥接管线）
 - 依赖 Phase 5（需要 selection / 收藏在特定站点仍可工作）
+- 依赖 Phase 6.6（需要 YouTube 视频模式基线、video caption contracts 和浏览器 chrome 修正）
+- 依赖 Phase 6.7（需要 YouTube 听音翻译 contracts、ASR 路由和音频分钟额度）
 - 依赖 Phase 7（需要历史与设置回归稳定）
 
 **架构约束映射**：
-- 层次边界：站点规则只进 `packages/browser-agent/src/site-adapters`；YouTube 能力只做保守学习增强，native 层只负责提示与状态展示。
-- 目录职责：允许新增 site adapter 和首页快捷入口管理页面；禁止在 `apps/ios` 中硬编码 DOM selector 或在 JS 中改动播放器行为。
-- ADR 约束：YouTube 不能做替代客户端、不能下载媒体、不能去广告；站点失败必须回退到通用文本识别或选区翻译。
+- 层次边界：站点规则只进 `packages/browser-agent/src/site-adapters`；YouTube 能力只做保守学习增强，native 层只负责提示、收藏入口和状态展示。
+- 目录职责：允许新增 / 扩展 site adapter、video caption overlay 和首页快捷入口管理页面；禁止在 `apps/ios` 中硬编码 DOM selector 或在 JS 中改动播放器行为。
+- ADR 约束：YouTube 不能做替代客户端、不能下载媒体或完整字幕文件、不能去广告、不能后台听音；站点失败必须回退到通用文本识别、视频下方字幕条、听音翻译 Beta 或选区翻译。
 - 后续范围：不提前支持 Netflix / Disney+ / Coursera，也不创建桌面端或 Android 站点壳。
 
 **已知风险**：
 - 第三方站点 DOM 经常变化，site adapter 需要与通用扫描共存，不能让单站点失败拖垮整页翻译。
+- YouTube 字幕能力可能因地区、视频设置、登录状态或页面结构不可用；听音能力也可能因音质、权限、额度或 ASR 服务不可用失败；失败状态必须被当作正常产品状态处理。
 
 **验收标准**：
-- 最低：五个核心站点都能在各自主页面结构上获得更稳定的翻译结果；YouTube 字幕失败不会影响页面文字翻译；用户可自定义首页快捷入口顺序。
+- 最低：五个核心站点都能在各自主页面结构上获得更稳定的翻译结果；YouTube watch / Shorts 不出现阅读模式分段控件；有可访问字幕或可见字幕文本的视频能显示双语字幕叠层或降级字幕条；字幕不可用时可进入听音翻译 Beta 并遵守 Free 每天 10 分钟额度；字幕 / 听音失败不会影响页面文字翻译；用户可自定义首页快捷入口顺序。
 - 回归：Phase 4 的 generic 翻译、Phase 5 的点词收藏、Phase 7 的历史与设置仍正常。
+
+---
+
+## Phase 8.5: 翻译分层重构（Free 文本翻译解耦大模型后端）
+
+**交付内容**：
+- 新建独立 `services/translation-proxy`：只负责转发第三方通用翻译（Google / 微软）、按 session 限额、文本分块、缓存、通用翻译 Provider fallback 和错误归一；该服务不判定 entitlement 等级，也不调用大模型或 ASR，独立于 `services/model-gateway` 部署。
+- 把 iOS `AgentEnglishCore/Providers` 的翻译客户端改为按 session entitlement 路由：Free 文本翻译走 `translation-proxy`，Pro / Max 文本翻译、解释和听音仍走 `model-gateway`；收敛现状全量直连大模型 gateway `/v1/translate` 的链路这一迁移技术债。
+- 让 Free 文本翻译在大模型后端未配置（`MODEL_SERVICE_ROOT` 未设）或故障时仍开箱可用，并补针对该解耦路径的 Swift / TS 测试，验证「gateway 缺位时 Free 仍能翻」。
+- 把设置页隐私提示拆成两条数据流说明：Free 文本翻译经翻译代理转发到第三方通用翻译；Pro / Max 文本翻译与解释经大模型 gateway 处理。
+
+**关键文件**：
+- `[新增] services/translation-proxy/package.json` — 独立轻量翻译代理服务的依赖与启动脚本
+- `[新增] services/translation-proxy/src/index.ts` — 服务入口、路由装配与配置加载（独立于 model-gateway）
+- `[新增] services/translation-proxy/src/routes/translate.ts` — Free 文本翻译转发 API，校验 session 并执行分块与限额
+- `[新增] services/translation-proxy/src/providers/` — 第三方通用翻译（Google / 微软）Provider adapter 与 fallback 边界
+- `[新增] services/translation-proxy/src/quota/` — 按 session 的文本翻译限额与重置策略
+- `[新增] services/translation-proxy/src/cache/` — 翻译结果缓存，降低重复请求与第三方调用成本
+- `[新增] services/translation-proxy/tests/` — 转发、分块、限额、缓存与 fallback 的服务端测试
+- `[修改] packages/contracts/src/translation.ts` — 如需区分 Free 文本翻译链路与大模型链路的请求 / 结果字段
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/TranslationProviderClient.swift` — 按 session entitlement 把 Free 文本翻译路由到 translation-proxy、Pro / Max 路由到 model-gateway
+- `[新增] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/TranslationProxyClient.swift` — translation-proxy 请求编排、限额错误映射与错误归一（或在 `ModelServiceClient.swift` 内拆分对应路径）
+- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — 隐私提示拆成两条数据流文案（Free 文本→翻译代理→第三方通用翻译；Pro / Max 文本与解释→大模型 gateway）
+- `[新增] apps/ios/AgentEnglishTests/TranslationTieringTests.swift` — Free 文本翻译在 `MODEL_SERVICE_ROOT` 未配置时仍可翻的路径测试与 entitlement 分流测试
+
+**依赖前置 Phase**：
+- 依赖 Phase 4（需要翻译请求 / 回填管线作为分层改造的基线）
+- 依赖 Phase 6（需要 `services/model-gateway` 和 `ModelServiceClient` 作为 Pro / Max 路由目标）
+- 依赖 Phase 6.5（需要 session entitlement 作为分流的授权事实源）
+- 依赖 ADR-0005（翻译分层 + Free 轻量翻译代理解耦的技术决策）
+
+**架构约束映射**：
+- 层次边界：Free 文本翻译第三方转发、限额、分块、缓存和 fallback 只在 `services/translation-proxy`；iOS `Providers` 层只做按 entitlement 的路由编排、错误映射和错误归一；entitlement 等级判定仍是 `services/model-gateway` 与 session 的职责。
+- 目录职责：允许新建 `services/translation-proxy/`（`src/routes`、`src/providers`、`src/quota`、`src/cache`、`tests`）并重构 iOS `Providers` 为分层路由；禁止把通用翻译 key 放进客户端，禁止在 `translation-proxy` 内调用大模型 / ASR，禁止 JS 或 iOS App 直接调用第三方翻译服务。
+- ADR 约束：依据 ADR-0005，`translation-proxy` 与 `model-gateway` 独立部署、互不依赖，大模型后端未配置或故障时 Free 文本翻译必须仍可用；翻译 key 只托管在代理服务端。
+- 后续范围：不在本 Phase 内做 Pro / Max 翻译链路的重构、StoreKit、跨平台 Web / Android 翻译壳，也不把账号同步纳入本 Phase。
+
+**已知风险**：
+- 现状 iOS 全量直连 `/v1/translate` 是「Free 用不了」的根因，重构需保证分流后 Pro / Max 既有翻译路径不被破坏，回归成本集中在 `Providers` 层。
+- 第三方通用翻译（Google / 微软）的额度、计费和可用性存在外部不确定性，`translation-proxy` 必须具备限额、缓存和 Provider fallback，避免单一通用翻译失败拖垮 Free 文本翻译。
+
+**验收标准**：
+- 最低：大模型 gateway 未配置（`MODEL_SERVICE_ROOT` 未设）或不可用时，Free 文本翻译仍能完成翻译，并有覆盖该路径的测试。
+- 分流：按 session entitlement 正确分流——Free 文本翻译走 translation-proxy，Pro / Max 文本翻译 / 解释走 model-gateway；修改客户端自报等级不能越权改变分流结果。
+- 安全：第三方通用翻译 key 只在 `translation-proxy` 服务端，不进入 iOS / JS 客户端。
+- 隐私：设置页隐私提示按两条数据流分别说明 Free 文本翻译与 Pro / Max 文本翻译 / 解释。
+- 回归：Phase 4 的翻译回填管线、Phase 6 的 model-gateway / `ModelServiceClient` 请求路径、Phase 6.5 的 session entitlement 仍正常。
+
+---
+
+## Phase 8.6: YouTube 视频页 v2.5 隐形态 / 召唤态重构
+
+**交付内容**：
+- 移除 `WebBrowserView` 视频沉浸模式下底部常驻的 `videoCaptionToolbar` + `videoCaptionStatusBar`（现状 7 按钮工具条），收敛违反 v2.5「视频页不在底部常驻控件」的技术债。
+- 进入 YouTube 视频页时进入 App UI 隐形态：YouTube 独占屏幕，App 只保留视频上的双语字幕叠层和左侧半透明召唤把手，不在底部常驻任何工具条或状态栏。
+- 实现召唤态：点击左侧把手浮出精简胶囊菜单，仅包含返回、翻译开关、字幕 · 听音来源切换、收藏当前句四项，用完即隐，不长期占屏。
+- 相应调整 `browser-agent` overlay 与 `apps/ios/AgentEnglish/Web` 的 native 视频状态以承载隐形态 / 召唤态切换；字幕叠层内容层（含听音状态展示）保持不变，不重做字幕 / 听音翻译能力。
+
+**关键文件**：
+- `[修改] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — 删除底部 `videoCaptionToolbar` / `videoCaptionStatusBar`，承载隐形态与召唤态布局和左侧把手
+- `[修改] apps/ios/AgentEnglish/Web/WebBridgeController.swift` — 承载隐形态 / 召唤态状态、把手唤出与菜单收起的事件流转
+- `[修改] apps/ios/AgentEnglish/Web/WebBridgeController+Recording.swift` — 如召唤态切换涉及字幕 · 听音来源 / 收藏当前句事件，需同步调整对应桥接
+- `[修改] packages/browser-agent/src/overlay/video-caption-overlay.ts` — 召唤把手与精简胶囊菜单 overlay，或与 native 协作的渲染边界划分
+- `[修改] packages/contracts/src/video-caption.ts` — 如需新增隐形态 / 召唤态状态枚举或菜单项动作字段
+- `[新增] apps/ios/AgentEnglishTests/VideoSummonStateTests.swift` — 隐形态 / 召唤态状态与菜单四项行为的测试
+
+**依赖前置 Phase**：
+- 依赖 Phase 6.6（需要 YouTube 视频模式基线、video caption contracts 和浏览器沉浸 chrome）
+- 依赖 Phase 6.7（需要字幕 / 听音来源切换与音频分钟额度状态）
+- 依赖 Phase 8（需要 YouTube 站点适配与视频沉浸翻译完善后的稳定基线）
+- 依赖 ADR-0004 v2.5 修订（隐形态 / 召唤态交互与合规边界）和 Design-Brief v2.5
+
+**架构约束映射**：
+- 层次边界：把手与召唤菜单的渲染按 ADR-0004 v2.5 在 `browser-agent` overlay 与 native 之间划分；SwiftUI 只承载隐形态 / 召唤态布局与状态，不硬编码 YouTube DOM selector，也不改动播放器行为。
+- 目录职责：允许修改 `WebBrowserView`、`WebBridgeController` 与 `video-caption-overlay.ts`、扩展 `contracts` 状态枚举；禁止把视频页控件改回底部常驻工具条，禁止新增越层捷径。
+- ADR 约束：依据 ADR-0004 v2.5，视频页不在底部常驻控件，把手与菜单不得遮挡 YouTube 播放器控件、进度条、右侧点赞 / 评论 / 分享、频道信息与品牌区域；无法安全叠加时降级。
+- 后续范围：不在本 Phase 内重做字幕 / 听音翻译能力，不扩展 Reddit / Wikipedia / AO3 / X 的非视频交互，也不做 Netflix / Disney+ / Coursera。
+
+**已知风险**：
+- YouTube 播放器布局、安全区域和控件位置随地区 / 登录状态 / 页面结构变化，召唤把手与菜单的叠加位置需保证不遮挡播放器原生控件与品牌区域，否则触发合规风险。
+- 隐形态 / 召唤态切换涉及 native 与 overlay 双端状态同步，需避免菜单残留占屏或把手丢失导致用户无法返回。
+
+**验收标准**：
+- 最低：YouTube 视频页不再出现任何底部常驻工具条或状态栏；隐形态下 YouTube 独占屏幕，App 仅保留视频上的双语字幕叠层和左侧召唤把手。
+- 召唤态：点击把手浮出的精简菜单含返回、翻译开关、字幕 · 听音来源切换、收藏当前句四项，且用完即隐，不长期占屏。
+- 合规：把手与菜单不遮挡 YouTube 播放器控件、进度条、右侧点赞 / 评论 / 分享、频道信息和品牌区域。
+- 回归：Phase 6.6 的视频模式基线与字幕叠层、Phase 6.7 的字幕 / 听音切换与额度、Phase 8 的 YouTube 站点适配仍正常。
 
 ---
 
@@ -469,7 +667,7 @@
 
 | 表名 | 创建 Phase | 修改记录 | 用途（含外键关系）|
 |------|-----------|---------|------|
-| `app_settings_records` | Phase 2 | Phase 3 增加隐私提示状态；Phase 6 改为服务等级 / 模型偏好快照；Phase 6.5 关联账号状态快照；Phase 7 增加目标语言、显示模式默认值、数据保留策略 | 保存本机设置项；关联当前账号状态、服务等级和模型偏好快照 |
+| `app_settings_records` | Phase 2 | Phase 3 增加隐私提示状态；Phase 6 改为服务等级 / 模型偏好快照；Phase 6.5 关联账号状态快照；Phase 7 增加目标语言、阅读显示模式默认值、数据保留策略 | 保存本机设置项；关联当前账号状态、服务等级和模型偏好快照 |
 | `provider_profile_records` | Phase 2 | Phase 6 标记为迁移对象 | 旧直连 Provider 配置记录；Phase 6 后不得作为最终产品配置来源，可迁移为 `model_service_profile_records` 或删除 |
 | `account_state_records` | Phase 6.5 | — | 保存用于展示的账号类型、邮箱脱敏文本、当前 entitlement、额度快照和最后同步时间；真实 session token 只在 Keychain |
 | `model_service_profile_records` | Phase 6 | Phase 6.5 改为由 session entitlement 驱动 | 保存后台下发的服务等级、模型显示名、额度状态、默认模型偏好和最后同步时间；不保存 Provider 密钥、Base URL、真实内部模型名或授权 token |

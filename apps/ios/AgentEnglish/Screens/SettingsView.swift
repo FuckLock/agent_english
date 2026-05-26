@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var preferredModelID = "free-translate"
     @State private var catalog = ModelCatalogSnapshot.preview(currentTier: .free)
     @State private var quota = ModelCatalogSnapshot.preview(currentTier: .free).quota
+    @State private var audioQuota = ModelCatalogSnapshot.previewAudioQuota(for: .free)
     @State private var statusMessage: String?
     @State private var pendingClearAction: SettingsClearAction?
     @State private var showsModelPicker = false
@@ -113,6 +114,8 @@ struct SettingsView: View {
                 LabeledContent("当前等级", value: serviceTier.displayName)
                 LabeledContent("可用档位", value: "Free / Pro / Max")
                 LabeledContent("额度 / quota", value: quotaSummary)
+                LabeledContent("听音额度", value: audioQuotaSummary)
+                    .accessibilityIdentifier("audio-quota-summary")
                 Text("当前等级由账号服务确认；设置页只展示可用档位和默认模型。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -200,7 +203,10 @@ struct SettingsView: View {
             }
 
             Section("隐私说明 / Privacy") {
-                Text("翻译文本和页面文本只会在你主动触发时发送到模型服务，再由自有后端按当前等级转发。")
+                Text("Free 文本翻译只会在你主动触发时发送到自有翻译代理，再由翻译代理转发到第三方通用翻译服务（如 Google / 微软）。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Text("Pro / Max 文本翻译与解释只会在你主动触发时发送到自有大模型 gateway，由后端按当前等级转发到对应模型服务。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 PrivacyDisclosureView(
@@ -263,6 +269,10 @@ struct SettingsView: View {
 
     private var quotaSummary: String {
         "\(quota.used) / \(quota.limit) · 剩余 \(quota.remaining)"
+    }
+
+    private var audioQuotaSummary: String {
+        "今日 \(audioQuota.limit) 分钟 · 剩余 \(audioQuota.remaining) 分钟"
     }
 
     private var accountDisplayName: String {
@@ -392,6 +402,8 @@ struct SettingsView: View {
         serviceTier = session.entitlement.serviceTier
         catalog = session.entitlement.catalog
         quota = session.entitlement.quota
+        audioQuota = session.entitlement.catalog.audioQuota
+            ?? ModelCatalogSnapshot.previewAudioQuota(for: session.entitlement.serviceTier)
         preferredModelID = session.entitlement.catalog.defaultModelID
     }
 
@@ -434,6 +446,8 @@ struct SettingsView: View {
         preferredModelID = preferences.preferredModelID
         catalog = preferences.catalog
         quota = preferences.quota
+        audioQuota = preferences.catalog.audioQuota
+            ?? ModelCatalogSnapshot.previewAudioQuota(for: preferences.serviceTier)
     }
 
     private func saveLanguages() {

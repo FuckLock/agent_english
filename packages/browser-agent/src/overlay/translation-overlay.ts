@@ -15,6 +15,7 @@ export const OVERLAY_STATUS_LABELS = {
   "service-unavailable": "Model service is unavailable right now.",
   "content-too-long": "Selected text is too long to process.",
   "provider-fallback-failed": "Model service is unavailable right now.",
+  "privacy-disclosure-required": "Confirm privacy disclosure before continuing.",
 } as const;
 
 export interface OverlayElementLike {

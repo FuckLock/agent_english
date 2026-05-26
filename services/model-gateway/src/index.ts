@@ -5,6 +5,7 @@ import type {
   DevLoginRequest,
   ExplainRequest,
   TranslateRequest,
+  VideoAudioTranslateRequest,
 } from "@agent-english/contracts";
 
 import { handleDevLogin } from "./auth/dev-auth";
@@ -18,6 +19,7 @@ import type { ProviderRouterDependencies } from "./providers/provider-router";
 import { handleCatalogRoute } from "./routes/catalog";
 import { handleExplainRoute } from "./routes/explain";
 import { handleTranslateRoute } from "./routes/translate";
+import { handleVideoAudioTranslateRoute } from "./routes/video-audio-translate";
 import {
   defaultSessionStore,
   type SessionStore,
@@ -96,6 +98,22 @@ export function createModelGatewayServer(
       return sendJSON(
         response,
         await handleExplainRoute(
+          applySessionEntitlement(body, entitlement),
+          0,
+          {
+            ...dependencies,
+            env,
+            entitlement,
+          },
+        ),
+      );
+    }
+
+    if (request.method === "POST" && routeURL.pathname === "/v1/video-audio-translate") {
+      const body = (await readJSON(request)) as VideoAudioTranslateRequest;
+      return sendJSON(
+        response,
+        await handleVideoAudioTranslateRoute(
           applySessionEntitlement(body, entitlement),
           0,
           {

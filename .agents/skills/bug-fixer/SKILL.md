@@ -1,6 +1,8 @@
 ---
-name: "bug-fixer"
-description: "\u5f53\u7528\u6237\u8bf4'\u8fd9\u4e2a\u529f\u80fd\u574f\u4e86'\u3001'\u62a5\u9519\u4e86'\u3001'\u4e0d\u6b63\u5e38'\uff0c\u6216\u62a5\u544a bug\u3001\u7f16\u8bd1\u9519\u8bef\u3001\u8fd0\u884c\u65f6\u5f02\u5e38\u65f6\u4f7f\u7528\u3002\u901a\u8fc7\u56db\u9636\u6bb5\u7cfb\u7edf\u6027\u8c03\u8bd5\u5b9a\u4f4d\u6839\u56e0\u5e76\u4fee\u590d\u3002"
+name: bug-fixer
+description: 当用户说'这个功能坏了'、'报错了'、'不正常'，或报告 bug、编译错误、运行时异常时使用。通过四阶段系统性调试定位根因并修复。
+version: 2.0
+depends_on: []
 ---
 
 [任务与边界]
@@ -61,7 +63,7 @@ description: "\u5f53\u7528\u6237\u8bf4'\u8fd9\u4e2a\u529f\u80fd\u574f\u4e86'\u30
     - Product-Spec.md → 有则对照预期行为判断是 bug 还是 feature
     - DEV-PLAN.md → 有则定位相关 Phase 和文件
     - 设计工具 MCP → 有则对照设计判断 UI 是否正确
-    - Browser plugin 或 Playwright → 有则自动化复现和验证
+    - Playwright plugin → 有则自动化复现和验证
     - git → 有则用 git log/diff/blame 追溯变更
 
 [调试策略]
@@ -112,9 +114,9 @@ description: "\u5f53\u7528\u6237\u8bf4'\u8fd9\u4e2a\u529f\u80fd\u574f\u4e86'\u30
         - 否定后记录原因，不重复验证
         - 3 个全否定 → 回第一阶段重新收集证据
         卡住时（条件性联网）：
-        - 报错信息不熟悉 → web.run 报错 + 框架名
-        - 怀疑第三方库 bug → web.run 库名 + 版本 + known issues
-        - 怀疑框架兼容性 → web.run 框架 + 版本 + breaking changes
+        - 报错信息不熟悉 → WebSearch 报错 + 框架名
+        - 怀疑第三方库 bug → WebSearch 库名 + 版本 + known issues
+        - 怀疑框架兼容性 → WebSearch 框架 + 版本 + breaking changes
 
     第四阶段：实施修复
         规则：

@@ -67,6 +67,7 @@ public actor ExplanationProviderClient {
         case .serviceUnavailable: return .serviceUnavailable
         case .contentTooLong: return .contentTooLong
         case .providerFallbackFailed: return .providerFallbackFailed
+        case .privacyDisclosureRequired: return .selectionExplanationFailed
         }
     }
 }

@@ -5,13 +5,17 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 project_dir="${CODEX_PROJECT_DIR:-$(cd "$script_dir/../.." && pwd)}"
 state_file="$project_dir/.codex/.needs-review"
 snapshot_file="$project_dir/.codex/.review-snapshot"
+diff_baseline_file="$project_dir/.codex/.review-diff-baseline"
 
 is_code_file() {
   case "$1" in
-    *.md|*.txt|*.json|*.yaml|*.yml|*.toml|*.lock|*.log|*.env|*.env.*|*.gitignore|*.prettierrc|*.eslintrc|.codex/.needs-review|*/.codex/.needs-review)
+    *.md|*.txt|*.json|*.yaml|*.yml|*.toml|*.lock|*.log|*.env|*.env.*|*.gitignore|*.prettierrc|*.eslintrc|next-env.d.ts|.codex/.needs-review|*/.codex/.needs-review)
       return 1
       ;;
     .codex/*|.agents/skills/*/SKILL.md)
+      return 1
+      ;;
+    .claude/*)
       return 1
       ;;
     *)
@@ -30,17 +34,6 @@ if [ -n "$file_path" ]; then
   exit 0
 fi
 
-if [ -d "$project_dir/.git" ] && git -C "$project_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  while IFS= read -r changed; do
-    if [ -n "$changed" ] && is_code_file "$changed"; then
-      printf 'needs_review\n' > "$state_file"
-      exit 0
-    fi
-  done <<EOF
-$(git -C "$project_dir" diff --name-only HEAD 2>/dev/null || true)
-EOF
-fi
-
 snapshot_current() {
   find "$project_dir" \
     \( -path "$project_dir/.git" -o -path "$project_dir/.codex" -o -path "$project_dir/.agents" -o -path "$project_dir/node_modules" -o -path "$project_dir/dist" -o -path "$project_dir/build" -o -path "$project_dir/.next" \) -prune \
@@ -56,15 +49,48 @@ snapshot_current() {
 tmp_snapshot="$(mktemp "${TMPDIR:-/tmp}/codex-review-snapshot.XXXXXX")"
 snapshot_current > "$tmp_snapshot"
 
+tmp_code_diff="$(mktemp "${TMPDIR:-/tmp}/codex-review-diff.XXXXXX")"
+snapshot_code_diff() {
+  if [ -d "$project_dir/.git" ] && git -C "$project_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    while IFS= read -r changed; do
+      if [ -n "$changed" ] && is_code_file "$changed"; then
+        printf '### %s\n' "$changed"
+        git -C "$project_dir" diff --no-ext-diff --binary HEAD -- "$changed" 2>/dev/null || true
+      fi
+    done <<EOF
+$(git -C "$project_dir" diff --name-only HEAD 2>/dev/null || true)
+EOF
+  fi
+}
+snapshot_code_diff > "$tmp_code_diff"
+
 if [ -f "$state_file" ] && [ "$(tr -d '[:space:]' < "$state_file" 2>/dev/null || true)" = "clean" ]; then
   cp "$tmp_snapshot" "$snapshot_file"
+  cp "$tmp_code_diff" "$diff_baseline_file"
   rm -f "$tmp_snapshot"
+  rm -f "$tmp_code_diff"
   exit 0
+fi
+
+if [ -d "$project_dir/.git" ] && git -C "$project_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if [ -f "$diff_baseline_file" ] && cmp -s "$diff_baseline_file" "$tmp_code_diff"; then
+    rm -f "$tmp_snapshot"
+    rm -f "$tmp_code_diff"
+    exit 0
+  fi
+
+  if [ -s "$tmp_code_diff" ]; then
+    printf 'needs_review\n' > "$state_file"
+    rm -f "$tmp_snapshot"
+    rm -f "$tmp_code_diff"
+    exit 0
+  fi
 fi
 
 if [ ! -f "$snapshot_file" ]; then
   cp "$tmp_snapshot" "$snapshot_file"
   rm -f "$tmp_snapshot"
+  rm -f "$tmp_code_diff"
   exit 0
 fi
 
@@ -73,5 +99,6 @@ if ! cmp -s "$snapshot_file" "$tmp_snapshot"; then
 fi
 
 rm -f "$tmp_snapshot"
+rm -f "$tmp_code_diff"
 
 exit 0

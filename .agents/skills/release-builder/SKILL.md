@@ -1,6 +1,6 @@
 ---
-name: "release-builder"
-description: "\u5f53\u7528\u6237\u8bf4\u8981\u6253\u5305\u3001\u90e8\u7f72\u3001\u53d1\u5e03\u3001\u4e0a\u7ebf\uff0c\u6216\u9879\u76ee\u5f00\u53d1\u5b8c\u6210\u51c6\u5907\u4ea4\u4ed8\u65f6\u4f7f\u7528\u3002\u652f\u6301 Web \u90e8\u7f72\u3001Desktop \u6253\u5305\u3001CLI \u53d1\u5e03\uff0c\u5185\u7f6e\u9690\u79c1\u5ba1\u8ba1\u548c\u5192\u70df\u6d4b\u8bd5\u3002"
+name: release-builder
+description: 当用户说要打包、部署、发布、上线，或项目开发完成准备交付时使用。支持 Web 部署、Desktop 打包、CLI 发布，内置隐私审计和冒烟测试。
 ---
 
 [任务]
@@ -27,12 +27,13 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u6253\u5305\u3001\u90e8\u7f72\u3001
 
     可选：
     - Product-Spec.md → 有则可对照功能做冒烟测试
+    - ARCHITECTURE.md / PROJECT-STRUCTURE.md / ADR → 有则读取平台矩阵、数据流、隐私边界、发布约束和 non-goals
 
 [第一性原则]
     **dev 测通 ≠ 打包能用**：开发环境和打包后的运行时环境完全不同。路径不同、依赖打包方式不同、权限不同。必须从安装包测试，不能只测 dev 模式。
     **隐私是底线**：发布产物中绝不包含个人数据——数据库文件、session、API Key、开发者路径、用户名。没有例外，没有豁免。
     **安装后测试**：Desktop 从安装包安装到系统目录测试，CLI 全局安装后测试，Web 部署后在线测试。不从构建输出目录测试。
-    **联网优先**：打包报错先 web.run 搜索，特别是 electron-builder、Vercel CLI 的版本兼容性和签名/公证问题。
+    **联网优先**：打包报错先 WebSearch 搜索，特别是 electron-builder、Vercel CLI 的版本兼容性和签名/公证问题。
 
 [输出风格]
     **语态**：
@@ -70,6 +71,8 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u6253\u5305\u3001\u90e8\u7f72\u3001
         - 产物文件存在且大小合理，Agent 根据项目类型和依赖规模判断预期范围，异常偏大则排查是否打包了不该打包的东西
 
     [隐私审计]（绝对底线）
+        如存在架构文档，先读取其中的数据流、隐私边界和外部服务约束；隐私审计不得低于架构文档要求。
+
         先确定构建产物目录（不同项目不同）：
         - Next.js → .next/ 或 out/
         - Vite → dist/
@@ -117,7 +120,7 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u6253\u5305\u3001\u90e8\u7f72\u3001
     2. 打包
        - macOS：检查签名配置（electron-builder.json 中的 mac.identity / mac.notarize）
        - 如无签名证书 → 告知用户"未签名的应用在 macOS 上会弹'无法验证开发者'，用户需右键→打开绕过"
-       - 如有签名 → web.run 确认 electron-builder 当前版本的签名和公证配置方式
+       - 如有签名 → WebSearch 确认 electron-builder 当前版本的签名和公证配置方式
        - 执行打包：`pnpm package:mac`（或项目实际的打包命令）
        - Windows：`pnpm package:win`
        - Linux：`pnpm package:linux`
@@ -171,6 +174,12 @@ description: "\u5f53\u7528\u6237\u8bf4\u8981\u6253\u5305\u3001\u90e8\u7f72\u3001
            - 有 bin 字段 in package.json + 无前端框架 → CLI
            - 混合类型（如 Electron + Next.js）→ Desktop
            - 无法判断 → 询问用户
+
+        1.5. 读取架构约束（如有）
+           - ARCHITECTURE.md：平台 / 运行环境矩阵、数据流、隐私边界
+           - PROJECT-STRUCTURE.md：发布相关目录、产物目录约束
+           - ADR：发布技术路线、放弃方案、non-goals
+           - 发布检查不得把架构 non-goals 当作缺失功能
 
         2. 问目标
            "你想打包还是发布？

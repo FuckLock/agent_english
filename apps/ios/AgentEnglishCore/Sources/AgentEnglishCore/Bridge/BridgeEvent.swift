@@ -12,6 +12,9 @@ public enum BridgeEventType: String, CaseIterable, Sendable {
     case selectionRequested = "selection.requested"
     case selectionExplanationCompleted = "selection.explanation.completed"
     case selectionExplanationFailed = "selection.explanation.failed"
+    case videoCaptionStateChanged = "video.caption.state.changed"
+    case videoAudioStateChanged = "video.audio.state.changed"
+    case videoAudioQuotaChanged = "video.audio.quota.changed"
 }
 
 public struct BridgeBootPayload: Codable, Equatable, Sendable {
@@ -41,6 +44,9 @@ public enum BridgeEventPayload: Equatable, Sendable {
     case selectionRequested(SelectionRequest)
     case selectionExplanationCompleted(SelectionExplanationResult)
     case selectionExplanationFailed(SelectionExplanationFailurePayload)
+    case videoCaptionStateChanged(VideoCaptionOverlayState)
+    case videoAudioStateChanged(VideoAudioTranslationState)
+    case videoAudioQuotaChanged(AudioTranslationQuota)
 }
 
 public struct BridgeEvent: Equatable, Sendable {
@@ -154,6 +160,33 @@ public struct BridgeEventDecoder: Sendable {
                     requestId: envelope.requestId,
                     pageId: envelope.pageId,
                     payload: .selectionExplanationFailed(envelope.payload)
+                )
+            case .videoCaptionStateChanged:
+                let envelope = try decoder.decode(TypedBridgeEventEnvelope<VideoCaptionOverlayState>.self, from: data)
+                return BridgeEvent(
+                    schemaVersion: envelope.schemaVersion,
+                    eventType: eventType,
+                    requestId: envelope.requestId,
+                    pageId: envelope.pageId,
+                    payload: .videoCaptionStateChanged(envelope.payload)
+                )
+            case .videoAudioStateChanged:
+                let envelope = try decoder.decode(TypedBridgeEventEnvelope<VideoAudioTranslationState>.self, from: data)
+                return BridgeEvent(
+                    schemaVersion: envelope.schemaVersion,
+                    eventType: eventType,
+                    requestId: envelope.requestId,
+                    pageId: envelope.pageId,
+                    payload: .videoAudioStateChanged(envelope.payload)
+                )
+            case .videoAudioQuotaChanged:
+                let envelope = try decoder.decode(TypedBridgeEventEnvelope<AudioTranslationQuota>.self, from: data)
+                return BridgeEvent(
+                    schemaVersion: envelope.schemaVersion,
+                    eventType: eventType,
+                    requestId: envelope.requestId,
+                    pageId: envelope.pageId,
+                    payload: .videoAudioQuotaChanged(envelope.payload)
                 )
             }
         } catch {

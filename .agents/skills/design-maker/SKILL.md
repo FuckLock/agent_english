@@ -1,6 +1,10 @@
 ---
-name: "design-maker"
-description: "\u5f53 Design Brief \u5b8c\u6210\u540e\u3001\u7528\u6237\u9700\u8981\u751f\u6210\u8bbe\u8ba1\u7a3f\u65f6\u4f7f\u7528\u3002\u8bfb\u53d6 Product-Spec.md \u548c Design-Brief.md\uff0c\u901a\u8fc7\u8bbe\u8ba1\u5de5\u5177 MCP \u751f\u6210\u4e00\u6574\u5957\u8bbe\u8ba1\u4ea4\u4ed8\u7269\uff0c\u5305\u62ec\u6240\u6709\u9875\u9762\u3001\u72b6\u6001\u53d8\u4f53\u3001\u7ec4\u4ef6\u89c4\u8303\u548c\u8bbe\u8ba1\u53d8\u91cf\u3002"
+name: design-maker
+description: 当 Design Brief 完成后、用户需要生成设计稿时使用。读取 Product-Spec.md 和 Design-Brief.md，通过设计工具 MCP 生成一整套设计交付物，包括所有页面、状态变体、组件规范和设计变量。
+version: 2.0
+depends_on:
+  - product-spec-builder
+  - design-brief-builder
 ---
 
 [任务与边界]
@@ -9,6 +13,7 @@ description: "\u5f53 Design Brief \u5b8c\u6210\u540e\u3001\u7528\u6237\u9700\u89
     - Product Spec 中每个有 UI 的功能都有对应设计页面
     - 每个页面覆盖适用的状态变体（默认/空/加载/错误/交互变体）
     - 抽取可复用组件，避免重复劳动
+    - MCP 生成完成并校验通过后，将设计稿导出为 PNG 保存到项目根目录 `design_export/`
 
     不做：
     - 不偏离 Spec 添加新功能
@@ -20,6 +25,7 @@ description: "\u5f53 Design Brief \u5b8c\u6210\u540e\u3001\u7528\u6237\u9700\u89
     完成标准：
     - 设计交付清单（规划阶段产出）100% 完成
     - 三层校验通过（完整性 / 一致性 / Spec 对照）
+    - MCP 模式下，`design_export/` 已创建，并包含本次设计稿 PNG 导出文件
     - 输出设计完成报告
 
 [第一性原则]（优先级从高到低）
@@ -117,6 +123,14 @@ description: "\u5f53 Design Brief \u5b8c\u6210\u540e\u3001\u7528\u6237\u9700\u89
          c) 折叠/展开 → 折叠态 + 展开态
          d) 选中/未选中 → 两态都要
 
+    5. 本地 PNG 导出（MCP 模式必需）
+       - 设计 MCP 生成并校验通过后，必须导出 PNG 到项目根目录 `design_export/`
+       - 如果 `design_export/` 不存在，先创建目录
+       - 导出目标至少包含：总设计容器 / 页面区 / 状态区
+       - 如果主页面是独立 frame，应额外导出每个主页面 PNG，方便后续开发对照
+       - 导出前必须确认导出节点仍挂在正确设计文件中，不能只凭上一步记住的 node id
+       - 导出失败 = 设计交付未完成，不能只用截图或文字报告替代
+
     不交付：
     - 技术架构图、流程图
     - 开发任务清单
@@ -169,13 +183,54 @@ description: "\u5f53 Design Brief \u5b8c\u6210\u540e\u3001\u7528\u6237\u9700\u89
            - 设计变量正确引用？
         3. Spec 对照：回读 Spec 功能需求，无遗漏
 
-    [第五步] 输出报告
+    [第五步] 本地 PNG 导出
+        仅 MCP 模式执行；清单模式不执行 PNG 导出，但必须在报告里说明未导出的原因。
+
+        1. 创建导出目录：
+           - 目录固定为项目根目录 `design_export/`
+           - 若不存在，执行 `mkdir -p design_export`
+           - 传给 MCP 导出工具时优先使用项目根目录下的绝对路径，避免相对路径落到设计工具工作目录
+
+        2. 导出前置校验：
+           - 调用 `get_editor_state` 确认当前活动设计文件
+           - 如果活动文件不是本次生成设计稿所在文件，先打开目标设计文件，再继续
+           - 用 `batch_get` 读取导出节点，确认节点真实存在于同一个设计文件
+           - 用 `snapshot_layout(..., problemsOnly: true)` 检查总设计容器和导出区没有布局问题
+           - 回读总设计容器，确认至少包含：Header / Variables / Components / Pages / State Variants
+           - 如果组件区、页面区、状态区脱离总设计容器，先移动回总容器或明确改为分别导出，不能导出一个缺内容的总容器
+
+        3. 确认导出节点：
+           - 总设计容器（完整交付总览）
+           - 页面区（所有主页面总览）
+           - 状态区（所有状态变体总览）
+           - 每个主页面 frame（如果设计工具中有独立页面 frame）
+
+        4. 执行 PNG 导出：
+           - Pencil：使用 MCP `export_nodes`，`format: "png"`，`outputDir: "design_export"`
+           - Pencil 导出优先单节点逐个导出；不要把大量 node ids 一次传给 `export_nodes`
+           - Pencil 对宽/复杂总览节点可能误报 `.pen` 文件错误：
+             - 主页面、单页面：优先 `scale: 1`
+             - 组件区 / 页面行 / 状态区：可用 `scale: 0.5`
+             - 总设计容器：可用 `scale: 0.25`
+           - 如果页面总览节点导出失败，但页面行或每个页面 frame 能导出，应导出页面行 + 每个页面 frame，并在报告里注明页面总览节点失败原因
+           - Figma：使用对应 MCP / 插件导出 PNG 到 `design_export/`
+           - 导出后读取返回路径，确认 PNG 文件真实存在
+
+        5. 失败处理：
+           - 目录创建失败、MCP 导出失败、PNG 文件不存在，都必须停止并报告
+           - 如果 `export_nodes` 报告引用了错误 `.pen` 文件，只允许做 1 次恢复：打开目标设计文件，重新读取节点，再重试导出
+           - 1 次恢复后仍失败，停止并报告 MCP 错误、已创建目录、未生成 PNG 的事实
+           - 不允许把 `get_screenshot` 结果或 Markdown 描述冒充本地 PNG 导出
+
+    [第六步] 输出报告
         📐 设计稿已完成
 
         - 组件：[列表]（共 N 个）
         - 页面：[列表]（共 M 个）
         - 变体：[列表]（共 K 个）
         - 设计文件位置：[path]
+        - PNG 导出目录：`design_export/`
+        - PNG 文件：[导出文件路径列表]
         - 未覆盖内容：[列表 或 "无"]
         
 [初始化]

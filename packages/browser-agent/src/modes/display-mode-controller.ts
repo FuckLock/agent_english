@@ -1,6 +1,7 @@
 import {
   DISPLAY_MODES,
   type DisplayMode,
+  type SiteKind,
 } from "@agent-english/contracts";
 
 export const DISPLAY_MODE_LABELS: Record<DisplayMode, string> = {
@@ -22,7 +23,13 @@ export class DisplayModeController {
     return this.displayMode;
   }
 
-  setMode(mode: DisplayMode): DisplayMode {
+  setMode(mode: DisplayMode, context?: DisplayModeContext): DisplayMode {
+    if (!isTextReadingModeAllowed(context)) {
+      this.displayMode = "original";
+      this.expandedSegmentIds.clear();
+      return this.displayMode;
+    }
+
     if (!DISPLAY_MODES.includes(mode)) {
       return this.displayMode;
     }
@@ -64,4 +71,13 @@ export class DisplayModeController {
   isSegmentCollapsed(segmentId: string): boolean {
     return this.displayMode === "learning" && !this.expandedSegmentIds.has(segmentId);
   }
+}
+
+export interface DisplayModeContext {
+  siteKind?: SiteKind;
+  isVideoPage?: boolean;
+}
+
+export function isTextReadingModeAllowed(context?: DisplayModeContext): boolean {
+  return !(context?.isVideoPage === true || context?.siteKind === "youtube");
 }

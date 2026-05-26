@@ -171,4 +171,86 @@ final class WebBridgeControllerTests: XCTestCase {
         XCTAssertEqual(payload.sourceTitle, "Example Article")
         XCTAssertEqual(payload.failureReason, .selectionExplanationFailed)
     }
+
+    func testDecodesVideoAudioStateEventEnvelope() throws {
+        let event = try BridgeEventDecoder().decode(
+            """
+            {
+              "schemaVersion": 1,
+              "eventType": "video.audio.state.changed",
+              "requestId": "video-audio-state-vaud-1",
+              "pageId": "page-youtube-watch-1",
+              "payload": {
+                "pageId": "page-youtube-watch-1",
+                "siteKind": "youtube",
+                "pageKind": "youtube-watch",
+                "url": "https://m.youtube.com/watch?v=LmFME_-3icE",
+                "title": "Hydrogen Peroxide",
+                "videoId": "LmFME_-3icE",
+                "captionAvailability": "unavailable",
+                "source": "audio",
+                "overlayMode": "inline-overlay",
+                "status": "translated",
+                "capabilities": ["captions-unavailable", "audio-translation-beta", "video-audio-translation"],
+                "activeSegment": {
+                  "pageId": "page-youtube-watch-1",
+                  "audioSegmentId": "vaud-1",
+                  "videoId": "LmFME_-3icE",
+                  "source": "audio",
+                  "sourceText": "Ranking the best ice moments.",
+                  "translatedText": "冰上瞬间排名。",
+                  "sourceLanguage": "English",
+                  "targetLanguage": "简体中文",
+                  "capturedAt": "2026-05-24T19:52:00.000Z"
+                },
+                "quota": {
+                  "serviceTier": "free",
+                  "status": "ok",
+                  "usedMinutes": 3,
+                  "limitMinutes": 10,
+                  "remainingMinutes": 7,
+                  "resetAt": "2026-05-25T00:00:00.000Z"
+                },
+                "updatedAt": "2026-05-24T19:52:01.000Z"
+              }
+            }
+            """.data(using: .utf8)!
+        )
+
+        guard case .videoAudioStateChanged(let payload) = event.payload else {
+            XCTFail("Expected videoAudioStateChanged payload.")
+            return
+        }
+
+        XCTAssertEqual(event.eventType, .videoAudioStateChanged)
+        XCTAssertEqual(payload.activeSegment?.audioSegmentId, "vaud-1")
+        XCTAssertEqual(payload.quota?.remainingMinutes, 7)
+    }
+
+    func testDecodesVideoAudioQuotaEventEnvelope() throws {
+        let event = try BridgeEventDecoder().decode(
+            """
+            {
+              "schemaVersion": 1,
+              "eventType": "video.audio.quota.changed",
+              "payload": {
+                "serviceTier": "free",
+                "status": "ok",
+                "usedMinutes": 3,
+                "limitMinutes": 10,
+                "remainingMinutes": 7,
+                "resetAt": "2026-05-25T00:00:00.000Z"
+              }
+            }
+            """.data(using: .utf8)!
+        )
+
+        guard case .videoAudioQuotaChanged(let payload) = event.payload else {
+            XCTFail("Expected videoAudioQuotaChanged payload.")
+            return
+        }
+
+        XCTAssertEqual(payload.remainingMinutes, 7)
+        XCTAssertEqual(payload.resetAt, "2026-05-25T00:00:00.000Z")
+    }
 }

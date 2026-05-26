@@ -1,6 +1,8 @@
 ---
-name: "skill-builder"
-description: "\u5f53\u7528\u6237\u63d0\u51fa\u521b\u5efa\u65b0 Skill \u7684\u9700\u6c42\uff0c\u6216\u4efb\u4f55\u4e0a\u6e38\u673a\u5236\uff08\u5982\u81ea\u8fdb\u5316\u5f15\u64ce\u3001\u5176\u4ed6 Agent\uff09\u63d0\u8bae\u521b\u5efa\u65b0 Skill \u65f6\u4f7f\u7528\u3002\u6309\u7167\u6846\u67b6\u6a21\u5757\u5316\u89c4\u8303\u521b\u5efa\u7ed3\u6784\u4e00\u81f4\u7684\u65b0 Skill\u3002"
+name: skill-builder
+version: 2.3
+description: 当用户提出创建新 Skill 的需求，或任何上游机制（如自进化引擎、其他 Agent）提议创建新 Skill 时使用。按照框架模块化规范创建结构一致的新 Skill。
+depends_on: []
 ---
 
 [任务与边界]
@@ -49,8 +51,8 @@ description: "\u5f53\u7528\u6237\u63d0\u51fa\u521b\u5efa\u65b0 Skill \u7684\u970
     - 上游提议附带的背景资料（如相关 feedback 记录，由调用方以路径或内容形式提供）
 
     [路径变量]
-    $SKILLS_DIR  = 项目里已存在的 Skill 集合位置（Codex 默认 .agents/skills/）
-    $FEEDBACK_DIR = 项目的 feedback 集合位置（Codex 默认 .codex/feedback/）
+    $SKILLS_DIR  = 项目里已存在的 Skill 集合位置（Claude Code 默认 .claude/skills/）
+    $FEEDBACK_DIR = 项目的 feedback 集合位置（Claude Code 默认 .claude/feedback/）
     其他框架/项目按对应约定提供。
 
 [创建知识]
@@ -131,7 +133,7 @@ description: "\u5f53\u7528\u6237\u63d0\u51fa\u521b\u5efa\u65b0 Skill \u7684\u970
     - AI 容易跳过步骤的 Skill → [反合理化清单]
 
     [条件性联网策略]
-    仅以下情况执行 web.run：
+    仅以下情况执行 WebSearch：
     - 涉及不熟悉的领域 → 了解最佳实践
     - 不确定某 section 命名是否符合社区惯例
     其他情况：按 [9 要素维度] + [反模式规则] 创建即可
@@ -141,7 +143,7 @@ description: "\u5f53\u7528\u6237\u63d0\u51fa\u521b\u5efa\u65b0 Skill \u7684\u970
     [三层模块化]
     - 第一层：原子能力（Section）
     - 第二层：Skill（SKILL.md）
-    - 第三层：工作流（AGENTS.md）
+    - 第三层：工作流（CLAUDE.md）
 
 [工作流程]
 
@@ -206,7 +208,7 @@ description: "\u5f53\u7528\u6237\u63d0\u51fa\u521b\u5efa\u65b0 Skill \u7684\u970
     反模式扫描：
     ✅ 全通过 / ❌ 检测到 [清单]
 
-    （注：本 Skill 不在 AGENTS.md 注册，注册由主 Agent 处理）
+    （注：本 Skill 不在 CLAUDE.md 注册，注册由主 Agent 处理）
     """
 
 [输出风格]

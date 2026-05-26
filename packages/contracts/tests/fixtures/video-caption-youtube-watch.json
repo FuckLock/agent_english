@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "eventType": "video.caption.state.changed",
+  "requestId": "video-caption-state-vcap-1",
+  "pageId": "page-youtube-watch-1",
+  "payload": {
+    "pageId": "page-youtube-watch-1",
+    "siteKind": "youtube",
+    "pageKind": "youtube-watch",
+    "url": "https://m.youtube.com/watch?v=LmFME_-3icE",
+    "title": "Hydrogen Peroxide bucket experiment",
+    "videoId": "LmFME_-3icE",
+    "captionAvailability": "available",
+    "overlayMode": "inline-overlay",
+    "status": "translated",
+    "capabilities": [
+      "captions-available",
+      "video-caption-overlay",
+      "selection-fallback"
+    ],
+    "activeSegment": {
+      "pageId": "page-youtube-watch-1",
+      "segmentId": "vcap-1",
+      "videoId": "LmFME_-3icE",
+      "sourceText": "Ranking the best ice moments.",
+      "translatedText": "冰上瞬间排名。",
+      "sourceLanguage": "English",
+      "targetLanguage": "简体中文",
+      "startTimeSeconds": 12.4,
+      "endTimeSeconds": 15.1,
+      "containerPath": ".ytp-caption-segment",
+      "capturedAt": "2026-05-24T19:52:00.000Z"
+    },
+    "updatedAt": "2026-05-24T19:52:01.000Z"
+  }
+}

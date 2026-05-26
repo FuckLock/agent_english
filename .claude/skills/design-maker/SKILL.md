@@ -52,17 +52,6 @@ depends_on:
        先建可复用组件，再用组件拼页面
        组件先行能加速完整覆盖
 
-[Pencil MCP 实战避坑]（仅 Pencil 模式）
-    调用 `batch_design` / `export_nodes` / `get_screenshot` 前先过一遍
-    `playbooks/pencil-mcp.md` 的 4 问 checklist；4 类已知陷阱按 playbook 规避：
-
-    1. parent 参数不接受 binding 变量（`document` 例外）—— 用 string id
-    2. 单 batch_design 内新建节点 id 不可立即被引用 —— 用 `children` 嵌套或拆 batch
-    3. operations 字符串避开非 ASCII 特殊符（勾号 / emoji）和嵌套双引号
-    4. `get_screenshot` 对大尺寸嵌套顶级容器返回白板缩略图 —— 用 `batch_get` 结构数据判断完成度
-
-    详见 `playbooks/pencil-mcp.md`。Figma 模式忽略本节。
-
 [依赖检测]
     必需（缺失则终止）：
 
@@ -135,15 +124,11 @@ depends_on:
          d) 选中/未选中 → 两态都要
 
     5. 本地 PNG 导出（MCP 模式必需）
-       > 详细 actionable 步骤、scale 分级表、过期 PNG 清理规则见 `checklists/local-png-export.md`。
-       > 本节定义底线规则；checklist 是执行时逐项核查表。
-
        - 设计 MCP 生成并校验通过后，必须导出 PNG 到项目根目录 `design_export/`
        - 如果 `design_export/` 不存在，先创建目录
        - 导出目标至少包含：总设计容器 / 页面区 / 状态区
        - 如果主页面是独立 frame，应额外导出每个主页面 PNG，方便后续开发对照
        - 导出前必须确认导出节点仍挂在正确设计文件中，不能只凭上一步记住的 node id
-       - 替代导出成功后，必须删除或移出被替代的过期 PNG，禁止 `design_export/` 混入过期文件
        - 导出失败 = 设计交付未完成，不能只用截图或文字报告替代
 
     不交付：
@@ -200,8 +185,6 @@ depends_on:
 
     [第五步] 本地 PNG 导出
         仅 MCP 模式执行；清单模式不执行 PNG 导出，但必须在报告里说明未导出的原因。
-
-        > 执行时逐项核查 `checklists/local-png-export.md`（含 scale 分级表、`.pen` 引用错误恢复策略、过期 PNG 清理）。
 
         1. 创建导出目录：
            - 目录固定为项目根目录 `design_export/`

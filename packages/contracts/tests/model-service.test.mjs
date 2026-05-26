@@ -23,5 +23,6 @@ test("model service contract exposes the phase 6 error codes", () => {
     "service-unavailable",
     "content-too-long",
     "provider-fallback-failed",
+    "privacy-disclosure-required",
   ]);
 });

@@ -22,10 +22,14 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     @Published var translationFailure: TranslationFailureReason?
     @Published var displayMode: DisplayMode = .original
     @Published var explanationSheet: ExplanationSheetPresentation?
+    @Published var videoCaptionState: VideoCaptionOverlayState?
+    @Published var videoAudioState: VideoAudioTranslationState?
+    @Published var videoAudioPrivacyAcknowledged = false
 
     let decoder = BridgeEventDecoder()
     let providerClient: TranslationProviderClient
     let explanationProviderClient: ExplanationProviderClient
+    let modelServiceClient: ModelServiceClient
     let createdAtFormatter = ISO8601DateFormatter()
 
     var cacheStore: TranslationCacheStore?
@@ -34,10 +38,13 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     var historyRepository: HistoryRepository?
     var statisticsRepository: StatisticsRepository?
     weak var webView: WKWebView?
+    var videoCaptionTranslationKeys = Set<String>()
+    var videoAudioDispatchCount = 0
 
     init(
         providerClient: TranslationProviderClient = TranslationProviderClient(),
         explanationProviderClient: ExplanationProviderClient = ExplanationProviderClient(),
+        modelServiceClient: ModelServiceClient = ModelServiceClient(),
         cacheStore: TranslationCacheStore? = nil,
         modelServiceSettingsStore: ModelServiceSettingsStore? = nil,
         savedItemRepository: SavedItemRepository? = nil,
@@ -46,6 +53,7 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     ) {
         self.providerClient = providerClient
         self.explanationProviderClient = explanationProviderClient
+        self.modelServiceClient = modelServiceClient
         self.cacheStore = cacheStore
         self.modelServiceSettingsStore = modelServiceSettingsStore
         self.savedItemRepository = savedItemRepository

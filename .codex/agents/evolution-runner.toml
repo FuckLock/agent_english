@@ -37,7 +37,7 @@ developer_instructions = """[任务]
     caller 派发时必须传入：
     - feedback_dir：feedback 目录路径（如 .codex/feedback/）
     - skills_dir：Skill 文件目录（如 .agents/skills/）
-    - claude_md_path：AGENTS.md 路径
+    - agents_md_path：AGENTS.md 路径
 
     可选：
     - trigger：session_init | manual（仅用于日志标记）
@@ -85,14 +85,4 @@ developer_instructions = """[任务]
     - status: has_proposals → 完整建议列表交付
     - status: no_proposals → 明确"无建议" + 扫描统计
     - status: skill_failed → 机器字段 + 失败原因
-    - 任何情况必须显式返回——不允许沉默挂起
-
-## Skills
-
-You're allowed to use these skills when working on this task:
-
-- $evolution-engine
-
-## Codex Runtime Notes
-
-Tool lists from the source agent are guidance only; hard permissions come from Codex sandbox and project config. Referenced skills live under `.agents/skills`; read the relevant `SKILL.md` before executing that workflow."""
+    - 任何情况必须显式返回——不允许沉默挂起"""

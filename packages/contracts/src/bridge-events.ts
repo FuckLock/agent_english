@@ -11,6 +11,12 @@ export const SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE =
   "selection.explanation.completed" as const;
 export const SELECTION_EXPLANATION_FAILED_EVENT_TYPE =
   "selection.explanation.failed" as const;
+export const VIDEO_CAPTION_STATE_CHANGED_EVENT_TYPE =
+  "video.caption.state.changed" as const;
+export const VIDEO_AUDIO_STATE_CHANGED_EVENT_TYPE =
+  "video.audio.state.changed" as const;
+export const VIDEO_AUDIO_QUOTA_CHANGED_EVENT_TYPE =
+  "video.audio.quota.changed" as const;
 
 import type {
   TranslationFailurePayload,
@@ -22,6 +28,11 @@ import type {
   SelectionExplanationResult,
   SelectionRequestedPayload,
 } from "./selection";
+import type { VideoCaptionOverlayState } from "./video-caption";
+import type {
+  AudioTranslationQuota,
+  VideoAudioTranslationState,
+} from "./video-audio-translation";
 
 export type BridgeEventType =
   | typeof BRIDGE_BOOT_EVENT_TYPE
@@ -32,7 +43,10 @@ export type BridgeEventType =
   | typeof TRANSLATION_FAILED_EVENT_TYPE
   | typeof SELECTION_REQUESTED_EVENT_TYPE
   | typeof SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE
-  | typeof SELECTION_EXPLANATION_FAILED_EVENT_TYPE;
+  | typeof SELECTION_EXPLANATION_FAILED_EVENT_TYPE
+  | typeof VIDEO_CAPTION_STATE_CHANGED_EVENT_TYPE
+  | typeof VIDEO_AUDIO_STATE_CHANGED_EVENT_TYPE
+  | typeof VIDEO_AUDIO_QUOTA_CHANGED_EVENT_TYPE;
 
 export interface BridgeEventError {
   code: string;
@@ -71,6 +85,9 @@ interface BridgeEventPayloadMap {
   [SELECTION_REQUESTED_EVENT_TYPE]: SelectionRequestedPayload;
   [SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE]: SelectionExplanationResult;
   [SELECTION_EXPLANATION_FAILED_EVENT_TYPE]: SelectionExplanationFailurePayload;
+  [VIDEO_CAPTION_STATE_CHANGED_EVENT_TYPE]: VideoCaptionOverlayState;
+  [VIDEO_AUDIO_STATE_CHANGED_EVENT_TYPE]: VideoAudioTranslationState;
+  [VIDEO_AUDIO_QUOTA_CHANGED_EVENT_TYPE]: AudioTranslationQuota;
 }
 
 interface BridgeEventResultMap {
@@ -83,6 +100,9 @@ interface BridgeEventResultMap {
   [SELECTION_REQUESTED_EVENT_TYPE]: undefined;
   [SELECTION_EXPLANATION_COMPLETED_EVENT_TYPE]: undefined;
   [SELECTION_EXPLANATION_FAILED_EVENT_TYPE]: undefined;
+  [VIDEO_CAPTION_STATE_CHANGED_EVENT_TYPE]: undefined;
+  [VIDEO_AUDIO_STATE_CHANGED_EVENT_TYPE]: undefined;
+  [VIDEO_AUDIO_QUOTA_CHANGED_EVENT_TYPE]: undefined;
 }
 
 export interface BridgeEventEnvelope<

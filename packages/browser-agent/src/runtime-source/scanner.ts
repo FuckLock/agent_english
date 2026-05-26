@@ -68,13 +68,79 @@ export const RUNTIME_SCANNER_SOURCE = String.raw`  const isVisible = (element) =
     }
     return (
       element.id === pageNoticeId ||
+      element.id === videoCaptionOverlayId ||
+      element.id === videoCaptionFallbackId ||
       element.classList?.contains(overlayClassName) === true ||
-      element.closest?.("." + overlayClassName) != null
+      element.classList?.contains(videoCaptionOverlayClassName) === true ||
+      element.classList?.contains(videoCaptionFallbackClassName) === true ||
+      element.closest?.("." + overlayClassName) != null ||
+      element.closest?.("." + videoCaptionOverlayClassName) != null ||
+      element.closest?.("." + videoCaptionFallbackClassName) != null
     );
+  };
+  const runtimeHostMatches = (url, hosts) => {
+    const hostname = url.hostname.toLowerCase();
+    return hosts.some((host) => hostname === host || hostname.endsWith("." + host));
+  };
+  const runtimeSiteProfile = (urlText) => {
+    let url;
+    try {
+      url = new URL(urlText);
+    } catch {
+      return { siteKind: "generic", capabilities: [...genericCapabilities] };
+    }
+    const path = url.pathname;
+    if (runtimeHostMatches(url, ["youtube.com", "youtu.be"])) {
+      const isVideoPage =
+        url.hostname === "youtu.be" ||
+        path === "/watch" ||
+        path.startsWith("/shorts/");
+      const capabilities = [
+        ...genericCapabilities,
+        "comments",
+        "search-results",
+        "dynamic-content",
+      ];
+      if (isVideoPage) {
+        capabilities.push(
+          "captions-unavailable",
+          "video-caption-fallback",
+          "audio-translation-beta",
+          "video-audio-translation",
+        );
+      }
+      return { siteKind: "youtube", capabilities: Array.from(new Set(capabilities)) };
+    }
+    if (runtimeHostMatches(url, ["reddit.com"])) {
+      return {
+        siteKind: "reddit",
+        capabilities: Array.from(new Set([...genericCapabilities, "comments", "dynamic-content"])),
+      };
+    }
+    if (runtimeHostMatches(url, ["wikipedia.org"])) {
+      return {
+        siteKind: "wikipedia",
+        capabilities: Array.from(new Set([...genericCapabilities, "longform-reading"])),
+      };
+    }
+    if (runtimeHostMatches(url, ["archiveofourown.org"])) {
+      return {
+        siteKind: "ao3",
+        capabilities: Array.from(new Set([...genericCapabilities, "longform-reading"])),
+      };
+    }
+    if (runtimeHostMatches(url, ["x.com", "twitter.com"])) {
+      return {
+        siteKind: "x",
+        capabilities: Array.from(new Set([...genericCapabilities, "dynamic-content"])),
+      };
+    }
+    return { siteKind: "generic", capabilities: [...genericCapabilities] };
   };
 
   const scanPage = (config) => {
-    const pageCapabilities = [...genericCapabilities];
+    const siteProfile = runtimeSiteProfile(window.location.href);
+    const pageCapabilities = [...siteProfile.capabilities];
     const groups = new Map();
     anchorsBySegmentId.clear();
     const walker = document.body ? document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT) : null;
@@ -125,7 +191,7 @@ export const RUNTIME_SCANNER_SOURCE = String.raw`  const isVisible = (element) =
         targetLanguage: config.targetLanguage,
         displayMode: config.displayMode,
         capabilities: pageCapabilities,
-        siteKind: "generic",
+        siteKind: siteProfile.siteKind,
       },
       segments,
     };

@@ -13,11 +13,14 @@
 - [product-spec-builder 快乐优先的游戏化英语学习](product-spec-joy-first-game-learning.md) — 英语学习产品应把快乐学习、游戏化推进和图片驱动放在核心体验前部，Provider 配置只是支撑能力（✅ 2026-05-14 → SKILL [反模式守门].4）
 - [product-spec-builder 内容控制应交给用户](product-spec-content-controls-user-choice.md) — 内容型学习产品应支持默认分类 Tab、关键词输入、长度/难度/模式筛选，而不是固定单一路径（✅ 2026-05-14 → SKILL [反模式守门].3）
 - [product-spec-builder 多模型供应商配置](product-spec-configurable-ai-providers.md) — AI 产品需求应明确多 Provider Adapter、官方 API、grsai/API 聚合配置、设置界面和密钥隔离（✅ 2026-05-14 → SKILL [AI Provider 配置最小集]）
+- [product-spec-builder 消费级 AI 服务等级边界](product-spec-consumer-ai-service-tiers.md) — 普通用户产品不应默认暴露 Provider / API Key / BYOK 配置，应把模型运营放后台、前台只展示服务等级
+- [product-spec-builder Free 层核心能力试用边界](product-spec-free-tier-core-feature-trial.md) — 消费级 Free 层也应给核心差异化能力受限试用额度，不能只把核心体验锁到 Pro / Max
 
 ## AGENTS.md / 路由逻辑
 
 - [AGENTS.md [项目旅程] 状态检测表与线性旅程不一致](claude-md-journey-inconsistent.md) — 状态检测表让 Spec 完成后直跳 /dev-planner，线性旅程里"可选设计阶段"永远不可达，UI-heavy 产品丢失设计分叉（✅ 已毕业）
 - [Codex hook 契约迁移缺口](codex-hook-contract-migration-gaps.md) — AGENTS.md 必须逐项写明 `.codex/hooks.json` 中每个 hook 的真实能力边界，尤其说明 hook 不会自动派发 custom agent
+- [Codex controller reference migration](codex-controller-reference-migration.md) — AGENTS.md 从 CLAUDE.md 迁移时可保留业务流程正文，但必须系统替换 `.agents` / `.codex` 路径、hook 语义和派发参数名
 
 ## design-maker
 

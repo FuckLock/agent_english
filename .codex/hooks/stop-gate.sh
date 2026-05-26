@@ -17,7 +17,6 @@ case "$state" in
     exit 0
     ;;
   clean)
-    rm -f "$state_file"
     exit 0
     ;;
   *)

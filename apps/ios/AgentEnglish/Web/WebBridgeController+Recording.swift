@@ -31,6 +31,7 @@ extension WebBridgeController {
         case .pageReady(let payload):
             summary = "\(event.eventType.rawValue) · \(payload.title.isEmpty ? payload.url : payload.title)"
             recordPageReady(payload)
+            updateVideoModeForPageReady(urlText: payload.url)
         case .translationRequested(let payload):
             summary = "\(event.eventType.rawValue) · \(payload.segments.count)"
             handleTranslationRequest(payload)
@@ -64,6 +65,15 @@ extension WebBridgeController {
                 failureReason: payload.failureReason
             )
             summary = "\(event.eventType.rawValue) · \(payload.failureReason.rawValue)"
+        case .videoCaptionStateChanged(let payload):
+            handleVideoCaptionState(payload)
+            summary = "\(event.eventType.rawValue) · \(payload.pageKind.rawValue) · \(payload.status.rawValue)"
+        case .videoAudioStateChanged(let payload):
+            handleVideoAudioState(payload)
+            summary = "\(event.eventType.rawValue) · \(payload.pageKind.rawValue) · \(payload.status.rawValue)"
+        case .videoAudioQuotaChanged(let payload):
+            handleVideoAudioQuota(payload)
+            summary = "\(event.eventType.rawValue) · \(payload.remainingMinutes)"
         }
 
         pushSummary(summary)
