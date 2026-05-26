@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, amended by Product-Spec v2.4；v2.5 修订：视频页交互重构为隐形态 / 召唤态（见下方 v2.5 修订段，配套 ADR-0005 翻译分层）
+Accepted, amended by Product-Spec v2.4；v2.5 修订：视频页交互重构为隐形态 / 召唤态（见下方 v2.5 修订段，配套 ADR-0005 翻译分层）；v2.6 修订：YouTube 整站重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互 + 不做页面文字翻译，见下方 v2.6 修订段）
 
 ## Date
 
@@ -46,6 +46,17 @@ YouTube watch / Shorts 页面采用独立的“视频沉浸翻译模式”：
 - 召唤把手与菜单的渲染载体（native 浮层 vs `browser-agent` overlay）由实现按层次边界划分；无论哪种都不得遮挡 YouTube 播放器控件、进度条、右侧点赞 / 评论 / 分享、频道信息与品牌区域，无法安全叠加时降级。
 - 由 DEV-PLAN Phase 8.6 落地；该 phase 不重做字幕 / 听音翻译能力，只改交互结构。
 
+### v2.6 修订（YouTube 整站重定位 + SPA 友好注入）
+
+真机验证 v2.5 实现暴露两个问题：① v2.5 只把视频播放页特殊化，YouTube 首页 / 列表仍走通用文本网页管线、套了“原文 / 双语 / 学习”阅读模式控件 + 浏览工具条；② browser-agent 注入（`.atDocumentEnd` 一次性注入 + 全量 DOM 扫描 + 全局 touch/mouse 事件监听 + fixed overlay + 不监听 SPA 路由）破坏了 YouTube 单页应用的原生滑动 / 点击 / 路由。v2.6 把 YouTube 从“通用文本网页 + 视频页特殊”重定位为“专门适配的视频站点”：
+
+- YouTube 整站（首页 / 列表 / 搜索 / Shorts / 视频页）不走通用“文本网页全量扫描 + 阅读显示模式 + 注入翻译”管线，按原生体验处理；`apps/ios` WebBrowserView 对 YouTube 整站走极简 chrome，不显示阅读模式分段控件和常驻浏览工具条。YouTube 是否“整站隐形 + 仅视频页叠字幕”的判定不能只看 /watch、/shorts，要覆盖整站。
+- `browser-agent` 的 YouTube adapter 改 SPA 友好轻注入：监听前端路由变化（History API / popstate），在 YouTube 内前端路由切换时重新判定页面类型；不做全量 DOM 扫描；不注册会干扰 YouTube 原生滚动 / 点击 / 手势的全局事件监听；overlay 不用会干扰 YouTube 虚拟滚动的布局方式。
+- App 在 YouTube 整站的唯一增强是视频播放页的双语字幕叠层（含 v2.5 隐形态 / 召唤态）；YouTube 首页 / 列表 / 搜索不注入翻译逻辑。
+- 硬约束（review 阻断项）：YouTube 注入绝不破坏原生交互——上下滑视频列表、点开视频 / Shorts、SPA 前端路由必须正常，不报错、不卡。
+- 本版不做 YouTube 页面文字翻译（标题 / 简介 / 评论 / 搜索结果），该能力从当前范围移除、留作后续。
+- 由 DEV-PLAN 新增的 “YouTube 整站沉浸重构” phase 落地。
+
 ## Consequences
 
 - 普通文本网页和 YouTube 视频页拥有不同交互模型，避免把阅读器控件套到视频页。
@@ -71,3 +82,5 @@ YouTube watch / Shorts 页面采用独立的“视频沉浸翻译模式”：
 - 不去广告、不后台播放、不分离音视频。
 - 不做无限制听音识别、后台听音识别、下载音视频后转写或保存完整音频。
 - 不在 YouTube 视频页展示阅读型底部分段控件，也不在视频页底部常驻任何 App 工具条 / 状态栏（v2.5 强化：改隐形态 + 召唤态）。
+- 不在 YouTube 任何页面（首页 / 列表 / 搜索 / Shorts / 视频页）套阅读显示模式控件或常驻浏览工具条；不把 YouTube 当普通文本网页处理（v2.6）。
+- YouTube 注入不得破坏原生交互（滑动、点击、SPA 路由）；本版不做 YouTube 页面文字翻译（v2.6）。

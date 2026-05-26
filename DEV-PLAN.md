@@ -4,13 +4,13 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.5
-- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦）
-- 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准
-- 生成日期：2026-05-19（v2.5 修订：2026-05-25）
-- 覆盖 Spec 功能：v2.5 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由新增 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由新增 Phase 8.6 落地
+- 源 Spec：Product-Spec.md v2.6
+- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦）
+- 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准；v2.6 YouTube 整站重定位为交互 / 注入修正，沿用 v2.5 视频页隐形态 / 召唤态视觉，未引入新视觉稿
+- 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25）
+- 覆盖 Spec 功能：v2.6 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由新增 Phase 8.7 落地
 
-**当前进度（2026-05-25，已迭代到 v2.5）**：
+**当前进度（2026-05-25，已迭代到 v2.6）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
 - Phase 2 已完成：iOS 原生 Tab 壳、SwiftData / Keychain 本地学习底座和样例学习闭环可构建 / 测试。
 - Phase 3 已完成：Xcode 工程、WebView 可进入页面、boot / ping / page-ready bridge 解码、Provider disclosure 和 website data 分离提示可构建 / 测试。
@@ -23,8 +23,11 @@
 - Phase 7 已完成：收藏生成复习卡、记住 / 模糊 / 不会反馈调度、浏览历史 / 继续学习、本地统计、目标语言保存、翻译缓存 / 学习数据 / website data 分离清理已构建 / 测试。
 - Phase 8 已完成：YouTube、Reddit、Wikipedia、AO3、X 站点能力 adapter、scanner 站点能力下发、YouTube 字幕 / 听音双路径回归和首页快捷入口管理已构建 / 测试。
 - 产品决策已调整到 v2.5（在 v2.4 基础上）：① Free 文本翻译从「统一走大模型 gateway」改为「走独立轻量翻译代理转发第三方通用翻译（Google / 微软）」，大模型后端未就绪时 Free 文本翻译仍开箱可用；② YouTube 视频页砍掉底部常驻工具条，改为 App UI 隐形态（YouTube 独占屏幕 + 双语字幕叠层 + 左侧半透明召唤把手）+ 召唤态（精简胶囊菜单：返回 / 翻译开关 / 字幕·听音切换 / 收藏当前句，用完即隐）；③「不做 BYOK」仅指禁止用户自配大模型，不限制产品集成的通用翻译服务；④ 本版集中把 YouTube 做透，Reddit / Wikipedia / AO3 / X 等其他平台定位不变但延后。听音 ASR 仍走 gateway、Free 每天 10 分钟；Free 文本翻译不限量。
-- 当前现状技术债（v2.5 待收敛）：iOS `ModelServiceClient` 现状所有文本翻译都走大模型 gateway 的 `/v1/translate`；`MODEL_SERVICE_ROOT` 未配置时整体报「未连接到模型服务」，导致 Free 也翻不了——这是「Free 用不了」的根因；现状底部常驻 `videoCaptionToolbar` + `videoCaptionStatusBar`（7 按钮工具条）违反 v2.5「视频页不在底部常驻控件」。两项均在新增 Phase 8.5 / 8.6 收敛。
-- 下一步进入 Phase 8.5：翻译分层重构（新建 `services/translation-proxy`、iOS Providers 按 entitlement 路由、Free 文本翻译解耦大模型后端并补测试、隐私提示分两条数据流）。随后 Phase 8.6：YouTube 视频页 v2.5 隐形态 / 召唤态重构。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
+- Phase 8.5 已完成：翻译分层重构落地——新建独立 `services/translation-proxy`、iOS `Providers` 按 session entitlement 路由（Free 文本翻译走翻译代理、Pro / Max 走大模型 gateway）、Free 文本翻译在 `MODEL_SERVICE_ROOT` 未配置时仍开箱可用、隐私提示拆成两条数据流并补测试已 commit；收敛了「现状全量直连 `/v1/translate` 导致 Free 翻不了」的技术债。
+- Phase 8.6 已完成：YouTube 视频页 v2.5 隐形态 / 召唤态重构落地——移除底部常驻 `videoCaptionToolbar` + `videoCaptionStatusBar`（7 按钮工具条）、进入视频页即隐形态（YouTube 独占屏幕 + 双语字幕叠层 + 左侧半透明召唤把手）、召唤态精简胶囊菜单（返回 / 翻译开关 / 字幕 · 听音切换 / 收藏当前句）用完即隐已 commit；收敛了「视频页底部常驻控件违反 v2.5」的技术债。
+- 产品决策已调整到 v2.6（在 v2.5 基础上，真机验证后修正）：v2.5 只把 YouTube **视频播放页**做了隐形（Phase 8.6），但 YouTube **首页 / 列表 / 搜索 / Shorts** 仍被当普通文本网页处理——套了「原文 / 双语 / 学习」阅读显示模式控件 + 常驻浏览工具条；且 `browser-agent` 注入（`.atDocumentEnd` 一次性注入 + 全量 DOM 扫描 + 全局 touch / mouse 事件监听 + fixed overlay + 不监听 SPA 路由）破坏了 YouTube 单页应用的原生滑动 / 点击 / 路由。v2.6 把 YouTube 从「普通可翻译网页 + 视频页特殊」重定位为「专门适配的视频站点」：YouTube **整站**（首页 / 列表 / 搜索 / Shorts / 视频页）保持原生操作体验、App 整站几乎隐形、整站不套阅读显示模式控件 / 浏览工具条；App 在 YouTube 的唯一增强是视频播放页的可开关双语字幕（沿用 v2.5 隐形态 / 召唤态）；本版不做 YouTube 页面文字翻译（标题 / 简介 / 评论 / 搜索结果），该能力从当前范围移除、留作后续；注入必须 SPA 友好、绝不破坏 YouTube 原生交互（属 review 阻断项）。
+- 当前现状技术债（v2.6 待收敛）：① `WebBrowserView` 对 YouTube 仅在视频页做隐形，首页 / 列表 / 搜索仍走文本网页 chrome（阅读模式分段控件 + 浏览工具条）；② iOS 侧 `WebBridgeController+VideoCaption.swift` 的 `isVideoImmersiveMode` / `isYouTubeVideoURL` 仅按 `/watch`、`/shorts` 路径识别，未做「YouTube 域名整站识别」；③ `browser-agent` YouTube adapter（`site-adapters/youtube.ts`）与 runtime 注入（`runtime-source/scanner.ts` 全量扫描、`runtime-source/ui-bridge.ts`、`runtime-source/bootstrap.ts`）走通用文本网页注入路径，不监听 SPA 前端路由、做全量 DOM 扫描、注册干扰原生滚动 / 点击的全局事件、overlay 布局干扰 YouTube 虚拟滚动。三项均在新增 Phase 8.7 收敛。
+- 下一步进入 Phase 8.7：YouTube 整站沉浸重构 + 修交互破坏（`WebBrowserView` 对 YouTube 整站走极简 chrome + 整站判定、YouTube adapter 改 SPA 友好轻注入、首页 / 列表 / 搜索不注入翻译、移除 YouTube 页面文字翻译、视频页字幕叠层 + 隐形态 / 召唤态保持不回退）。随后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
 
 ---
 
@@ -610,6 +613,52 @@
 - 召唤态：点击把手浮出的精简菜单含返回、翻译开关、字幕 · 听音来源切换、收藏当前句四项，且用完即隐，不长期占屏。
 - 合规：把手与菜单不遮挡 YouTube 播放器控件、进度条、右侧点赞 / 评论 / 分享、频道信息和品牌区域。
 - 回归：Phase 6.6 的视频模式基线与字幕叠层、Phase 6.7 的字幕 / 听音切换与额度、Phase 8 的 YouTube 站点适配仍正常。
+
+---
+
+## Phase 8.7: YouTube 整站沉浸重构 + 修交互破坏
+
+> 依据 ADR-0004 v2.6 修订段 + Product-Spec v2.6 + ARCHITECTURE v2.6（Browser agent 层 SPA 约束、Risk「YouTube SPA injection」、Dev Planning 输入）。真机验证 v2.5 实现暴露两个问题：① v2.5 只把视频播放页特殊化，YouTube 首页 / 列表 / 搜索 / Shorts 仍走通用文本网页管线、套了「原文 / 双语 / 学习」阅读模式控件 + 浏览工具条；② `browser-agent` 注入（`.atDocumentEnd` 一次性注入 + 全量 DOM 扫描 + 全局 touch / mouse 事件监听 + fixed overlay + 不监听 SPA 路由）破坏了 YouTube 单页应用的原生滑动 / 点击 / 路由。本 Phase 把 YouTube 从「普通可翻译网页 + 视频页特殊」重定位为「专门适配的视频站点」，并修复注入对原生交互的破坏；不重做字幕 / 听音翻译能力本身。
+
+**交付内容**：
+- 让 `WebBrowserView` 对 YouTube **整站**（首页 / 列表 / 搜索 / Shorts / 视频页）走极简 chrome：不显示 `browserBody` 的阅读显示模式分段控件（原文 / 双语 / 学习）和常驻浏览工具条；把「YouTube 整站隐形 + 仅视频播放页叠字幕」的判定从只认 `isVideoImmersiveMode` / `isYouTubeVideoURL` 的 `/watch`、`/shorts` 路径扩展为按 YouTube 域名整站识别（区分「整站隐形」与「仅视频页才叠字幕」两个不同判定）。
+- 把 `browser-agent` YouTube adapter 与 runtime 注入改为 SPA 友好轻注入：监听前端路由变化（History API `pushState` / `replaceState` / `popstate`）在 YouTube 内前端路由切换时重判页面类型；不对 YouTube 做全量 DOM 扫描；不注册会干扰 YouTube 原生滚动 / 点击 / 手势的全局事件监听；overlay 不使用会干扰 YouTube 虚拟滚动的布局（避免 fixed 覆盖滚动容器）。
+- 修复注入对原生交互的破坏，让 YouTube 整站能正常上下滑视频列表、点开视频 / Shorts、SPA 前端路由不报错不卡；同时移除 YouTube 页面文字翻译能力——首页 / 列表 / 搜索不注入翻译逻辑，视频播放页的双语字幕叠层 + v2.5 隐形态 / 召唤态保持可用、不回退。
+
+**关键文件**：
+- `[修改] apps/ios/AgentEnglish/Screens/WebBrowserView.swift` — YouTube 整站极简 chrome 分支（隐藏阅读显示模式分段控件与常驻浏览工具条）+ 整站识别判定，区分「整站隐形」与「仅视频页叠字幕」
+- `[修改] apps/ios/AgentEnglish/Web/WebBridgeController+VideoCaption.swift` — YouTube 站点 / 页面类型判定从只认 `/watch`·`/shorts` 扩展为整站识别（新增 YouTube 整站判定，保留视频页才叠字幕的语义）
+- `[修改] packages/browser-agent/src/site-adapters/youtube.ts` — YouTube 页面类型判定接入 SPA 前端路由重判、整站只在视频播放页声明字幕叠层能力、首页 / 列表 / 搜索不声明翻译注入
+- `[修改] packages/browser-agent/src/runtime-source/ui-bridge.ts` — YouTube 走轻注入路径，监听 History API 路由变化重判页面类型，去除干扰原生滚动 / 点击 / 手势的全局事件监听
+- `[修改] packages/browser-agent/src/runtime-source/scanner.ts` — YouTube 整站跳过全量 DOM 扫描，仅视频播放页走字幕句识别路径
+- `[修改] packages/browser-agent/src/overlay/video-caption-overlay.ts` — 字幕叠层 overlay 布局避免干扰 YouTube 虚拟滚动（不用 fixed 覆盖滚动容器），整站非视频页不渲染翻译 overlay
+- `[修改] packages/contracts/src/site-capability.ts` — 如需新增 YouTube 整站 / 页面类型与「整站隐形 / 仅视频页字幕 / 不注入翻译」站点状态字段（无需新增则保持现状）
+- `[新增] apps/ios/AgentEnglishTests/YouTubeSiteImmersionTests.swift` — YouTube 整站识别、整站极简 chrome 判定与「仅视频页叠字幕」分支的测试
+- `[新增] packages/browser-agent/tests/youtube-spa-injection.test.ts` — SPA 路由重判、YouTube 整站不全量扫描、不注册干扰原生交互的全局事件的注入行为测试
+
+**依赖前置 Phase**：
+- 依赖 Phase 6.6（需要 YouTube 视频模式基线、`VideoCaptionSegment` / `VideoCaptionOverlayState` contract 和浏览器沉浸 chrome）
+- 依赖 Phase 8.6（需要 YouTube 视频页隐形态 / 召唤态 + 左侧召唤把手 + 精简胶囊菜单，本 Phase 在其之上扩展到整站且不得回退视频页交互）
+- 依赖 Phase 8（需要 YouTube 站点适配基线；本 Phase 据 v2.6 移除其中的 YouTube 页面文字翻译，其余站点适配定位不变）
+- 依赖 ADR-0004 v2.6 修订段（YouTube 整站重定位 + SPA 友好注入 + 绝不破坏交互 + 不做页面文字翻译）和 Product-Spec v2.6
+
+**架构约束映射**：
+- 层次边界：YouTube 整站 / 页面类型识别、SPA 路由监听、字幕句识别和 overlay 渲染只在 `packages/browser-agent`（`site-adapters/youtube.ts`、`runtime-source/`、`overlay/`）；`apps/ios` 入口层只承载 YouTube 整站极简 chrome 分支、整站隐形 / 视频页字幕状态展示，不硬编码 YouTube DOM selector；翻译 / 听音请求仍由 native `ModelServiceClient` / 分层 `Providers` 路由，JS 不直接调模型服务。
+- 目录职责：允许修改 `WebBrowserView.swift`、`WebBridgeController+VideoCaption.swift`、`site-adapters/youtube.ts`、`runtime-source/ui-bridge.ts`、`runtime-source/scanner.ts`、`overlay/video-caption-overlay.ts` 和（如需）`contracts/src/site-capability.ts`；禁止在 `apps/ios` 中写 YouTube DOM 规则，禁止 `browser-agent` 修改 YouTube 播放器、下载媒体或完整字幕文件、遮挡控件 / 广告 / 品牌区域，禁止在 YouTube 非视频页注入翻译逻辑或套阅读显示模式 UI。
+- ADR 约束：依据 ADR-0004 v2.6——YouTube 整站走原生体验，不在任何页面套阅读显示模式控件 / 常驻浏览工具条；YouTube adapter 走 SPA 友好轻注入（监听前端路由、不全量扫描、不注册干扰原生交互的全局事件、overlay 不破坏布局）；整站只在视频播放页做字幕叠层；YouTube 注入破坏原生交互（滑动 / 点击 / SPA 路由）属 review 阻断项；本版不做 YouTube 页面文字翻译。
+- 后续范围：本版不做 YouTube 页面文字翻译（标题 / 简介 / 评论 / 搜索结果），该能力移除留作后续；不重做字幕 / 听音翻译能力（沿用 Phase 6.6 / 6.7 / 8.6）；不扩展 Reddit / Wikipedia / AO3 / X 适配（定位不变、延后）；不做 Netflix / Disney+ / Coursera；不做 YouTube 替代客户端、媒体 / 字幕下载、去广告或后台播放。
+
+**已知风险**：
+- YouTube 单页应用的前端路由、虚拟滚动和动态 DOM 行为复杂，SPA 路由监听与轻注入若覆盖不全，可能在某些页面类型切换时漏判或残留 overlay；本 Phase 必须以「整站不破坏原生交互」为硬验收，宁可少注入也不破坏滑动 / 点击 / 路由。
+- 整站识别若过宽（误把非 YouTube 域名当 YouTube）或过窄（漏判 `music.youtube.com` / `m.youtube.com` / `youtu.be` 等），会导致 chrome 判定错误；整站隐形判定与「仅视频页叠字幕」判定必须分别覆盖各 YouTube 域名与页面类型。
+- 移除 YouTube 页面文字翻译需确保不波及通用文本网页（Reddit / Wikipedia / AO3 / 文章）的翻译注入；YouTube 专属轻注入路径必须与通用扫描路径隔离，避免一处改动拖垮另一类页面。
+
+**验收标准**：
+- 最低：真机 / 模拟器在 App 内打开 YouTube，整站（首页 / 列表 / 搜索 / Shorts / 视频页）能正常操作——上下滑视频列表、点开 Shorts、进视频不报错不卡，SPA 前端路由切换正常；YouTube 首页 / 列表 / 搜索不出现阅读显示模式分段控件（原文 / 双语 / 学习）和常驻浏览工具条。
+- 交互（review 阻断项）：YouTube 注入不破坏原生交互——滑动、点击、SPA 前端路由必须正常；YouTube adapter 走 SPA 友好轻注入（监听前端路由重判页面类型、不全量扫描、不注册干扰原生滚动 / 点击的全局事件、overlay 不破坏 YouTube 布局）；整站只在视频播放页注入字幕叠层，首页 / 列表 / 搜索不注入翻译逻辑。
+- 视频页：视频播放页的双语字幕叠层 + v2.5 隐形态 / 召唤态（左侧召唤把手 + 精简胶囊菜单：返回 / 翻译开关 / 字幕 · 听音切换 / 收藏当前句）仍可用、不回退。
+- 范围：YouTube 页面文字翻译能力已移除（首页 / 列表 / 搜索 / 评论不做文字翻译），不被当作缺失功能。
+- 回归：Phase 8.5 的翻译分层（Free 文本翻译走翻译代理、`MODEL_SERVICE_ROOT` 未配置时仍可翻）、Phase 8.6 的视频页隐形态 / 召唤态、Phase 8 的其他站点（Reddit / Wikipedia / AO3 / X）适配与通用文本网页翻译均不被破坏。
 
 ---
 

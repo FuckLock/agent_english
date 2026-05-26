@@ -1,5 +1,4 @@
 import {
-  GENERIC_SITE_CAPABILITIES,
   type SiteCapability,
   type VideoCaptionOverlayState,
   type VideoCaptionPageKind,
@@ -49,8 +48,12 @@ const CAPTION_SELECTORS = [
 
 export function youtubePageCapabilities(urlText: string): SiteCapability[] {
   const detection = detectYouTubePage(urlText);
-  const baseCapabilities: SiteCapability[] = [
-    ...GENERIC_SITE_CAPABILITIES,
+
+  // Phase 8.7 / ADR-0004 v2.6：YouTube 整站走原生体验，非视频页不声明 "inline-translation"
+  // （页面文字翻译注入能力）。仅视频播放页声明字幕 / 听音能力。这里有意排除
+  // GENERIC_SITE_CAPABILITIES 中的 "inline-translation"，与通用文本网页路径隔离。
+  const nonVideoCapabilities: SiteCapability[] = [
+    "readable-page",
     "comments",
     "search-results",
     "dynamic-content",
@@ -58,16 +61,25 @@ export function youtubePageCapabilities(urlText: string): SiteCapability[] {
   ];
 
   if (!detection.isVideoPage) {
-    return uniqueCapabilities(baseCapabilities);
+    return uniqueCapabilities(nonVideoCapabilities);
   }
 
   return uniqueCapabilities([
-    ...baseCapabilities,
+    ...nonVideoCapabilities,
     "captions-unavailable",
     "video-caption-fallback",
     "audio-translation-beta",
     "video-audio-translation",
   ]);
+}
+
+/**
+ * Phase 8.7：YouTube "整站" 识别——区别于 `detectYouTubePage(...).isVideoPage`
+ * 的 "仅视频页" 判定。整站识别覆盖各 YouTube 域名的任意页面（首页 / 列表 /
+ * 搜索 / Shorts / 视频页），供 native chrome 决策与轻注入路径分流使用。
+ */
+export function isYouTubeSiteUrl(urlText: string): boolean {
+  return detectYouTubePage(urlText).isYouTube;
 }
 
 export function detectYouTubePage(urlText: string): YouTubePageDetection {

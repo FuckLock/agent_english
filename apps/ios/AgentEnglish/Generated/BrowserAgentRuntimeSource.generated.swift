@@ -213,6 +213,24 @@ enum BrowserAgentRuntimeSource {
     const pageCapabilities = [...siteProfile.capabilities];
     const groups = new Map();
     anchorsBySegmentId.clear();
+    // Phase 8.7 / A5.2：YouTube 整站不走 TreeWalker 全量遍历产出文本 segments
+    // （视频页只产字幕句、非视频页不产 segments）；直接返回空 segments，与通用文本网页
+    // 全量扫描路径隔离。其它站点行为不变。
+    if (siteProfile.siteKind === "youtube") {
+      return {
+        pageContext: {
+          pageId,
+          url: window.location.href,
+          title: document.title || "",
+          sourceLanguage: config.sourceLanguage,
+          targetLanguage: config.targetLanguage,
+          displayMode: config.displayMode,
+          capabilities: pageCapabilities,
+          siteKind: siteProfile.siteKind,
+        },
+        segments: [],
+      };
+    }
     const walker = document.body ? document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT) : null;
     if (!walker) {
       return null;
@@ -339,116 +357,6 @@ enum BrowserAgentRuntimeSource {
       postSelectionRequested();
     }, 0);
   };
-  const failureMessage = (failureReason) => {
-    switch (failureReason) {
-      case "page-unrecognized":
-        return "Select text to translate on this page.";
-      case "quota-exceeded":
-        return "Daily quota is exhausted for this tier.";
-      case "tier-unavailable":
-        return "Upgrade your service tier to use this model.";
-      case "content-too-long":
-        return "Selected text is too long to process.";
-      case "provider-fallback-failed":
-        return "Model service is unavailable right now.";
-      default:
-        return "Model service is unavailable right now.";
-    }
-  };
-  const selectionFailureMessage = (failureReason) => {
-    switch (failureReason) {
-      case "quota-exceeded":
-        return "Daily quota is exhausted for this tier.";
-      case "tier-unavailable":
-        return "Upgrade your service tier before asking for explanations.";
-      case "content-too-long":
-        return "Selected text is too long to explain.";
-      case "provider-fallback-failed":
-        return "Model service is unavailable right now.";
-      default:
-        return "Model service is unavailable right now.";
-    }
-  };
-  const clearPageNotice = () => {
-    const notice = document.getElementById(pageNoticeId);
-    if (notice) {
-      notice.remove();
-    }
-  };
-  const ensurePageNotice = () => {
-    let notice = document.getElementById(pageNoticeId);
-    if (!notice) {
-      notice = document.createElement("div");
-      notice.id = pageNoticeId;
-      notice.style.margin = "12px";
-      notice.style.padding = "10px 12px";
-      notice.style.borderRadius = "12px";
-      notice.style.background = "rgba(245, 158, 11, 0.12)";
-      notice.style.color = "#92400e";
-      document.body?.insertAdjacentElement("afterbegin", notice);
-    }
-    return notice;
-  };
-  const overlayHidden = (segmentId) => {
-    if (currentDisplayMode === displayModes.original) {
-      return true;
-    }
-    if (currentDisplayMode === displayModes.learning) {
-      return !expandedSegmentIds.has(segmentId);
-    }
-    return false;
-  };
-  const ensureOverlay = (segmentId) => {
-    const anchorElement = anchorsBySegmentId.get(segmentId);
-    if (!anchorElement) {
-      return null;
-    }
-    let overlay = overlaysBySegmentId.get(segmentId);
-    if (overlay?.parentElement) {
-      return overlay;
-    }
-    overlay = document.createElement("div");
-    overlay.dataset.agentEnglishSegmentId = segmentId;
-    overlay.className = overlayClassName;
-    overlay.style.marginTop = "8px";
-    overlay.style.fontSize = "0.92em";
-    overlay.style.lineHeight = "1.5";
-    overlay.style.color = "#475569";
-    overlay.addEventListener("click", () => {
-      if (currentDisplayMode !== displayModes.learning) {
-        return;
-      }
-      if (expandedSegmentIds.has(segmentId)) {
-        expandedSegmentIds.delete(segmentId);
-      } else {
-        expandedSegmentIds.add(segmentId);
-      }
-      syncDisplayMode();
-    });
-    anchorElement.insertAdjacentElement("afterend", overlay);
-    overlaysBySegmentId.set(segmentId, overlay);
-    return overlay;
-  };
-  const renderFailure = (failurePayload) => {
-    clearPageNotice();
-    if (failurePayload.segmentId) {
-      const overlay = ensureOverlay(failurePayload.segmentId);
-      if (overlay) {
-        overlay.textContent = failureMessage(failurePayload.failureReason);
-        overlay.hidden = false;
-        overlay.title = overlay.textContent;
-        overlay.style.color = "#92400e";
-        return;
-      }
-    }
-    const notice = ensurePageNotice();
-    notice.textContent = failureMessage(failurePayload.failureReason);
-  };
-  const syncDisplayMode = () => {
-    overlaysBySegmentId.forEach((overlay, segmentId) => {
-      overlay.hidden = overlayHidden(segmentId);
-    });
-  };
   const detectYouTubePage = () => {
     let url;
     try {
@@ -479,13 +387,6 @@ enum BrowserAgentRuntimeSource {
       return { isYouTube: true, isVideoPage: Boolean(videoId), pageKind: "youtube-shorts", videoId };
     }
     return { isYouTube: true, isVideoPage: false };
-  };
-  const readActiveYouTubeCaptionText = () => {
-    const primaryNodes = Array.from(document.querySelectorAll(".ytp-caption-segment"));
-    const fallbackNodes = primaryNodes.length
-      ? primaryNodes
-      : Array.from(document.querySelectorAll(".caption-window, .ytp-caption-window-container"));
-    return normalizeText(fallbackNodes.map((node) => node.textContent || "").join(" "));
   };
   const videoCaptionStatusMessage = (state) => {
     if (state.failureReason === "caption-unavailable") {
@@ -542,6 +443,17 @@ enum BrowserAgentRuntimeSource {
     }
     return state.message || "听音翻译 Beta";
   };
+  const videoCaptionPlayerHost = () => {
+    const player = document.querySelector("#movie_player, .html5-video-player, ytd-player, .ytp-iv-video-content");
+    if (!player) {
+      return null;
+    }
+    const hostStyle = getComputedStyle(player);
+    if (hostStyle.position === "static") {
+      player.style.position = "relative";
+    }
+    return player;
+  };
   const ensureVideoCaptionSurface = (id) => {
     let surface = document.getElementById(id);
     if (surface) {
@@ -549,12 +461,20 @@ enum BrowserAgentRuntimeSource {
     }
     surface = document.createElement("div");
     surface.id = id;
-    document.body?.appendChild(surface);
+    const playerHost = videoCaptionPlayerHost();
+    if (playerHost) {
+      playerHost.appendChild(surface);
+    } else {
+      document.body?.appendChild(surface);
+    }
     return surface;
   };
   const styleVideoCaptionSurface = (surface, mode) => {
-    surface.style.position = "fixed";
-    surface.style.zIndex = "2147483647";
+    // Phase 8.7 / A7：字幕叠层不再用 fixed 覆盖整个滚动容器，改为 absolute 相对视频
+    // 播放器局部容器定位（host 见 videoCaptionPlayerHost）；播放器不可达时降级为不拦截
+    // 滚动的局部条。pointerEvents:none 确保不拦截 YouTube 原生点击 / 滚动手势。
+    surface.style.position = "absolute";
+    surface.style.zIndex = "2147483000";
     surface.style.whiteSpace = "pre-line";
     surface.style.pointerEvents = "none";
     surface.style.color = "#ffffff";
@@ -564,7 +484,7 @@ enum BrowserAgentRuntimeSource {
       surface.className = videoCaptionFallbackClassName;
       surface.style.left = "12px";
       surface.style.right = "12px";
-      surface.style.bottom = "72px";
+      surface.style.bottom = "12%";
       surface.style.top = "";
       surface.style.transform = "";
       surface.style.maxWidth = "";
@@ -577,8 +497,8 @@ enum BrowserAgentRuntimeSource {
     surface.className = videoCaptionOverlayClassName;
     surface.style.left = "50%";
     surface.style.right = "";
-    surface.style.top = "34%";
-    surface.style.bottom = "";
+    surface.style.top = "";
+    surface.style.bottom = "12%";
     surface.style.transform = "translateX(-50%)";
     surface.style.maxWidth = "82%";
     surface.style.padding = "6px 10px";
@@ -586,14 +506,22 @@ enum BrowserAgentRuntimeSource {
     surface.style.fontSize = "15px";
     surface.style.textAlign = "center";
   };
+  const removeVideoCaptionSurfaces = () => {
+    document.getElementById(videoCaptionOverlayId)?.remove();
+    document.getElementById(videoCaptionFallbackId)?.remove();
+  };
   const applyVideoCaptionOverlayState = (state) => {
+    // A7.2：非视频页绝不渲染字幕 surface；切换前清除任何残留。
+    if (!detectYouTubePage().isVideoPage) {
+      removeVideoCaptionSurfaces();
+      return true;
+    }
     const inactiveId = state.overlayMode === "fallback-bar"
       ? videoCaptionOverlayId
       : videoCaptionFallbackId;
     document.getElementById(inactiveId)?.remove();
     if (state.overlayMode === "hidden") {
-      document.getElementById(videoCaptionOverlayId)?.remove();
-      document.getElementById(videoCaptionFallbackId)?.remove();
+      removeVideoCaptionSurfaces();
       return true;
     }
     const surfaceId = state.overlayMode === "fallback-bar"
@@ -607,6 +535,14 @@ enum BrowserAgentRuntimeSource {
       ? videoAudioStatusMessage(state)
       : videoCaptionStatusMessage(state);
     return true;
+  };
+
+  const readActiveYouTubeCaptionText = () => {
+    const primaryNodes = Array.from(document.querySelectorAll(".ytp-caption-segment"));
+    const fallbackNodes = primaryNodes.length
+      ? primaryNodes
+      : Array.from(document.querySelectorAll(".caption-window, .ytp-caption-window-container"));
+    return normalizeText(fallbackNodes.map((node) => node.textContent || "").join(" "));
   };
   const buildYouTubeVideoCaptionState = (overrides = {}) => {
     const detection = detectYouTubePage();
@@ -770,6 +706,14 @@ enum BrowserAgentRuntimeSource {
     return postVideoAudioState(state, true);
   };
   const syncVideoCaptionState = (force = false) => {
+    // A5 / A7.2：非视频页（含 YouTube 整站非视频页与非 YouTube 页面）不产字幕状态、
+    // 不渲染 overlay；切换到非视频页时清除任何残留 surface。
+    if (!detectYouTubePage().isVideoPage) {
+      removeVideoCaptionSurfaces();
+      lastVideoCaptionSignature = "";
+      lastVideoAudioSignature = "";
+      return false;
+    }
     const state = buildYouTubeVideoCaptionState();
     const postedCaption = postVideoCaptionState(state, force);
     if (state?.captionAvailability === "unavailable") {
@@ -777,14 +721,174 @@ enum BrowserAgentRuntimeSource {
     }
     return postedCaption;
   };
+  const handleYouTubeRouteChange = () => {
+    // A4.2：SPA 前端路由切换后重判页面类型；非视频页清残留、视频页重新同步字幕。
+    syncVideoCaptionState(true);
+  };
+  const installYouTubeRouteListeners = () => {
+    // A4.1：仅在 YouTube 整站注入路径包裹 History API + 监听 popstate；A4.3：不改变
+    // 非 YouTube 通用文本网页行为（非 YouTube 直接返回，不安装监听）。
+    if (!detectYouTubePage().isYouTube || window.__agentEnglishYouTubeRouteHooked) {
+      return;
+    }
+    window.__agentEnglishYouTubeRouteHooked = true;
+    const originalPushState = history.pushState.bind(history);
+    const originalReplaceState = history.replaceState.bind(history);
+    history.pushState = function (...args) {
+      const result = originalPushState(...args);
+      handleYouTubeRouteChange();
+      return result;
+    };
+    history.replaceState = function (...args) {
+      const result = originalReplaceState(...args);
+      handleYouTubeRouteChange();
+      return result;
+    };
+    window.addEventListener("popstate", handleYouTubeRouteChange);
+  };
+
+  window.__agentEnglishYouTubeInjection = {
+    detectYouTubePage,
+    readActiveYouTubeCaptionText,
+    applyVideoCaptionOverlayState,
+    buildYouTubeVideoCaptionState,
+    postVideoCaptionState,
+    buildYouTubeVideoAudioState,
+    postVideoAudioState,
+    requestVideoAudioTranslation,
+    syncVideoCaptionState,
+    installYouTubeRouteListeners,
+  };
+
+  // YouTube 整站识别 / 字幕状态 / overlay 渲染 / SPA 路由监听由 youtube-overlay +
+  // youtube-injection 子模块在同一 IIFE 词法作用域内声明（detectYouTubePage /
+  // applyVideoCaptionOverlayState / buildYouTubeVideoCaptionState / postVideoCaptionState /
+  // postVideoAudioState / requestVideoAudioTranslation / syncVideoCaptionState /
+  // installYouTubeRouteListeners），此处直接引用，不重复声明。
+  const failureMessage = (failureReason) => {
+    switch (failureReason) {
+      case "page-unrecognized":
+        return "Select text to translate on this page.";
+      case "quota-exceeded":
+        return "Daily quota is exhausted for this tier.";
+      case "tier-unavailable":
+        return "Upgrade your service tier to use this model.";
+      case "content-too-long":
+        return "Selected text is too long to process.";
+      case "provider-fallback-failed":
+        return "Model service is unavailable right now.";
+      default:
+        return "Model service is unavailable right now.";
+    }
+  };
+  const selectionFailureMessage = (failureReason) => {
+    switch (failureReason) {
+      case "quota-exceeded":
+        return "Daily quota is exhausted for this tier.";
+      case "tier-unavailable":
+        return "Upgrade your service tier before asking for explanations.";
+      case "content-too-long":
+        return "Selected text is too long to explain.";
+      case "provider-fallback-failed":
+        return "Model service is unavailable right now.";
+      default:
+        return "Model service is unavailable right now.";
+    }
+  };
+  const clearPageNotice = () => {
+    const notice = document.getElementById(pageNoticeId);
+    if (notice) {
+      notice.remove();
+    }
+  };
+  const ensurePageNotice = () => {
+    let notice = document.getElementById(pageNoticeId);
+    if (!notice) {
+      notice = document.createElement("div");
+      notice.id = pageNoticeId;
+      notice.style.margin = "12px";
+      notice.style.padding = "10px 12px";
+      notice.style.borderRadius = "12px";
+      notice.style.background = "rgba(245, 158, 11, 0.12)";
+      notice.style.color = "#92400e";
+      document.body?.insertAdjacentElement("afterbegin", notice);
+    }
+    return notice;
+  };
+  const overlayHidden = (segmentId) => {
+    if (currentDisplayMode === displayModes.original) {
+      return true;
+    }
+    if (currentDisplayMode === displayModes.learning) {
+      return !expandedSegmentIds.has(segmentId);
+    }
+    return false;
+  };
+  const ensureOverlay = (segmentId) => {
+    const anchorElement = anchorsBySegmentId.get(segmentId);
+    if (!anchorElement) {
+      return null;
+    }
+    let overlay = overlaysBySegmentId.get(segmentId);
+    if (overlay?.parentElement) {
+      return overlay;
+    }
+    overlay = document.createElement("div");
+    overlay.dataset.agentEnglishSegmentId = segmentId;
+    overlay.className = overlayClassName;
+    overlay.style.marginTop = "8px";
+    overlay.style.fontSize = "0.92em";
+    overlay.style.lineHeight = "1.5";
+    overlay.style.color = "#475569";
+    overlay.addEventListener("click", () => {
+      if (currentDisplayMode !== displayModes.learning) {
+        return;
+      }
+      if (expandedSegmentIds.has(segmentId)) {
+        expandedSegmentIds.delete(segmentId);
+      } else {
+        expandedSegmentIds.add(segmentId);
+      }
+      syncDisplayMode();
+    });
+    anchorElement.insertAdjacentElement("afterend", overlay);
+    overlaysBySegmentId.set(segmentId, overlay);
+    return overlay;
+  };
+  const renderFailure = (failurePayload) => {
+    clearPageNotice();
+    if (failurePayload.segmentId) {
+      const overlay = ensureOverlay(failurePayload.segmentId);
+      if (overlay) {
+        overlay.textContent = failureMessage(failurePayload.failureReason);
+        overlay.hidden = false;
+        overlay.title = overlay.textContent;
+        overlay.style.color = "#92400e";
+        return;
+      }
+    }
+    const notice = ensurePageNotice();
+    notice.textContent = failureMessage(failurePayload.failureReason);
+  };
+  const syncDisplayMode = () => {
+    overlaysBySegmentId.forEach((overlay, segmentId) => {
+      overlay.hidden = overlayHidden(segmentId);
+    });
+  };
   const requestTranslation = (config = {}) => {
-    if (detectYouTubePage().isVideoPage) {
-      const state = buildYouTubeVideoCaptionState({
-        sourceLanguage: config.sourceLanguage,
-        targetLanguage: config.targetLanguage,
-        status: "translating",
-      });
-      return postVideoCaptionState(state, true);
+    const detection = detectYouTubePage();
+    // Phase 8.7 / A5 / A8：YouTube 整站短路守卫——视频页走字幕路径，非视频页直接返回，
+    // 绝不调用 scanPage 全量扫描、不产生 translation.requested 整页扫描事件。
+    if (detection.isYouTube) {
+      if (detection.isVideoPage) {
+        const state = buildYouTubeVideoCaptionState({
+          sourceLanguage: config.sourceLanguage,
+          targetLanguage: config.targetLanguage,
+          status: "translating",
+        });
+        return postVideoCaptionState(state, true);
+      }
+      return false;
     }
     const displayMode = config.displayMode === displayModes.original
       ? displayModes.bilingual
@@ -883,14 +987,19 @@ enum BrowserAgentRuntimeSource {
     setDisplayMode,
   };
 
+  // Phase 8.7 / A6：选词 / 翻译触发用的全局指针 / 触摸 / 键盘监听仅在非 YouTube
+  // 通用文本网页路径注册；YouTube 整站走轻注入，不挂这些会干扰原生滚动 / 点击 / 手势
+  // 的全局监听。selectionchange 仅清理指纹、不触发翻译，对原生交互无干扰，可保留。
   document.addEventListener("selectionchange", () => {
     if (!window.getSelection?.()?.toString().trim()) {
       lastSelectionFingerprint = "";
     }
   });
-  document.addEventListener("mouseup", scheduleSelectionRequested);
-  document.addEventListener("touchend", scheduleSelectionRequested, { passive: true });
-  document.addEventListener("keyup", scheduleSelectionRequested);
+  if (!detectYouTubePage().isYouTube) {
+    document.addEventListener("mouseup", scheduleSelectionRequested);
+    document.addEventListener("touchend", scheduleSelectionRequested, { passive: true });
+    document.addEventListener("keyup", scheduleSelectionRequested);
+  }
 
   postBridgeEvent("bridge.boot", { sessionId, bridgeScope: "bootstrap" }, {
     requestId: "boot-" + sessionId,
@@ -915,8 +1024,9 @@ enum BrowserAgentRuntimeSource {
   } else {
     postPageReady();
   }
+  installYouTubeRouteListeners();
   syncVideoCaptionState(true);
-  if (!videoCaptionTimer) {
+  if (detectYouTubePage().isYouTube && !videoCaptionTimer) {
     videoCaptionTimer = window.setInterval(() => {
       syncVideoCaptionState(false);
     }, 1200);

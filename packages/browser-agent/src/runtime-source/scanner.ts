@@ -143,6 +143,24 @@ export const RUNTIME_SCANNER_SOURCE = String.raw`  const isVisible = (element) =
     const pageCapabilities = [...siteProfile.capabilities];
     const groups = new Map();
     anchorsBySegmentId.clear();
+    // Phase 8.7 / A5.2：YouTube 整站不走 TreeWalker 全量遍历产出文本 segments
+    // （视频页只产字幕句、非视频页不产 segments）；直接返回空 segments，与通用文本网页
+    // 全量扫描路径隔离。其它站点行为不变。
+    if (siteProfile.siteKind === "youtube") {
+      return {
+        pageContext: {
+          pageId,
+          url: window.location.href,
+          title: document.title || "",
+          sourceLanguage: config.sourceLanguage,
+          targetLanguage: config.targetLanguage,
+          displayMode: config.displayMode,
+          capabilities: pageCapabilities,
+          siteKind: siteProfile.siteKind,
+        },
+        segments: [],
+      };
+    }
     const walker = document.body ? document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT) : null;
     if (!walker) {
       return null;

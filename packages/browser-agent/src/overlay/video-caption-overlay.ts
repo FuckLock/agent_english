@@ -5,6 +5,8 @@ import type {
   VideoCaptionOverlayState,
 } from "@agent-english/contracts";
 
+import { detectYouTubePage } from "../site-adapters/youtube";
+
 export interface VideoCaptionOverlayElementLike {
   textContent: string | null;
   className?: string;
@@ -53,7 +55,13 @@ export const VIDEO_AUDIO_STATUS_LABELS = {
 export function applyVideoCaptionOverlayState(
   documentLike: VideoCaptionOverlayDocumentLike,
   state: VideoCaptionOverlayState | VideoAudioTranslationState,
-): VideoCaptionOverlayElementLike {
+): VideoCaptionOverlayElementLike | null {
+  // Phase 8.7 / A7.2：YouTube 非视频页绝不渲染翻译 / 字幕 surface；清除任何残留节点。
+  if (!detectYouTubePage(state.url).isVideoPage) {
+    removeCaptionSurfaces(documentLike);
+    return null;
+  }
+
   const overlayMode = resolvedOverlayMode(state);
   clearInactiveCaptionSurface(documentLike, overlayMode);
 
@@ -62,6 +70,13 @@ export function applyVideoCaptionOverlayState(
   }
 
   return renderCaptionSurface(documentLike, VIDEO_CAPTION_OVERLAY_ID, state);
+}
+
+function removeCaptionSurfaces(
+  documentLike: VideoCaptionOverlayDocumentLike,
+): void {
+  documentLike.getElementById?.(VIDEO_CAPTION_OVERLAY_ID)?.remove?.();
+  documentLike.getElementById?.(VIDEO_CAPTION_FALLBACK_ID)?.remove?.();
 }
 
 export function messageForVideoCaptionFailure(
@@ -224,14 +239,17 @@ function ensureCaptionSurface(
   return surface;
 }
 
+// Phase 8.7 / A7.1：字幕叠层不再用 position:fixed 覆盖整个滚动容器（会脱离文档流、
+// 干扰 YouTube 虚拟滚动）。改为 position:absolute 相对视频播放器局部容器、bottom 锚定到
+// 视频安全区下方，并以 pointerEvents:none 保证不拦截 YouTube 原生滚动 / 点击手势。
 function surfaceStyle(id: string): Record<string, string> {
   if (id === VIDEO_CAPTION_FALLBACK_ID) {
     return {
-      position: "fixed",
+      position: "absolute",
       left: "12px",
       right: "12px",
-      bottom: "72px",
-      zIndex: "2147483647",
+      bottom: "12%",
+      zIndex: "2147483000",
       padding: "9px 12px",
       borderRadius: "12px",
       background: "rgba(15, 23, 42, 0.82)",
@@ -244,12 +262,12 @@ function surfaceStyle(id: string): Record<string, string> {
   }
 
   return {
-    position: "fixed",
+    position: "absolute",
     left: "50%",
-    top: "34%",
+    bottom: "12%",
     transform: "translateX(-50%)",
     maxWidth: "82%",
-    zIndex: "2147483647",
+    zIndex: "2147483000",
     padding: "6px 10px",
     borderRadius: "4px",
     background: "rgba(0, 0, 0, 0.72)",

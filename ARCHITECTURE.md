@@ -8,7 +8,7 @@
 
 | Type | Source | How It Was Used |
 |---|---|---|
-| Requirements | `Product-Spec.md` v2.5 | 作为产品范围、MVP 功能、非目标、技术方向和隐私边界的事实源；v2.2 明确取消用户自定义 Provider / BYOK，改为后台模型目录、游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端权益判定；v2.3 将 YouTube watch / Shorts 从普通网页阅读模式中拆出为视频沉浸翻译模式；v2.4 将视频翻译升级为字幕翻译优先 + 听音翻译 Beta 兜底，Free 每天 10 分钟听音额度；v2.5 把翻译能力分层——Free 文本翻译走独立轻量翻译代理转发第三方通用翻译（Google / 微软），Pro / Max 文本翻译、解释、听音走大模型 gateway + ASR——并把 Free 文本翻译从大模型后端解耦，澄清“不做 BYOK”仅指禁止用户自配大模型、不限制产品自身集成的通用翻译服务，新增 Web 为后续平台。 |
+| Requirements | `Product-Spec.md` v2.6 | 作为产品范围、MVP 功能、非目标、技术方向和隐私边界的事实源；v2.2 明确取消用户自定义 Provider / BYOK，改为后台模型目录、游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端权益判定；v2.3 将 YouTube watch / Shorts 从普通网页阅读模式中拆出为视频沉浸翻译模式；v2.4 将视频翻译升级为字幕翻译优先 + 听音翻译 Beta 兜底，Free 每天 10 分钟听音额度；v2.5 把翻译能力分层——Free 文本翻译走独立轻量翻译代理转发第三方通用翻译（Google / 微软），Pro / Max 文本翻译、解释、听音走大模型 gateway + ASR——并把 Free 文本翻译从大模型后端解耦，澄清“不做 BYOK”仅指禁止用户自配大模型、不限制产品自身集成的通用翻译服务，新增 Web 为后续平台；v2.6 把 YouTube 从普通可翻译网页重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互），本版不做 YouTube 页面文字翻译。 |
 | Design | `Design-Brief.md`、`design_export/clean_pencil/`、`design_export/5mGHS.png` / `bCKWH.png` / `uTNzx.png` 等 v2.2 状态稿、`design_export/IeNMB.png` 等 v2.3 YouTube 状态稿、`design_export/iajll.png` 等 v2.4 听音状态稿 | 作为 iPhone 首页、网页浏览页、翻译层、点词抽屉、收藏、复习、设置的信息架构和视觉约束；v2.2 补充账号状态、登录入口、测试账号和模型服务错误态；v2.3 已补充 YouTube 视频沉浸翻译设计稿，并禁止视频页展示阅读模式分段控件；v2.4 已补充听音翻译 Beta、识别中、额度用完、Shorts 无字幕听音和设置页听音额度状态。 |
 | Existing code | 当前仓库根目录、`package.json`、已删除的旧 `src/` 游戏代码状态 | 判断当前处于重大重定义后新项目状态；旧 Next 游戏实现不再作为产品入口。 |
 | Constraints | 用户明确说明：首版苹果手机端，后续 Android、macOS、Windows；2026-05-20 复核的 Apple App Review Guidelines、Apple SwiftData / WebKit 文档；2026-05-22 补充 Apple 登录服务规则与 Google Sign-In 后端校验约束；2026-05-24 复核 YouTube API Services Developer Policies 与 Required Minimum Functionality | 用于确定平台矩阵、审核风险、持久化边界、WebView 注入边界、账号登录边界和 YouTube 视频沉浸翻译的保守合规边界。 |
@@ -75,7 +75,7 @@
 | Entry layer / runtime container | `apps/ios` 的 App 生命周期、SwiftUI 导航、Tab、网页浏览页、工具条、底部抽屉、设置页、登录 sheet、账号状态展示、WKWebView 配置、系统权限。 | 不拥有翻译 Provider 具体协议、不直接写 DOM 解析规则、不把复习调度规则写进 View、不展示 API Key 输入、不让用户手动指定真实服务等级。 |
 | Native core modules | 收藏、历史、复习队列、复习反馈、阅读显示模式状态、YouTube 视频沉浸模式状态、视频翻译来源状态、听音翻译分钟额度展示、账号 / session 状态、服务等级快照、模型偏好、错误状态、隐私清理策略、SwiftData repository 接口、Keychain session token 存取、模型服务客户端。 | 不拥有网页 DOM 节点查找、不保存 Provider / ASR 密钥明文、不包含 YouTube 播放器修改逻辑、不直接调用模型厂商或 ASR API、不把客户端等级当作授权依据、不在后台静默听音。 |
 | Shared contracts | Native 与 JS bridge 事件、页面文本段、翻译请求、翻译结果、视频字幕段、视频字幕叠层状态、视频翻译来源、听音识别状态、音频分钟额度、选区上下文、收藏项、复习卡、错误码、站点能力声明、AuthSession、AccountStatus、EntitlementSnapshot、模型目录、服务等级、额度状态。 | 不拥有 UI 组件、不直接调用 Provider / ASR、不直接写本地数据库或后端密钥。 |
-| Browser agent | DOM 文本识别、稳定节点 id、文本型网页翻译层插入、学习模式折叠、选词选句事件、YouTube 视频页识别、当前可见字幕句识别、字幕翻译叠层 / 听音翻译叠层 / 降级条渲染、站点适配、页面变更监听。 | 不持久化学习数据、不存储 API Key、不绕过站点权限、不修改播放器核心能力、不下载媒体或完整字幕文件、不调用模型服务或 ASR、不遮挡 YouTube 控件、广告、链接或品牌标识。 |
+| Browser agent | DOM 文本识别、稳定节点 id、文本型网页翻译层插入、学习模式折叠、选词选句事件、YouTube 视频页识别、当前可见字幕句识别、字幕翻译叠层 / 听音翻译叠层 / 降级条渲染、站点适配、页面变更监听。YouTube 走专门适配的 SPA 友好轻注入：监听前端路由变化（History API / popstate）重判页面类型、不做全量扫描、整站只在视频播放页做字幕叠层。 | 不持久化学习数据、不存储 API Key、不绕过站点权限、不修改播放器核心能力、不下载媒体或完整字幕文件、不调用模型服务或 ASR、不遮挡 YouTube 控件、广告、链接或品牌标识；**不得破坏 YouTube 原生交互（滑动 / 点击 / SPA 路由），不注册干扰原生滚动 / 点击的全局事件，overlay 不破坏 YouTube 布局；不在 YouTube 非视频页注入翻译逻辑或套阅读显示模式 UI**。 |
 | Local data layer | SwiftData model、migration、repository implementation、收藏、历史、复习状态、翻译缓存、服务等级快照、模型偏好、数据清理操作；App session token 只进入 Keychain。 | 不决定 UI 导航、不直接读取 DOM、不把完整浏览历史上传到远端、不管理第三方网页内部 cookie、不保存 Provider 密钥或固定生产等级 token。 |
 | Model gateway service | 游客会话、登录会话、dev/staging 测试账号、Free / Pro / Max entitlement、模型目录、Provider / ASR 密钥、文本额度、音频分钟额度、用量、fallback、Pro / Max 文本翻译与解释、YouTube 听音 ASR、错误映射、文本分块、音频短片段处理和成本控制。 | 不拥有 WebView 页面渲染、不保存完整浏览历史、不替 App 持久化收藏 / 复习学习数据、不暴露 Provider / ASR 密钥给客户端、不接受客户端自报服务等级作为授权、不默认持久化完整音频。 |
 | Translation proxy service | Free 文本翻译转发：托管第三方通用翻译（Google / 微软）key、按 session 做 Free 文本限额、文本分块、缓存、错误归一；独立于大模型 gateway 部署，gateway 故障不影响 Free 文本翻译。 | 不调用大模型 / ASR、不判定 entitlement 等级（只读 session 做限额）、不保存完整浏览历史、不暴露翻译 key 给客户端、不做页面渲染或本地学习数据持久化。 |
@@ -157,6 +157,7 @@
 | Third-party site changes | YouTube、Reddit、X 等页面结构频繁变化，可能导致文本识别失效 | 站点适配必须隔离在 `packages/browser-agent/src/site-adapters`，失败时回退到通用文本识别或选区翻译。 |
 | Publish / review constraints | App Store 可能拒绝纯 WebView、链接集合或无足够原生功能的应用 | 首个实现 tranche 必须在 DEV-PLAN Phase 1-3 内完成 contracts / browser-agent、原生 Tab 壳、SwiftData / Keychain、本地学习闭环、WKWebView 进入流、BridgeEvent native decode 和 website data 提示；不能只做站点入口和网页翻译按钮。 |
 | YouTube policy risk | 过度控制播放器、字幕下载、后台播放、去广告、下载 / 分离音视频或遮挡播放器控件会带来合规风险 | 当前不做播放器替代、不下载字幕文件或音视频、不修改广告或播放行为；视频字幕 / 听音翻译必须可关闭、可降级，并优先避开播放器控件和品牌区域。 |
+| YouTube SPA injection risk | YouTube 是单页应用（前端路由、虚拟滚动、动态 DOM）；通用文本网页注入（全量扫描 + 全局事件监听 + fixed overlay + 不监听路由）会破坏 YouTube 原生滑动 / 点击 / 路由 | YouTube 走专门 SPA 友好轻注入：监听前端路由变化重判页面类型、不做全量扫描、不注册干扰原生交互的全局事件、overlay 不破坏布局；整站只在视频页注入字幕叠层；注入破坏原生交互（滑动 / 点击 / 路由）属 review 阻断项。 |
 | Audio recognition cost and latency risk | 听音翻译比字幕翻译成本更高、延迟更高，且可能受音质、权限和播放状态影响 | 字幕优先；听音只作为 Beta fallback 或用户手动选择；Free 每天 10 分钟；后端按音频分钟限额、短片段处理、缓存和错误归一控制成本。 |
 | Backend cost and abuse risk | Free / Pro / Max 模型和 ASR 调用会产生直接成本，公开服务可能被滥用 | 模型服务必须有文本额度、音频分钟额度、速率限制、缓存、错误归一和服务等级检查；Free 层不能无限调用高成本模型或 ASR。 |
 | Free translation proxy dependency risk | Free 文本翻译依赖第三方通用翻译（Google / 微软）的可用性、配额和质量，翻译代理服务本身也需可用 | 翻译代理须有缓存、限额、错误归一和多家通用翻译 fallback；代理不可用时明确提示并允许选区 / 复制翻译降级；翻译代理与大模型 gateway 独立部署、互不拖累，任一故障不得让另一条链路整体不可用。 |
@@ -178,6 +179,7 @@
 - DEV-PLAN 必须新增翻译分层 Phase，落地翻译链路解耦：新建独立 `services/translation-proxy`（Free 文本翻译走第三方通用翻译，不依赖大模型 gateway），iOS `Providers` 层把现状全走 `/v1/translate` 的链路改为按 entitlement 路由（Free→翻译代理，Pro / Max→gateway）；Free 文本翻译必须在大模型后端未配置（如 `MODEL_SERVICE_ROOT` 未设）时仍可用，并有针对该路径的测试。
 - YouTube 视频页交互按 v2.5 重构：移除底部常驻工具条，改为 App UI 隐形态 + 召唤态（左侧把手唤出精简菜单），相关 `browser-agent` overlay 与 `apps/ios/AgentEnglish/Web` 的 native 状态须随之调整；交互与合规边界见 ADR-0004，翻译分层见 ADR-0005。
 - DEV-PLAN Phase 6.6 必须先建立 YouTube 视频沉浸翻译基线：watch / Shorts 不使用阅读显示模式，不展示底部模式分段控件；新增 `VideoCaptionSegment` / `VideoCaptionOverlayState` contract 与双端 fixture；字幕不可用、叠层不安全和降级显示都必须可测试。
+- DEV-PLAN 必须新增“YouTube 整站沉浸重构”phase（v2.6，依据 ADR-0004 v2.6 修订段）：`apps/ios` WebBrowserView 对 YouTube 整站（首页 / 列表 / 搜索 / Shorts / 视频页）走极简 chrome、不显示阅读模式 UI 和浏览工具条，YouTube“整站隐形 + 仅视频页叠字幕”的判定不能只看 /watch、/shorts；`browser-agent` YouTube adapter 改 SPA 友好轻注入（监听前端路由、不全量扫描、不注册干扰原生滚动 / 点击的全局事件、overlay 不破坏布局），首页 / 列表 / 搜索不注入翻译；真机 / 模拟器验证 YouTube 整站能正常滑 / 点 / 进视频不报错、视频字幕仍可用；本版移除 YouTube 页面文字翻译。
 - DEV-PLAN 必须在 Phase 6.6 后插入听音翻译 Beta Phase：补齐 `VideoAudioSegment` / `VideoAudioTranslationState` / `AudioTranslationQuota` contract、后端 ASR 路由、音频分钟额度、Free 每天 10 分钟限制、隐私提示和视频 overlay 听音状态。Phase 8 在字幕与听音两条来源都具备后再完善站点适配。
 - 收藏、复习、历史、隐私清理是 App Store 最低原生价值边界；开发计划不能把它们推迟到不可验证的后续阶段。
 - Android、macOS、Windows 目录不在首版实现中创建完整工程；只在文档和 contracts 中保留接入边界。

@@ -70,6 +70,7 @@ export {
 } from "./site-adapters";
 export {
   detectYouTubePage,
+  isYouTubeSiteUrl,
   readActiveYouTubeCaptionText,
   createYouTubeVideoCaptionState,
   youtubePageCapabilities,

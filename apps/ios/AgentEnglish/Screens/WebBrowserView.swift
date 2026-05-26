@@ -18,8 +18,14 @@ struct WebBrowserView: View {
     var body: some View {
         Group {
             if bridgeController.isVideoImmersiveMode {
+                // 视频播放页：隐形态 + 字幕叠层 + 左侧召唤把手（v2.5，不回退）。
                 videoImmersiveBody
+            } else if isYouTubeImmersiveSite {
+                // Phase 8.7 / A1：YouTube 整站（首页 / 列表 / 搜索 / Shorts 等非视频页）走
+                // 极简 chrome——不渲染阅读显示模式分段控件与常驻浏览工具条，整站原生体验。
+                youTubeSiteBody
             } else {
+                // 普通文本网页：完整浏览 chrome（含阅读显示模式分段控件 + 工具条）。
                 browserBody
             }
         }
@@ -68,6 +74,20 @@ struct WebBrowserView: View {
         }
     }
 
+    /// Phase 8.7 / A1：当前 URL 是否属于 YouTube 整站（首页 / 列表 / 搜索 / Shorts /
+    /// 视频页）。整站识别（chrome 决策入口）独立于 `isVideoImmersiveMode`（视频页字幕能力
+    /// 决策入口）——两个分别判定的入口，整站隐形为真不代表视频页叠字幕为真。
+    private var isYouTubeImmersiveSite: Bool {
+        bridgeController.shouldUseMinimalChrome(for: currentURLText)
+    }
+
+    /// 当前生效 URL：导航后取实时 URL，未加载时回退到入口 URL。
+    private var currentURLText: String {
+        navigationState.currentURLText.isEmpty
+            ? initialURL.absoluteString
+            : navigationState.currentURLText
+    }
+
     /// 视频隐形态：YouTube 独占屏幕（WebView 铺满），App 不在顶部 / 底部常驻任何
     /// 工具条 / 状态栏 / 分段控件；唯一常驻 App 元素是叠在视频左侧的召唤把手。
     private var videoImmersiveBody: some View {
@@ -79,6 +99,12 @@ struct WebBrowserView: View {
                     onSourceToggle: handleVideoSourceToggle
                 )
             }
+    }
+
+    /// YouTube 整站非视频页极简 chrome：WebView 铺满、原生体验，不展示阅读显示模式分段
+    /// 控件（原文 / 双语 / 学习）与常驻浏览工具条，也不注入页面文字翻译。
+    private var youTubeSiteBody: some View {
+        webViewContainer
     }
 
     /// 普通文本网页：保留原有浏览 chrome（URL 状态栏 / 工具条 / 桥接状态栏）。

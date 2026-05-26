@@ -8,6 +8,14 @@ extension WebBridgeController {
         videoCaptionState != nil || videoAudioState != nil
     }
 
+    /// Phase 8.7 / A1：YouTube 整站极简 chrome 决策入口。整站（首页 / 列表 / 搜索 /
+    /// Shorts / 视频页）均走极简 chrome——不展示阅读显示模式分段控件与常驻浏览工具条。
+    /// 这是 "整站隐形" 的 chrome 决策，独立于 "仅视频页才叠字幕" 的字幕能力决策
+    /// （后者由 `isVideoImmersiveMode` / `isYouTubeVideoURL` 承担）。
+    func shouldUseMinimalChrome(for urlText: String) -> Bool {
+        isYouTubeSiteURL(urlText)
+    }
+
     func updateVideoModeForPageReady(urlText: String) {
         guard isYouTubeVideoURL(urlText) else {
             videoCaptionState = nil
@@ -202,17 +210,30 @@ extension WebBridgeController {
         }
     }
 
+    /// Phase 8.7 / A2：YouTube "整站" 识别——覆盖各 YouTube 域名的任意页面（首页 / 列表 /
+    /// 搜索 / Shorts / 视频页）。区别于 `isYouTubeVideoURL`（仅视频页）：整站识别用于驱动
+    /// WebBrowserView 的极简 chrome 决策（整站隐形），视频页识别用于驱动字幕叠层能力决策。
+    /// 两者 host 集合一致，但 path 判定不同——这是 "整站隐形" 与 "仅视频页叠字幕" 两个分别
+    /// 判定入口的核心区分。本函数只解析 URL / host，不做任何 DOM 扫描或字幕句抽取。
+    func isYouTubeSiteURL(_ urlText: String) -> Bool {
+        guard let url = URL(string: urlText), let host = url.host?.lowercased() else {
+            return false
+        }
+
+        return Self.youTubeHosts.contains(host)
+    }
+
     func isYouTubeVideoURL(_ urlText: String) -> Bool {
         guard let url = URL(string: urlText), let host = url.host?.lowercased() else {
             return false
         }
 
-        if host == "youtu.be" {
-            return url.pathComponents.count > 1
+        guard Self.youTubeHosts.contains(host) else {
+            return false
         }
 
-        guard ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"].contains(host) else {
-            return false
+        if host == "youtu.be" {
+            return url.pathComponents.count > 1
         }
 
         if url.path == "/watch" {
@@ -223,6 +244,16 @@ extension WebBridgeController {
 
         return url.path.hasPrefix("/shorts/")
     }
+
+    /// YouTube 整站识别与视频页识别共用的 host 集合（与 browser-agent
+    /// `detectYouTubePage` 的 host 集合保持一致，含 m. / music. / youtu.be）。
+    static let youTubeHosts: Set<String> = [
+        "youtube.com",
+        "www.youtube.com",
+        "m.youtube.com",
+        "music.youtube.com",
+        "youtu.be",
+    ]
 }
 
 private extension VideoCaptionSegment {
