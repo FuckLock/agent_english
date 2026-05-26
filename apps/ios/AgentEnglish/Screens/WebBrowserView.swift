@@ -16,20 +16,34 @@ struct WebBrowserView: View {
     @State private var showsVideoAudioPrivacy = false
 
     var body: some View {
-        Group {
-            if bridgeController.isVideoImmersiveMode {
-                // 视频播放页：隐形态 + 字幕叠层 + 左侧召唤把手（v2.5，不回退）。
-                videoImmersiveBody
-            } else if isYouTubeImmersiveSite {
-                // Phase 8.7 / A1：YouTube 整站（首页 / 列表 / 搜索 / Shorts 等非视频页）走
-                // 极简 chrome——不渲染阅读显示模式分段控件与常驻浏览工具条，整站原生体验。
-                youTubeSiteBody
-            } else {
-                // 普通文本网页：完整浏览 chrome（含阅读显示模式分段控件 + 工具条）。
-                browserBody
+        // Phase 8.7 修复：WebView 单例化——webViewContainer 恒为视图树根，三种 chrome 模式
+        // 通过条件 inset / overlay 叠加，不再放进 if/else 分支。此前三个分支体各含一份
+        // webViewContainer，分支切换（如点视频 youTubeSite → videoImmersive）会让 SwiftUI
+        // 销毁并重建 WKWebView，触发 "Modifying state during view update" 且使视频重新加载。
+        webViewContainer
+            .safeAreaInset(edge: .top, spacing: 0) {
+                // 普通文本网页：顶部 URL 状态栏；视频隐形态 / YouTube 整站不显示。
+                if showsBrowserChrome {
+                    urlStatusBar
+                }
             }
-        }
-        .navigationTitle(navigationState.title)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // 普通文本网页：底部工具条 + 翻译失败横幅 + 桥接状态栏。
+                if showsBrowserChrome {
+                    browserBottomChrome
+                }
+            }
+            .overlay(alignment: .leading) {
+                // 视频隐形态：左侧召唤把手（v2.5，不回退）；非视频页不显示。
+                if bridgeController.isVideoImmersiveMode {
+                    VideoSummonView(
+                        bridgeController: bridgeController,
+                        onBack: handleVideoBack,
+                        onSourceToggle: handleVideoSourceToggle
+                    )
+                }
+            }
+            .navigationTitle(navigationState.title)
         .webBrowserNavigationChrome()
         .onAppear {
             bridgeController.configure(modelContext: modelContext)
@@ -88,32 +102,17 @@ struct WebBrowserView: View {
             : navigationState.currentURLText
     }
 
-    /// 视频隐形态：YouTube 独占屏幕（WebView 铺满），App 不在顶部 / 底部常驻任何
-    /// 工具条 / 状态栏 / 分段控件；唯一常驻 App 元素是叠在视频左侧的召唤把手。
-    private var videoImmersiveBody: some View {
-        webViewContainer
-            .overlay(alignment: .leading) {
-                VideoSummonView(
-                    bridgeController: bridgeController,
-                    onBack: handleVideoBack,
-                    onSourceToggle: handleVideoSourceToggle
-                )
-            }
+    /// Phase 8.7 修复：是否显示普通文本网页的完整浏览 chrome（顶部 URL 栏 + 底部工具条 /
+    /// 状态栏）。视频隐形态与 YouTube 整站均不显示——前者只叠召唤把手，后者整站原生体验，
+    /// 任何 YouTube 页面都不出现阅读显示模式分段控件与常驻浏览工具条（A1）。
+    private var showsBrowserChrome: Bool {
+        !bridgeController.isVideoImmersiveMode && !isYouTubeImmersiveSite
     }
 
-    /// YouTube 整站非视频页极简 chrome：WebView 铺满、原生体验，不展示阅读显示模式分段
-    /// 控件（原文 / 双语 / 学习）与常驻浏览工具条，也不注入页面文字翻译。
-    private var youTubeSiteBody: some View {
-        webViewContainer
-    }
-
-    /// 普通文本网页：保留原有浏览 chrome（URL 状态栏 / 工具条 / 桥接状态栏）。
-    private var browserBody: some View {
+    /// 普通文本网页底部 chrome：工具条（含原文 / 双语 / 学习分段控件）+ 翻译失败横幅 +
+    /// 桥接状态栏。作为 body 的 bottom safeAreaInset，叠加在稳定的 webViewContainer 上。
+    private var browserBottomChrome: some View {
         VStack(spacing: 0) {
-            urlStatusBar
-
-            webViewContainer
-
             browserToolbar
 
             if let translationFailure = translationFailure {
@@ -129,9 +128,14 @@ struct WebBrowserView: View {
             initialURL: initialURL,
             navigationState: navigationState,
             bridgeController: bridgeController,
-            onWebViewReady: {
-                webView = $0
-                bridgeController.attach(webView: $0)
+            onWebViewReady: { createdWebView in
+                // Phase 8.7 修复：makeUIView 内同步执行此回调；直接写 @State webView 会在
+                // 视图构建期间改状态（"Modifying state during view update"）。推迟到当前
+                // 渲染周期之后再写，避免首次创建 WebView 时的同步状态修改警告。
+                DispatchQueue.main.async {
+                    webView = createdWebView
+                    bridgeController.attach(webView: createdWebView)
+                }
             }
         )
         .background(Color.clear)

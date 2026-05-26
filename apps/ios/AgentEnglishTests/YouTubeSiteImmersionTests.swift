@@ -150,34 +150,36 @@ final class YouTubeSiteImmersionTests: XCTestCase {
     func testWebBrowserViewRoutesYouTubeSiteToMinimalChromeBranch() throws {
         let source = try webBrowserViewSource()
 
-        // 存在整站极简 chrome 分支与整站判定符号。
+        // body 通过整站判定符号驱动 chrome 决策（整站识别 + 极简 chrome 决策入口接入视图）。
         XCTAssertTrue(source.contains("isYouTubeImmersiveSite"))
-        XCTAssertTrue(source.contains("youTubeSiteBody"))
         XCTAssertTrue(source.contains("shouldUseMinimalChrome"))
 
-        // body 分支不再仅依赖 isVideoImmersiveMode 单一条件。
-        XCTAssertTrue(source.contains("else if isYouTubeImmersiveSite"))
+        // chrome 决策不再仅依赖 isVideoImmersiveMode 单一条件：YouTube 整站（含非视频页）
+        // 也走极简 chrome——showsBrowserChrome 同时排除视频隐形态与 YouTube 整站，二者皆走
+        // 极简（webViewContainer 单例 + 条件叠加），只有普通文本网页才显示完整浏览 chrome。
+        XCTAssertTrue(source.contains("showsBrowserChrome"))
+        XCTAssertTrue(
+            source.contains("!bridgeController.isVideoImmersiveMode && !isYouTubeImmersiveSite")
+        )
     }
 
     func testMinimalChromeBranchExcludesDisplayModePickerAndToolbar() throws {
         let source = try webBrowserViewSource()
 
-        // 分段控件 Picker（原文 / 双语 / 学习）与 browserToolbar 仍只存在于 browserBody
-        // 文本网页分支；youTubeSiteBody 极简分支只渲染 webViewContainer。
-        let youTubeBodyDecl = "private var youTubeSiteBody: some View {"
-        guard let bodyRange = source.range(of: youTubeBodyDecl) else {
-            return XCTFail("未找到 youTubeSiteBody 声明")
-        }
-        // 截取 youTubeSiteBody 声明体（到下一个右花括号块）做粗粒度断言。
-        let afterDecl = source[bodyRange.upperBound...]
-        let bodySnippet = String(afterDecl.prefix(160))
-        XCTAssertTrue(bodySnippet.contains("webViewContainer"))
-        XCTAssertFalse(bodySnippet.contains(".pickerStyle(.segmented)"))
-        XCTAssertFalse(bodySnippet.contains("browserToolbar"))
+        // 极简 chrome 语义：webViewContainer 单例化为视图树根（避免分支切换重建 WKWebView），
+        // 浏览 chrome（顶部 URL 栏 + 底部工具条 / 状态栏）只在 showsBrowserChrome 为真时经
+        // safeAreaInset 叠加。YouTube 整站 / 视频隐形态 showsBrowserChrome 为假 → 不渲染
+        // 分段控件 Picker 与工具条。
+        XCTAssertTrue(source.contains("private var showsBrowserChrome: Bool"))
+        // url 状态栏与底部 chrome 均受 showsBrowserChrome 守卫（不在 YouTube / 视频路径渲染）。
+        XCTAssertTrue(source.contains("if showsBrowserChrome {"))
+        XCTAssertTrue(source.contains("browserBottomChrome"))
 
-        // 分段控件仍保留在源文件（browserToolbar 分支内），未被整体删除。
+        // 分段控件 Picker（原文 / 双语 / 学习）与 browserToolbar 仍保留在源文件，但只经
+        // browserBottomChrome（受 showsBrowserChrome 守卫）可达，未被整体删除。
         XCTAssertTrue(source.contains(".pickerStyle(.segmented)"))
         XCTAssertTrue(source.contains("private var browserToolbar"))
+        XCTAssertTrue(source.contains("private var browserBottomChrome"))
     }
 
     private func webBrowserViewSource() throws -> String {
