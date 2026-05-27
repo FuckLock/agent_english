@@ -30,7 +30,14 @@ public enum TranslationProxyEndpointConfiguration {
     }
 
     public static func resolvedSessionToken() throws -> String? {
-        try KeychainCredentialStore.loadSessionToken()
+        // 优先用 model-gateway 签发的 session token（游客 / 登录会话）。
+        if let gatewayToken = try KeychainCredentialStore.loadSessionToken(),
+           !gatewayToken.isEmpty {
+            return gatewayToken
+        }
+        // ADR-0005 v2.7 解耦兜底：gateway 未就绪 / 无 session token 时，用本地设备级匿名标识
+        // 作为 translation-proxy 的限额分组键，让 Free 文本翻译不依赖 model-gateway。
+        return try KeychainCredentialStore.loadOrCreateAnonymousProxyToken()
     }
 }
 

@@ -94,3 +94,13 @@ Product-Spec v2.7 修订 Free 文本 / 字幕翻译的 provider 实现：`servic
 
 - 「不回退到 Free 走 model-gateway」仍成立：Free 仍走独立 translation-proxy，只是 proxy 内部 provider 从通用翻译换成便宜大模型；proxy（便宜模型 / Free）与 gateway（强模型 / 付费 + ASR）仍是两套独立部署、故障隔离的后端。
 - Alternatives 中「客户端直连第三方通用翻译」「Free 走 model-gateway」「端上翻译」被否决的理由对便宜大模型同样成立：key 不进客户端、Free 不绑大模型 gateway、不绑端上框架。
+
+### 解耦兜底修正（Phase 8.8 真机验证发现）
+
+真机验证暴露一个解耦漏洞：translation-proxy 把请求的 session token 当**不透明的限额分组键**（`session/session-key.ts`，不验真伪），但**强制要求有 token**（无 token → 401 Missing session token）。而 iOS 此前 `TranslationProxyEndpointConfiguration.resolvedSessionToken()` 只从 Keychain 读 model-gateway 创建游客 session 时存入的 token——model-gateway 未起时 Keychain 无 token，proxy 401，Free 文本翻译反而用不了。即「Free 不依赖 gateway」在运行时并未真正成立（Free 隐式依赖 gateway 签发 session token）。
+
+修正（仅改 iOS、不改 proxy）：`resolvedSessionToken()` 优先用 gateway session token；无 gateway token 时回退到本地生成并持久化的**设备级匿名标识**（`KeychainCredentialStore.loadOrCreateAnonymousProxyToken`，形如 `anon-<UUID>`），仅作 proxy 的 Free 限额分组键、不用于 gateway 鉴权。这样 model-gateway 未起 / 未配置时 Free 文本翻译仍可独立工作，真正落实本 ADR 的解耦目标。
+
+约束补充：
+- proxy 的 session token 是**限额分组键、非身份凭证**；entitlement 仍由 model-gateway + session 判定（proxy 不判），匿名标识不赋予任何等级 / 权益。
+- 解耦验证不能只看「proxy 代码不读 gateway 环境变量」，还要保证「iOS 在 gateway 未起时仍能给 proxy 一个稳定的限额 key」——后者由设备级匿名标识兜底 + iOS 测试（无 gateway token 时 `resolvedSessionToken` 非 nil 且跨调用稳定）覆盖。
