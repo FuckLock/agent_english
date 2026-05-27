@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, introduced by Product-Spec v2.5
+Accepted, introduced by Product-Spec v2.5；amended by v2.7（Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型；翻译分层 / 独立代理 / 故障隔离 / 不做 BYOK 等核心决策不变，见末尾「v2.7 修订」段）
 
 ## Context
 
@@ -68,3 +68,29 @@ Product-Spec v2.5 提出三条要求：
 - 现状全量直连 `/v1/translate` 的翻译链路视为迁移技术债，在翻译分层 Phase 收敛，不作为最终形态通过。
 - 后续 Web 端接入时复用同一 translation-proxy API，不得为 Web 单独把翻译 key 放进前端。
 - 如需为 Free 引入更多通用翻译 Provider 或调整限额策略，在翻译代理内做，不回退到"Free 走大模型 gateway"。
+
+---
+
+## v2.7 修订（Free 翻译 provider：第三方通用翻译 → 便宜大模型）
+
+Product-Spec v2.7 修订 Free 文本 / 字幕翻译的 provider 实现：`services/translation-proxy` 内部不再转发第三方通用翻译（Google / 微软），改为调用产品方在服务端配置的便宜大模型（OpenAI 兼容 Chat Completions，如 DeepSeek V3 / Kimi / GLM / Qwen 等），用翻译 prompt 生成中文译文。动机：Google Cloud / Azure 翻译账号申请麻烦、需信用卡；大模型 API（DeepSeek 等）注册充值简单、成本低、翻译质量优于通用机器翻译；产品方在服务端配一个便宜模型即可，简化实现、先把功能跑通。
+
+### 不变（本 ADR 核心决策全部保留）
+
+- 翻译分层 + 独立轻量翻译代理结构不变：Free 走独立 `services/translation-proxy`，Pro / Max 与听音 ASR 走 `services/model-gateway`。
+- 两服务独立部署、故障隔离：model-gateway 未配置 / 故障时 Free 文本翻译仍可经 translation-proxy 独立工作。
+- iOS 按 entitlement 路由不变：Free → translation-proxy（`TRANSLATION_PROXY_ROOT`），Pro / Max / 听音 → model-gateway；iOS 客户端与 model-gateway 代码不改。
+- key 只在服务端、不进客户端 / `browser-agent` / App bundle；不向用户暴露任何 Provider / key / 配置入口；不做 BYOK（仅指禁用户自配大模型）。
+- 按 session 做 Free 限额、文本分块、缓存、错误归一、Provider fallback 等基建不变。
+- 跨端复用同一 translation-proxy API（iOS / 后续 Web）。
+
+### 变更
+
+- translation-proxy 的 provider 层：从「Google / 微软 HTTP 翻译 API」换成「OpenAI 兼容大模型 Chat Completions provider」（翻译 prompt）。默认 provider 改为便宜大模型；原 google / microsoft provider 可移除或保留为后续可选的通用翻译通道。
+- 配置项：`.env` 从 `GOOGLE_TRANSLATE_API_KEY` / `AZURE_TRANSLATOR_API_KEY` 改为大模型的 Base URL + API Key + 模型名（OpenAI 兼容），仍只在服务端。
+- 数据流与隐私披露：Free 文本 → 自有翻译代理 → 便宜大模型 Provider（替代原「→ 第三方通用翻译」）。
+
+### 与既有原则的关系
+
+- 「不回退到 Free 走 model-gateway」仍成立：Free 仍走独立 translation-proxy，只是 proxy 内部 provider 从通用翻译换成便宜大模型；proxy（便宜模型 / Free）与 gateway（强模型 / 付费 + ASR）仍是两套独立部署、故障隔离的后端。
+- Alternatives 中「客户端直连第三方通用翻译」「Free 走 model-gateway」「端上翻译」被否决的理由对便宜大模型同样成立：key 不进客户端、Free 不绑大模型 gateway、不绑端上框架。

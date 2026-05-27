@@ -1,5 +1,19 @@
 # 变更记录
 
+## [v2.7] - 2026-05-26
+
+### 修改
+
+- 🔴 Free 文本 / 字幕翻译后端从「第三方通用翻译服务（Google / 微软）」改为「产品方在服务端配置的便宜大模型（OpenAI 兼容 Chat Completions，如 DeepSeek V3 等）」（位置：[状态] / [应用场景] / [核心功能] YouTube 视频沉浸翻译 / [用户使用流程] 路径 2A / [AI 能力需求] / [技术方向] 后端需求·多端方向 / [AI 服务与模型等级] BYOK 澄清·Free 档 / [MVP 范围] / [参考依据]）—— 原因：Google Cloud / Azure 翻译账号申请麻烦、需信用卡；大模型 API（DeepSeek 等）注册充值简单、成本低、翻译质量更好；产品方在服务端配一个便宜模型即可，简化实现、先把功能跑通。
+- 🟡 落地方式明确：沿用独立轻量翻译代理 translation-proxy（与付费 model-gateway 解耦、互不拖累），把 proxy 内部 provider 从 Google / 微软 HTTP 翻译换成调便宜大模型 Chat Completions；iOS 客户端与 model-gateway 不改（Free 仍走 TRANSLATION_PROXY_ROOT）（位置：[技术方向] 后端需求 / [AI 服务与模型等级] Free 档）。
+- 🟡 强化 BYOK 澄清：明确「产品方在服务端配置模型」与「禁止终端用户自带 Provider / Key / Base URL / 模型名」不冲突；用户界面仍只显示 “free translation”、不暴露背后模型 / 厂商（位置：[AI 服务与模型等级]）。
+
+### 不变
+
+- 听音翻译 Beta 仍走 model-gateway 的 ASR 路径；Free 每日额度限制（文本 segment 限额 / 听音 10 分钟·天）保留；Pro / Max 走 model-gateway；不让客户端直连厂商（key 只在服务端）等既有约束不变。
+
+---
+
 ## [v2.6] - 2026-05-25
 
 ### 修改

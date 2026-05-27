@@ -10,6 +10,7 @@ import type { TranslationProxyEnv } from "./env";
 import { TranslationCache } from "./cache/translation-cache";
 import { GoogleTranslateAdapter } from "./providers/google";
 import { MicrosoftTranslateAdapter } from "./providers/microsoft";
+import { OpenAICompatibleTranslateAdapter } from "./providers/openai-compatible";
 import type { TranslationProviderAdapter } from "./providers/types";
 import { SessionQuotaTracker } from "./quota/session-quota";
 import {
@@ -29,11 +30,16 @@ export interface TranslationProxyServerDependencies {
 export function buildProviderAdapters(
   env: TranslationProxyEnv,
 ): TranslationProviderAdapter[] {
-  return env.providers.map((provider) =>
-    provider.providerID === "google"
-      ? new GoogleTranslateAdapter(provider)
-      : new MicrosoftTranslateAdapter(provider),
-  );
+  return env.providers.map((provider) => {
+    switch (provider.providerID) {
+      case "openai-compatible":
+        return new OpenAICompatibleTranslateAdapter(provider);
+      case "google":
+        return new GoogleTranslateAdapter(provider);
+      case "microsoft":
+        return new MicrosoftTranslateAdapter(provider);
+    }
+  });
 }
 
 export function resolveProxyDependencies(

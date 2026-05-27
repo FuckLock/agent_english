@@ -4,11 +4,11 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.6
-- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦）
-- 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准；v2.6 YouTube 整站重定位为交互 / 注入修正，沿用 v2.5 视频页隐形态 / 召唤态视觉，未引入新视觉稿
-- 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25）
-- 覆盖 Spec 功能：v2.6 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由新增 Phase 8.7 落地
+- 源 Spec：Product-Spec.md v2.7
+- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦；v2.7 修订：Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions）
+- 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准；v2.6 YouTube 整站重定位为交互 / 注入修正，沿用 v2.5 视频页隐形态 / 召唤态视觉，未引入新视觉稿；v2.7 仅替换 translation-proxy 内部 provider 实现（服务端后端变更），用户无感、界面仍只显示 free translation，未引入新视觉稿
+- 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25；v2.7 修订：2026-05-26）
+- 覆盖 Spec 功能：v2.7 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地
 
 **当前进度（2026-05-25，已迭代到 v2.6）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
@@ -27,7 +27,8 @@
 - Phase 8.6 已完成：YouTube 视频页 v2.5 隐形态 / 召唤态重构落地——移除底部常驻 `videoCaptionToolbar` + `videoCaptionStatusBar`（7 按钮工具条）、进入视频页即隐形态（YouTube 独占屏幕 + 双语字幕叠层 + 左侧半透明召唤把手）、召唤态精简胶囊菜单（返回 / 翻译开关 / 字幕 · 听音切换 / 收藏当前句）用完即隐已 commit；收敛了「视频页底部常驻控件违反 v2.5」的技术债。
 - 产品决策已调整到 v2.6（在 v2.5 基础上，真机验证后修正）：v2.5 只把 YouTube **视频播放页**做了隐形（Phase 8.6），但 YouTube **首页 / 列表 / 搜索 / Shorts** 仍被当普通文本网页处理——套了「原文 / 双语 / 学习」阅读显示模式控件 + 常驻浏览工具条；且 `browser-agent` 注入（`.atDocumentEnd` 一次性注入 + 全量 DOM 扫描 + 全局 touch / mouse 事件监听 + fixed overlay + 不监听 SPA 路由）破坏了 YouTube 单页应用的原生滑动 / 点击 / 路由。v2.6 把 YouTube 从「普通可翻译网页 + 视频页特殊」重定位为「专门适配的视频站点」：YouTube **整站**（首页 / 列表 / 搜索 / Shorts / 视频页）保持原生操作体验、App 整站几乎隐形、整站不套阅读显示模式控件 / 浏览工具条；App 在 YouTube 的唯一增强是视频播放页的可开关双语字幕（沿用 v2.5 隐形态 / 召唤态）；本版不做 YouTube 页面文字翻译（标题 / 简介 / 评论 / 搜索结果），该能力从当前范围移除、留作后续；注入必须 SPA 友好、绝不破坏 YouTube 原生交互（属 review 阻断项）。
 - 当前现状技术债（v2.6 待收敛）：① `WebBrowserView` 对 YouTube 仅在视频页做隐形，首页 / 列表 / 搜索仍走文本网页 chrome（阅读模式分段控件 + 浏览工具条）；② iOS 侧 `WebBridgeController+VideoCaption.swift` 的 `isVideoImmersiveMode` / `isYouTubeVideoURL` 仅按 `/watch`、`/shorts` 路径识别，未做「YouTube 域名整站识别」；③ `browser-agent` YouTube adapter（`site-adapters/youtube.ts`）与 runtime 注入（`runtime-source/scanner.ts` 全量扫描、`runtime-source/ui-bridge.ts`、`runtime-source/bootstrap.ts`）走通用文本网页注入路径，不监听 SPA 前端路由、做全量 DOM 扫描、注册干扰原生滚动 / 点击的全局事件、overlay 布局干扰 YouTube 虚拟滚动。三项均在新增 Phase 8.7 收敛。
-- 下一步进入 Phase 8.7：YouTube 整站沉浸重构 + 修交互破坏（`WebBrowserView` 对 YouTube 整站走极简 chrome + 整站判定、YouTube adapter 改 SPA 友好轻注入、首页 / 列表 / 搜索不注入翻译、移除 YouTube 页面文字翻译、视频页字幕叠层 + 隐形态 / 召唤态保持不回退）。随后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
+- 产品决策已调整到 v2.7（在 v2.6 基础上，仅服务端后端实现变更）：Free 文本 / 字幕翻译的 provider 从「第三方通用翻译（Google / 微软）」改为「产品方在服务端配置的便宜大模型（OpenAI 兼容 Chat Completions，如 DeepSeek V3 / Kimi / GLM / Qwen）」。动机：Google Cloud / Azure 翻译账号申请麻烦、需信用卡；大模型 API（DeepSeek 等）注册充值简单、成本低、翻译质量优于通用机器翻译。本次只改 `services/translation-proxy` **内部 provider 实现**——iOS `AgentEnglishCore/Providers` 按 entitlement 路由（Free→translation-proxy，Pro / Max→model-gateway）与 `services/model-gateway` **都不动**；翻译分层 / 独立部署 / 故障隔离 / key 只在服务端 / 不做 BYOK / 跨端复用等 ADR-0005 核心决策全部保留（见 ADR-0005「v2.7 修订」段）；用户无感，界面仍只显示 free translation。
+- 下一步进入 Phase 8.7：YouTube 整站沉浸重构 + 修交互破坏（`WebBrowserView` 对 YouTube 整站走极简 chrome + 整站判定、YouTube adapter 改 SPA 友好轻注入、首页 / 列表 / 搜索不注入翻译、移除 YouTube 页面文字翻译、视频页字幕叠层 + 隐形态 / 召唤态保持不回退）。随后 Phase 8.8：translation-proxy Free 翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions），只换 proxy 内部 provider 实现、保留既有限额 / 分块 / 缓存 / fallback / 错误归一基建，iOS 与 model-gateway 不动。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
 
 ---
 
@@ -36,7 +37,7 @@
 **当前范围**：
 - 首版交付 iPhone 原生 App + 轻量模型服务后端；客户端入口固定为 `apps/ios`，模型服务入口固定为 `services/model-gateway`，运行时组合为 SwiftUI + WKWebView + SwiftData + Keychain + Node.js backend。
 - `packages/contracts` 是 native 与 injected script 的协议事实源；`packages/browser-agent` 只承载 DOM 识别、文本型网页翻译层、学习模式、YouTube 当前字幕句识别、视频字幕 / 听音翻译叠层、降级条和站点适配。
-- 翻译能力分层（ADR-0005）：Free 文本翻译走独立 `services/translation-proxy`（转发第三方通用翻译，按 session 限额），Pro / Max 文本翻译、点词解释、学习卡、YouTube 听音 ASR 走 `services/model-gateway`；两个服务独立部署、互不依赖，大模型 gateway 未配置 / 故障时 Free 文本翻译仍开箱可用。
+- 翻译能力分层（ADR-0005，v2.7 修订）：Free 文本翻译走独立 `services/translation-proxy`（内部调用产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions，按 session 限额），Pro / Max 文本翻译、点词解释、学习卡、YouTube 听音 ASR 走 `services/model-gateway`；两个服务独立部署、互不依赖，大模型 gateway 未配置 / 故障时 Free 文本翻译仍开箱可用。v2.7 只替换 translation-proxy 内部 provider 实现（第三方通用翻译 → 便宜大模型），分层 / 独立部署 / 故障隔离结构不变。
 - 首版必须交付原生学习闭环：收藏、复习、历史、服务等级 / 模型档位设置、隐私清理和基础统计，避免退化成纯 WebView 壳。
 - App 不提供用户自定义 Provider、API Key、Base URL、模型名或 BYOK；Provider 密钥、通用翻译 key、模型目录、会话、entitlement、额度和 fallback 只在后端，不进客户端 / `browser-agent` / App bundle。「不做 BYOK」仅指禁止用户自配大模型，不限制产品自身集成的通用翻译服务（Free 默认翻译）。
 - App 首次启动必须创建或恢复游客 Free session；后端 session entitlement 是 Free / Pro / Max 授权事实源，客户端自报服务等级不能用于授权。
@@ -52,7 +53,7 @@
 - 入口层：`apps/ios` 负责 App 生命周期、SwiftUI 导航、Tab、WKWebView 容器、工具条、底部抽屉、设置页和系统权限；禁止写 DOM 规则、Provider 协议细节、后台路由策略或复习调度规则。
 - 核心层：`apps/ios/AgentEnglishCore` 负责收藏、历史、复习、模型目录快照、服务等级、错误映射、隐私策略、视频翻译来源 / 听音额度状态、模型服务客户端和 SwiftData repository；禁止直接读写网页 DOM、保存 Provider / ASR 密钥或修改播放器。
 - 共享协议：`packages/contracts` 负责 `BridgeEvent`、DTO、错误码、模型目录、服务等级、文本额度、音频分钟额度、视频字幕 / 听音翻译 payload、数据模型命名和 schema；禁止放 UI、存储实现或 Provider / ASR SDK。
-- 适配层：`packages/browser-agent` 负责 DOM 扫描、overlay、selection、site adapter；`services/model-gateway` 负责 session / entitlement、Provider / ASR adapter、模型目录、文本额度、音频分钟额度、fallback 和错误归一；`services/translation-proxy` 负责 Free 文本翻译第三方通用翻译转发、按 session 限额、分块、缓存、通用翻译 fallback 和错误归一（不判定 entitlement 等级、不调用大模型 / ASR）；禁止 JS 或 iOS App 直接持有 API Key / 通用翻译 key 或调用第三方 AI / ASR / 翻译服务。
+- 适配层：`packages/browser-agent` 负责 DOM 扫描、overlay、selection、site adapter；`services/model-gateway` 负责 session / entitlement、Provider / ASR adapter、模型目录、文本额度、音频分钟额度、fallback 和错误归一；`services/translation-proxy` 负责 Free 文本翻译（v2.7：内部调用产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions，用翻译 prompt 生成中文译文）、按 session 限额、分块、缓存、provider fallback 和错误归一（不判定 entitlement 等级、不调用 model-gateway 的强模型 / ASR）；禁止 JS 或 iOS App 直接持有大模型 / 翻译 API Key、Base URL 或调用第三方 AI / ASR / 翻译服务。
 
 **目录职责**：
 | 路径 | 当前状态 | 职责 | 禁止 |
@@ -62,7 +63,7 @@
 | `packages/contracts/` | placeholder | bridge event、共享 DTO、错误码、模型目录、服务等级、文本额度、音频分钟额度、视频字幕 / 听音翻译 payload、数据模型命名、schema version | 放 UI 组件、平台存储实现、Provider / ASR SDK |
 | `packages/browser-agent/` | placeholder | 文本识别、文本型网页 overlay、学习模式、selection、YouTube 当前字幕句识别、视频字幕 / 听音翻译叠层、降级条、站点适配、页面变更监听 | 保存凭证、调用 Provider / ASR / 模型服务、写本地数据库、修改 YouTube 播放器、下载完整字幕文件、下载或分离音视频、遮挡 YouTube 控件 |
 | `services/model-gateway/` | active | 游客 / 登录 session、dev/staging 测试账号、entitlement、模型目录、Provider / ASR 密钥、Free / Pro / Max、文本额度、音频分钟额度、用量、fallback、Pro / Max 文本翻译 / 解释 / 听音翻译 API | App UI、DOM 规则、完整浏览历史、完整音频持久化、收藏 / 复习学习数据、客户端自报等级授权 |
-| `services/translation-proxy/` | placeholder（Phase 8.5 创建） | 独立轻量翻译转发服务：Free 文本翻译路由到第三方通用翻译（Google / 微软）、按 session 限额、文本分块、缓存、错误归一、通用翻译 Provider fallback；独立于 model-gateway 部署 | 大模型 / ASR 调用、entitlement 等级判定、完整浏览历史、向客户端暴露翻译 key、页面渲染或本地学习数据持久化 |
+| `services/translation-proxy/` | active（Phase 8.5 创建；Phase 8.8 换内部 provider） | 独立轻量翻译服务：Free 文本翻译，v2.7 内部调用产品方服务端配置的便宜大模型（OpenAI 兼容 Chat Completions）、按 session 限额、文本分块、缓存、错误归一、provider fallback；独立于 model-gateway 部署 | 调用 model-gateway 的强模型 / ASR、entitlement 等级判定、完整浏览历史、向客户端暴露大模型 / 翻译 key 或 Base URL、页面渲染或本地学习数据持久化 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | active（Phase 8.5 重构为分层路由） | 翻译 / 解释客户端：按 entitlement 把 Free 文本翻译路由到 translation-proxy、Pro / Max 文本翻译 / 解释 / 听音路由到 model-gateway；service-tier / audio-quota 错误映射、重试、错误归一 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码、第三方 Provider / ASR / 通用翻译密钥与 Base URL、把翻译 key 放进客户端 |
 | `apps/android/` / `apps/macos/` / `apps/windows/` | future | 未来平台壳位置，仅文档占位 | 首版创建完整工程或复制 iOS 实现 |
 | `src/` | legacy cleanup target | 旧 Next 游戏入口，后续只作为清理对象处理 | 恢复为新产品入口、创建新业务代码 |
@@ -659,6 +660,54 @@
 - 视频页：视频播放页的双语字幕叠层 + v2.5 隐形态 / 召唤态（左侧召唤把手 + 精简胶囊菜单：返回 / 翻译开关 / 字幕 · 听音切换 / 收藏当前句）仍可用、不回退。
 - 范围：YouTube 页面文字翻译能力已移除（首页 / 列表 / 搜索 / 评论不做文字翻译），不被当作缺失功能。
 - 回归：Phase 8.5 的翻译分层（Free 文本翻译走翻译代理、`MODEL_SERVICE_ROOT` 未配置时仍可翻）、Phase 8.6 的视频页隐形态 / 召唤态、Phase 8 的其他站点（Reddit / Wikipedia / AO3 / X）适配与通用文本网页翻译均不被破坏。
+
+---
+
+## Phase 8.8: translation-proxy Free 翻译 provider 改用便宜大模型
+
+> 依据 ADR-0005「v2.7 修订」段 + Product-Spec v2.7「AI 服务与模型等级」+ ARCHITECTURE v2.7（Translation proxy service 边界、Free translation proxy dependency risk、Dev Planning 输入）。Phase 8.5 已建立独立 `services/translation-proxy`（当时内部转发第三方通用翻译 Google / 微软）+ iOS `AgentEnglishCore/Providers` 按 entitlement 路由。v2.7 把 Free 文本 / 字幕翻译的 provider 实现从「第三方通用翻译 API」改为「产品方在服务端配置的便宜大模型（OpenAI 兼容 Chat Completions，如 DeepSeek V3 / Kimi / GLM / Qwen）」：Google Cloud / Azure 翻译账号申请麻烦、需信用卡，大模型 API 注册充值简单、成本低、翻译质量优于通用机器翻译。本 Phase **只改 `services/translation-proxy` 内部 provider 实现**——iOS 客户端 `Providers` 路由与 `services/model-gateway` 都不动；翻译分层 / 独立部署 / 故障隔离 / key 只在服务端 / 不做 BYOK / 跨端复用等核心决策全部保留，按 session 的 Free 限额、文本分块、缓存、错误归一、provider fallback 等既有基建复用。
+
+**交付内容**：
+- 在 `services/translation-proxy/src/providers/` 新增 OpenAI 兼容大模型 Chat Completions provider adapter：用翻译 prompt 调用大模型把英文文本翻成中文，逐 `segmentId` 回填译文；实现 `TranslationProviderAdapter` 接口、复用既有 `ProviderHttpTransport`（便于单测注入 stub、避免真实出网），prompt 必须约束模型只输出译文、不输出解释 / 标注 / 原文。
+- 调整 provider 选择与默认：把便宜大模型 provider 设为默认 Free 翻译 provider；原 google / microsoft provider 保留接口作为后续可选的通用翻译通道（默认不启用），按可配置的 provider 列表与 fallback 顺序装配，不破坏既有 `translateWithFallback` 编排。
+- 改配置装配：`src/env.ts` 与 `.env.example` 从 `GOOGLE_TRANSLATE_API_KEY` / `AZURE_TRANSLATOR_API_KEY` 改为大模型的 Base URL + API Key + 模型名（OpenAI 兼容），扩展 `TranslationProviderID` 以含大模型 provider；这些 key / Base URL 仍只在服务端从 `process.env` 读取，绝不内联、绝不进客户端。
+- 复用既有基建：按 session 的 Free 限额（`src/quota/session-quota.ts`）、文本分块（`routes/translate.ts` 的 `chunkBySize`）、缓存（`src/cache/translation-cache.ts`）、错误归一（落在 contracts `ModelServiceErrorCode` 集合内）、provider fallback（`src/providers/fallback.ts`）保持不变；`routes/translate.ts` 仅在为适配大模型 provider 的分块 / token 约束所必需时做最小调整，请求 / 结果 contract（`/v1/translate-text` 入参与逐 segment 译文出参）不变。
+- 扩展 `tests/translation-proxy.test.mjs`：补便宜大模型 provider 的翻译（happy path 逐 segment 译文）、分块、缓存命中、按 session 限额、fallback、错误归一覆盖，仍以注入式 stub adapter 断言、不连真实大模型、不依赖任何大模型 gateway 环境变量；保留并不回退「`MODEL_SERVICE_ROOT` 未配置时 Free 仍可翻」的解耦测试。
+
+**关键文件**：
+- `[新增] services/translation-proxy/src/providers/openai-compatible.ts` — OpenAI 兼容大模型 Chat Completions 翻译 provider adapter（翻译 prompt、逐 segment 译文解析、实现 `TranslationProviderAdapter`、复用 `ProviderHttpTransport`）
+- `[修改] services/translation-proxy/src/env.ts` — `TranslationProviderID` 扩展含大模型 provider；`resolveProviders` 改为读取大模型 Base URL + API Key + 模型名（OpenAI 兼容）并把大模型 provider 设为默认，google / microsoft 保留为可选
+- `[修改] services/translation-proxy/.env.example` — 从 `GOOGLE_TRANSLATE_API_KEY` / `AZURE_TRANSLATOR_API_KEY` 改为大模型 Base URL + API Key + 模型名占位键名（OpenAI 兼容），保留 PORT / 限额 / 分块阈值；通用翻译 key 降为后续可选注释
+- `[修改] services/translation-proxy/src/providers/types.ts` — 如新增大模型 provider 需要的请求 / 响应类型或 provider 配置字段（仅在必要时扩展，保持 `TranslationProviderAdapter` 抽象稳定）
+- `[修改] services/translation-proxy/src/index.ts` — provider 装配 / 默认选择接入大模型 provider（依赖解析 `resolveProxyDependencies` 装配默认 provider）
+- `[修改] services/translation-proxy/src/routes/translate.ts` — 仅在适配大模型 provider 的分块 / token 约束所必需时做最小调整，保持请求 / 结果 contract 与错误归一码不变
+- `[修改] services/translation-proxy/tests/translation-proxy.test.mjs` — 扩展大模型 provider 的翻译 / 分块 / 缓存 / 限额 / fallback / 错误归一覆盖，保留 `MODEL_SERVICE_ROOT` 未配置仍可翻的解耦测试
+- iOS `apps/ios/AgentEnglishCore/.../Providers/`（含 `TranslationProxyClient.swift` / `TranslationProviderClient.swift`）与 `services/model-gateway/` 本 Phase **不改**（路由、契约、听音 ASR 链路保持原样）
+
+**依赖前置 Phase**：
+- 依赖 Phase 8.5（需要已建立的独立 `services/translation-proxy`、provider adapter 抽象 / fallback / 限额 / 分块 / 缓存基建，以及 iOS `Providers` 按 entitlement 路由——本 Phase 在其内部 provider 实现上做替换，不得回退其分层与 iOS 路由）
+- 依赖 ADR-0005 v2.7 修订段（Free 翻译 provider：第三方通用翻译 → 便宜大模型；翻译分层 / 独立部署 / 故障隔离 / key 只在服务端 / 不做 BYOK / 跨端复用不变）
+- 依赖 Product-Spec v2.7「AI 服务与模型等级」（便宜大模型翻译为 Free 默认）与 ARCHITECTURE v2.7（Translation proxy service 边界）
+
+**架构约束映射**：
+- 层次边界：Free 文本翻译的便宜大模型调用、翻译 prompt、限额、分块、缓存、fallback 和错误归一只在 `services/translation-proxy`；entitlement 等级判定仍归 `services/model-gateway` 与 session；iOS `Providers` 层只做按 entitlement 的路由编排（Free→translation-proxy，Pro / Max→model-gateway），本 Phase 不改其代码。
+- 目录职责：允许修改 `services/translation-proxy/`（`src/providers`、`src/env.ts`、`.env.example`、`src/index.ts`、必要时 `src/routes/translate.ts`、`tests`）；禁止把大模型 / 翻译 key 或 Base URL 放进客户端 / `browser-agent` / App bundle，禁止在 `translation-proxy` 内调用 model-gateway 的强模型 / ASR 或判定 entitlement，禁止改动 iOS `Providers` 路由或 `services/model-gateway`。
+- ADR 约束（ADR-0005 v2.7）：translation-proxy 与 model-gateway 仍独立部署、互不依赖，model-gateway（`MODEL_SERVICE_ROOT`）未配置 / 故障时 Free 文本翻译仍可用；只替换 proxy 内部 provider（通用翻译 → 便宜大模型），不回退到「Free 走 model-gateway」；翻译 key 只托管在 proxy 服务端、不向用户暴露任何 Provider / key / 配置入口（不做 BYOK）；数据流与隐私披露保持「Free 文本 → 自有翻译代理 → 便宜大模型 Provider」，本 Phase 不改 iOS 设置页隐私文案的两条数据流结构（措辞已在 Spec / ADR 同步）。
+- 后续范围：不在本 Phase 重构 Pro / Max 翻译链路、不改听音 ASR（仍走 model-gateway，Free 每天 10 分钟），不做 BYOK / 用户可配置 provider，不做 Web / Android 翻译壳，不把通用翻译 provider 作为默认重新启用。
+
+**已知风险**：
+- 大模型翻译相比通用翻译 API 延迟与成本略高：prompt 必须严格约束「只输出译文、不输出解释 / 标注 / 原文 / 多余前后缀」，否则会污染逐 segment 回填；需要可验证的译文解析与对不规范输出的归一处理。
+- 大模型有 token / 上下文长度限制：分块阈值（`TRANSLATION_PROXY_CHUNK_CHAR_LIMIT`）与多 segment 合并策略需与大模型 provider 适配，避免单块超限或逐 segment 顺序 / 数量错位；分块后逐 segment 译文必须可稳定映射回 `segmentId`。
+- 大模型 provider 限流 / 偶发失败：必须复用既有限额、缓存与 provider fallback，单一大模型 provider 失败不得让 Free 文本翻译整体失败，错误必须归一到 contracts `ModelServiceErrorCode` 集合（如 `provider-fallback-failed` / `service-unavailable` / `quota-exceeded`），不裸抛字符串。
+- 不得破坏 Phase 8.5 已建立的解耦与 iOS 路由：本 Phase 只动 proxy 内部 provider 实现，若误改 iOS `Providers` 路由、`/v1/translate-text` 契约或让 Free 链路隐式依赖 model-gateway，即视为回退（review 阻断项）。
+
+**验收标准**：
+- 最低：translation-proxy 单测全部通过，且覆盖便宜大模型 provider 的翻译（逐 segment 译文）、文本分块、缓存命中、按 session 限额（含跨 session 隔离与自报 tier 被忽略）、provider fallback、错误归一；TS strict 编译无 `any`。
+- provider：默认 Free 翻译 provider 为便宜大模型（OpenAI 兼容 Chat Completions）；`.env.example` 与 `env.ts` 以大模型 Base URL + API Key + 模型名装配，google / microsoft 仅作后续可选通用翻译通道、默认不启用。
+- 解耦（不回退）：model-gateway 未配置（`MODEL_SERVICE_ROOT` 未设）或不可用时 Free 文本翻译仍可完成（既有解耦测试保留通过），iOS `Providers` 按 entitlement 路由与 `services/model-gateway` 未被改动。
+- 安全：大模型 / 翻译 key 与 Base URL 只在 `translation-proxy` 服务端，不进入 iOS / `browser-agent` / App bundle；不向用户暴露任何 Provider / key / 配置入口。
+- 端到端（人工验收项）：在服务端配好便宜模型 key（OpenAI 兼容）+ 启动 translation-proxy 后，App 内用一个带可访问 CC 字幕的 YouTube 视频，能看到视频画面安全区域出现「英文原句 + 中文翻译」的双语字幕（Free 档、无需登录 / 配置），界面仍只显示 free translation、不暴露背后模型 / 厂商。
+- 回归：Phase 8.5 的翻译分层与解耦、Phase 8.6 视频页隐形态 / 召唤态、Phase 8.7 YouTube 整站沉浸与 SPA 友好注入、Phase 8 其他站点适配与通用文本网页翻译均不被破坏。
 
 ---
 

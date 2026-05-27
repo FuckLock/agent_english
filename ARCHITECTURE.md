@@ -8,7 +8,7 @@
 
 | Type | Source | How It Was Used |
 |---|---|---|
-| Requirements | `Product-Spec.md` v2.6 | 作为产品范围、MVP 功能、非目标、技术方向和隐私边界的事实源；v2.2 明确取消用户自定义 Provider / BYOK，改为后台模型目录、游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端权益判定；v2.3 将 YouTube watch / Shorts 从普通网页阅读模式中拆出为视频沉浸翻译模式；v2.4 将视频翻译升级为字幕翻译优先 + 听音翻译 Beta 兜底，Free 每天 10 分钟听音额度；v2.5 把翻译能力分层——Free 文本翻译走独立轻量翻译代理转发第三方通用翻译（Google / 微软），Pro / Max 文本翻译、解释、听音走大模型 gateway + ASR——并把 Free 文本翻译从大模型后端解耦，澄清“不做 BYOK”仅指禁止用户自配大模型、不限制产品自身集成的通用翻译服务，新增 Web 为后续平台；v2.6 把 YouTube 从普通可翻译网页重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互），本版不做 YouTube 页面文字翻译。 |
+| Requirements | `Product-Spec.md` v2.7 | 作为产品范围、MVP 功能、非目标、技术方向和隐私边界的事实源；v2.2 明确取消用户自定义 Provider / BYOK，改为后台模型目录、游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端权益判定；v2.3 将 YouTube watch / Shorts 从普通网页阅读模式中拆出为视频沉浸翻译模式；v2.4 将视频翻译升级为字幕翻译优先 + 听音翻译 Beta 兜底，Free 每天 10 分钟听音额度；v2.5 把翻译能力分层——Free 文本翻译走独立轻量翻译代理转发第三方通用翻译（Google / 微软），Pro / Max 文本翻译、解释、听音走大模型 gateway + ASR——并把 Free 文本翻译从大模型后端解耦，澄清“不做 BYOK”仅指禁止用户自配大模型、不限制产品自身集成的通用翻译服务，新增 Web 为后续平台；v2.6 把 YouTube 从普通可翻译网页重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互），本版不做 YouTube 页面文字翻译；v2.7 把 Free 翻译 provider 从第三方通用翻译（Google / 微软）改为产品方服务端配置的便宜大模型（OpenAI 兼容，如 DeepSeek V3），仍走独立 translation-proxy、与付费 gateway 解耦、key 只在服务端、用户无感。 |
 | Design | `Design-Brief.md`、`design_export/clean_pencil/`、`design_export/5mGHS.png` / `bCKWH.png` / `uTNzx.png` 等 v2.2 状态稿、`design_export/IeNMB.png` 等 v2.3 YouTube 状态稿、`design_export/iajll.png` 等 v2.4 听音状态稿 | 作为 iPhone 首页、网页浏览页、翻译层、点词抽屉、收藏、复习、设置的信息架构和视觉约束；v2.2 补充账号状态、登录入口、测试账号和模型服务错误态；v2.3 已补充 YouTube 视频沉浸翻译设计稿，并禁止视频页展示阅读模式分段控件；v2.4 已补充听音翻译 Beta、识别中、额度用完、Shorts 无字幕听音和设置页听音额度状态。 |
 | Existing code | 当前仓库根目录、`package.json`、已删除的旧 `src/` 游戏代码状态 | 判断当前处于重大重定义后新项目状态；旧 Next 游戏实现不再作为产品入口。 |
 | Constraints | 用户明确说明：首版苹果手机端，后续 Android、macOS、Windows；2026-05-20 复核的 Apple App Review Guidelines、Apple SwiftData / WebKit 文档；2026-05-22 补充 Apple 登录服务规则与 Google Sign-In 后端校验约束；2026-05-24 复核 YouTube API Services Developer Policies 与 Required Minimum Functionality | 用于确定平台矩阵、审核风险、持久化边界、WebView 注入边界、账号登录边界和 YouTube 视频沉浸翻译的保守合规边界。 |
@@ -22,9 +22,9 @@
 - 首次启动创建或恢复匿名游客会话，游客默认 Free；公开登录为可选能力，iOS 公开版本如果提供 Google 登录，必须并列提供 Sign in with Apple 或等价隐私登录选项。
 - dev/staging 可通过 `ENABLE_DEV_AUTH=true` 启用 Pro / Max 测试账号；生产环境不得显示测试登录入口，也不得接受测试账号登录接口。
 - 收藏、历史、复习、翻译缓存等非敏感学习数据使用 SwiftData；App 不保存第三方 Provider 凭证或固定生产等级 token；Keychain 只允许保存后端签发的 App session token、匿名设备令牌或服务访问令牌；第三方网页 cookie、localStorage、sessionStorage 归 WKWebView 的 website data store 管理。
-- 页面文本只在用户触发翻译或解释时发送：Free 文本翻译发送到独立的轻量翻译代理（转发第三方通用翻译，如 Google / 微软），Pro / Max 文本翻译、点词解释与 YouTube 听音翻译发送到大模型 gateway，由后端按 session entitlement、模型目录和 fallback 策略路由；两条链路都不能信任客户端请求体中的服务等级。
-- Free 文本翻译不依赖大模型 gateway 是否就绪：轻量翻译代理独立部署、只托管通用翻译 key 并转发，大模型后端未配置（如 `MODEL_SERVICE_ROOT` 未设）或故障时 Free 文本翻译仍开箱可用；Pro / Max 翻译、解释和听音在大模型 gateway 不可用时给出降级提示。
-- “不做 BYOK”仅指禁止用户自行配置大模型 Provider / Base URL / 模型名 / API Key；产品自身集成的第三方通用翻译服务（经轻量翻译代理）不属于 BYOK，是 Free 的默认能力，不向用户暴露 key 或配置入口。
+- 页面文本只在用户触发翻译或解释时发送：Free 文本翻译发送到独立的轻量翻译代理（内部调用产品方服务端配置的便宜大模型，OpenAI 兼容），Pro / Max 文本翻译、点词解释与 YouTube 听音翻译发送到大模型 gateway，由后端按 session entitlement、模型目录和 fallback 策略路由；两条链路都不能信任客户端请求体中的服务等级。
+- Free 文本翻译不依赖付费大模型 gateway 是否就绪：轻量翻译代理独立部署、只托管自己的便宜大模型 key 并调用（OpenAI 兼容 Chat Completions），付费大模型 gateway 未配置（如 `MODEL_SERVICE_ROOT` 未设）或故障时 Free 文本翻译仍开箱可用；Pro / Max 翻译、解释和听音在大模型 gateway 不可用时给出降级提示。
+- “不做 BYOK”仅指禁止用户自行配置大模型 Provider / Base URL / 模型名 / API Key；产品方在服务端配置的便宜大模型翻译（经轻量翻译代理，OpenAI 兼容）不属于 BYOK，是 Free 的默认能力，不向用户暴露 key 或配置入口。
 - 网页文本识别、DOM 节点标记、翻译层插入和站点适配通过可打包的 TypeScript `browser-agent` 注入脚本承载，iOS App 通过 WKWebView 加载该脚本。
 - YouTube watch / Shorts 不使用通用阅读显示模式。`browser-agent` 的 YouTube adapter 负责识别视频页、字幕可用性、当前可见字幕句和安全显示区域；native 负责视频翻译来源状态、听音额度提示、错误和收藏入口。
 - YouTube 视频翻译采用字幕优先策略；字幕不可用、质量明显不足或用户手动选择时，可进入听音翻译 Beta。听音翻译必须经过后端 session entitlement 和音频分钟额度授权，Free 每天 10 分钟。
@@ -47,7 +47,7 @@
 |---|---|---|---|
 | iPhone | current | SwiftUI App + WKWebView + SwiftData + Keychain + Swift Package 模块 | 当前唯一客户端交付平台；复用 `browser-agent` JS bundle、`contracts` 协议、学习数据模型命名和模型服务 API。 |
 | Backend model gateway | current | 轻量模型服务 API | 托管游客 / 登录 session、entitlement、Provider / ASR 密钥、模型目录、Free / Pro / Max 等级、文本额度、音频分钟额度、用量、fallback；负责 Pro / Max 文本翻译、点词解释、学习卡和 YouTube 听音 ASR；App 不直连模型厂商，也不自己判定用户等级。 |
-| Translation proxy | current | 独立轻量翻译转发服务 API | 只托管第三方通用翻译（Google / 微软）key 并转发 Free 文本翻译；独立于大模型 gateway 部署，gateway 故障或未配置时不影响 Free 文本翻译；iOS / Web 跨端共用同一代理 API；不持有大模型密钥、不判定 entitlement（仍读 session 做限额）。 |
+| Translation proxy | current | 独立轻量翻译服务 API | 托管自己的便宜大模型（OpenAI 兼容，如 DeepSeek V3）key 并调用 Chat Completions（翻译 prompt）完成 Free 文本翻译；独立于付费大模型 gateway 部署，gateway 故障或未配置时不影响 Free 文本翻译；iOS / Web 跨端共用同一代理 API；不持有 gateway 的强模型 / ASR 密钥、不判定 entitlement（仍读 session 做限额）。 |
 | Android | future | Kotlin / Jetpack Compose + Android WebView | 重写平台壳、本地存储和系统权限；复用 `browser-agent`、协议 schema、模型服务 API 和学习数据命名。 |
 | macOS | future | SwiftUI App + WKWebView | 优先复用 iOS 的 Swift 无 UI 模块和 `browser-agent`；重写窗口、菜单、快捷键和桌面导航。 |
 | Windows | future | WinUI / WebView2 或等价原生壳 | 重写平台壳和本地存储；复用 `browser-agent`、协议 schema、模型服务 API。 |
@@ -66,7 +66,7 @@
 
 ## Architecture Principle
 
-平台壳只负责用户体验、系统能力和 WebView 容器，网页注入脚本只负责 DOM 识别与翻译层渲染，轻量翻译代理只负责 Free 文本翻译的第三方通用翻译转发与限额，大模型 gateway 只负责 session、entitlement、模型目录、密钥托管、额度、Pro / Max 模型与 ASR 路由；学习业务规则、数据协议和服务等级策略不能散落在页面脚本或单个 SwiftUI View 中。两条翻译链路解耦：大模型 gateway 未就绪或故障时，Free 文本翻译仍可经翻译代理独立工作。
+平台壳只负责用户体验、系统能力和 WebView 容器，网页注入脚本只负责 DOM 识别与翻译层渲染，轻量翻译代理只负责 Free 文本翻译的便宜大模型调用与限额，大模型 gateway 只负责 session、entitlement、模型目录、密钥托管、额度、Pro / Max 模型与 ASR 路由；学习业务规则、数据协议和服务等级策略不能散落在页面脚本或单个 SwiftUI View 中。两条翻译链路解耦：大模型 gateway 未就绪或故障时，Free 文本翻译仍可经翻译代理独立工作。
 
 ## Layer Boundaries
 
@@ -78,7 +78,7 @@
 | Browser agent | DOM 文本识别、稳定节点 id、文本型网页翻译层插入、学习模式折叠、选词选句事件、YouTube 视频页识别、当前可见字幕句识别、字幕翻译叠层 / 听音翻译叠层 / 降级条渲染、站点适配、页面变更监听。YouTube 走专门适配的 SPA 友好轻注入：监听前端路由变化（History API / popstate）重判页面类型、不做全量扫描、整站只在视频播放页做字幕叠层。 | 不持久化学习数据、不存储 API Key、不绕过站点权限、不修改播放器核心能力、不下载媒体或完整字幕文件、不调用模型服务或 ASR、不遮挡 YouTube 控件、广告、链接或品牌标识；**不得破坏 YouTube 原生交互（滑动 / 点击 / SPA 路由），不注册干扰原生滚动 / 点击的全局事件，overlay 不破坏 YouTube 布局；不在 YouTube 非视频页注入翻译逻辑或套阅读显示模式 UI**。 |
 | Local data layer | SwiftData model、migration、repository implementation、收藏、历史、复习状态、翻译缓存、服务等级快照、模型偏好、数据清理操作；App session token 只进入 Keychain。 | 不决定 UI 导航、不直接读取 DOM、不把完整浏览历史上传到远端、不管理第三方网页内部 cookie、不保存 Provider 密钥或固定生产等级 token。 |
 | Model gateway service | 游客会话、登录会话、dev/staging 测试账号、Free / Pro / Max entitlement、模型目录、Provider / ASR 密钥、文本额度、音频分钟额度、用量、fallback、Pro / Max 文本翻译与解释、YouTube 听音 ASR、错误映射、文本分块、音频短片段处理和成本控制。 | 不拥有 WebView 页面渲染、不保存完整浏览历史、不替 App 持久化收藏 / 复习学习数据、不暴露 Provider / ASR 密钥给客户端、不接受客户端自报服务等级作为授权、不默认持久化完整音频。 |
-| Translation proxy service | Free 文本翻译转发：托管第三方通用翻译（Google / 微软）key、按 session 做 Free 文本限额、文本分块、缓存、错误归一；独立于大模型 gateway 部署，gateway 故障不影响 Free 文本翻译。 | 不调用大模型 / ASR、不判定 entitlement 等级（只读 session 做限额）、不保存完整浏览历史、不暴露翻译 key 给客户端、不做页面渲染或本地学习数据持久化。 |
+| Translation proxy service | Free 文本翻译：托管自己的便宜大模型（OpenAI 兼容，如 DeepSeek V3）key、调用 Chat Completions（翻译 prompt）、按 session 做 Free 文本限额、文本分块、缓存、错误归一；独立于付费大模型 gateway 部署，gateway 故障不影响 Free 文本翻译。 | 不调用 gateway 的强模型 / ASR、不判定 entitlement 等级（只读 session 做限额）、不保存完整浏览历史、不暴露翻译 key 给客户端、不做页面渲染或本地学习数据持久化。 |
 | External provider adapters | 后端内部的翻译 API / LLM / ASR Provider adapter、网络请求、重试、速率限制、错误归一。 | 不拥有页面渲染、不决定收藏结构、不直接被 iOS App 调用。 |
 
 ## Runtime And Integration Boundary
@@ -130,7 +130,7 @@
 | Browsing history | SwiftData，可按站点清理 | 不默认上传完整历史；只用于继续学习和历史页。 |
 | Translation cache | SwiftData 或本地文件缓存，按页面和文本 hash 关联 | 仅用于减少重复请求；用户可清除；不作为永久学习资产。 |
 | Website cookies / localStorage | WKWebView website data store | 与学习数据清理分开提示；清理网站数据可能导致站点登出。 |
-| Free page text sent to translation proxy | 轻量翻译代理请求体 | 只有用户触发翻译时发送当前文本段；代理转发给第三方通用翻译（Google / 微软）；设置页必须说明 Free 文本会发送到自有翻译代理并转发给第三方通用翻译服务。 |
+| Free page text sent to translation proxy | 轻量翻译代理请求体 | 只有用户触发翻译时发送当前文本段；代理调用产品方服务端配置的便宜大模型（OpenAI 兼容）生成翻译；设置页必须说明 Free 文本会发送到自有翻译代理并由其调用便宜大模型完成翻译。 |
 | Pro / Max page text + explanation sent to model gateway | 大模型 gateway 请求体 | 只有用户触发翻译或解释时发送；gateway 按 entitlement 转发给对应大模型 / 翻译 Provider；设置页必须说明文本会发送到自有后端并可能转发给第三方模型服务。 |
 | YouTube visible caption text sent to model gateway | 自有后端请求体 | 只发送当前需要翻译的可访问 / 可见字幕句和必要上下文；不下载、缓存或上传完整字幕文件；用户可关闭视频字幕翻译。 |
 | YouTube audio snippets for listening translation | 自有后端请求体，默认不持久化 | 只在用户启用听音翻译 Beta 时处理当前短片段；按 session 的音频分钟额度计量；Free 每天 10 分钟；不保存完整音频，不下载或分离音视频，不写入学习数据，除非用户主动收藏识别出的句子文本。 |
@@ -160,7 +160,7 @@
 | YouTube SPA injection risk | YouTube 是单页应用（前端路由、虚拟滚动、动态 DOM）；通用文本网页注入（全量扫描 + 全局事件监听 + fixed overlay + 不监听路由）会破坏 YouTube 原生滑动 / 点击 / 路由 | YouTube 走专门 SPA 友好轻注入：监听前端路由变化重判页面类型、不做全量扫描、不注册干扰原生交互的全局事件、overlay 不破坏布局；整站只在视频页注入字幕叠层；注入破坏原生交互（滑动 / 点击 / 路由）属 review 阻断项。 |
 | Audio recognition cost and latency risk | 听音翻译比字幕翻译成本更高、延迟更高，且可能受音质、权限和播放状态影响 | 字幕优先；听音只作为 Beta fallback 或用户手动选择；Free 每天 10 分钟；后端按音频分钟限额、短片段处理、缓存和错误归一控制成本。 |
 | Backend cost and abuse risk | Free / Pro / Max 模型和 ASR 调用会产生直接成本，公开服务可能被滥用 | 模型服务必须有文本额度、音频分钟额度、速率限制、缓存、错误归一和服务等级检查；Free 层不能无限调用高成本模型或 ASR。 |
-| Free translation proxy dependency risk | Free 文本翻译依赖第三方通用翻译（Google / 微软）的可用性、配额和质量，翻译代理服务本身也需可用 | 翻译代理须有缓存、限额、错误归一和多家通用翻译 fallback；代理不可用时明确提示并允许选区 / 复制翻译降级；翻译代理与大模型 gateway 独立部署、互不拖累，任一故障不得让另一条链路整体不可用。 |
+| Free translation proxy dependency risk | Free 文本翻译依赖便宜大模型 Provider（OpenAI 兼容，如 DeepSeek）的可用性、配额和质量，翻译代理服务本身也需可用 | 翻译代理须有缓存、限额、错误归一和多家大模型 Provider fallback；代理不可用时明确提示并允许选区 / 复制翻译降级；翻译代理与大模型 gateway 独立部署、互不拖累，任一故障不得让另一条链路整体不可用。 |
 | Provider / ASR secret leakage risk | 如果第三方 Provider 或 ASR 密钥进入 App，密钥会被提取并滥用 | Provider / ASR 密钥只能存在后端密钥管理环境；iOS App 不允许出现 API Key、Base URL 或 BYOK 输入。 |
 | Fixed token abuse risk | 如果把固定 Free / Pro / Max token 写入 App 包，token 会被提取并绕过套餐 | 生产 App 只能保存后端签发的可撤销 session token；后端以 session entitlement 为授权事实源。 |
 | Dev auth leakage risk | Pro / Max 测试账号若进入生产，会直接绕过真实权益系统 | 测试账号和密码登录接口必须由 `ENABLE_DEV_AUTH` 和部署环境双重限制；生产构建隐藏 UI 并拒绝接口。 |
@@ -176,7 +176,7 @@
 - 所有 WebView 与 JS 通讯都必须经过 `BridgeEvent` envelope，禁止 SwiftUI View 直接拼接临时 JavaScript 字符串处理业务。
 - 翻译和解释请求通过 native 模型服务客户端调用自有后端；`browser-agent` 和 iOS App 都不能持有 API Key 或直接请求第三方 AI。
 - 模型目录、翻译和解释接口必须使用后端 session entitlement 授权；客户端传入的 `serviceTier` 只能用于展示偏好或兼容旧数据，不能作为后端授权输入。
-- DEV-PLAN 必须新增翻译分层 Phase，落地翻译链路解耦：新建独立 `services/translation-proxy`（Free 文本翻译走第三方通用翻译，不依赖大模型 gateway），iOS `Providers` 层把现状全走 `/v1/translate` 的链路改为按 entitlement 路由（Free→翻译代理，Pro / Max→gateway）；Free 文本翻译必须在大模型后端未配置（如 `MODEL_SERVICE_ROOT` 未设）时仍可用，并有针对该路径的测试。
+- DEV-PLAN 必须新增翻译分层 Phase，落地翻译链路解耦：新建独立 `services/translation-proxy`（Free 文本翻译走便宜大模型、OpenAI 兼容，不依赖付费大模型 gateway），iOS `Providers` 层把现状全走 `/v1/translate` 的链路改为按 entitlement 路由（Free→翻译代理，Pro / Max→gateway）；Free 文本翻译必须在大模型后端未配置（如 `MODEL_SERVICE_ROOT` 未设）时仍可用，并有针对该路径的测试。
 - YouTube 视频页交互按 v2.5 重构：移除底部常驻工具条，改为 App UI 隐形态 + 召唤态（左侧把手唤出精简菜单），相关 `browser-agent` overlay 与 `apps/ios/AgentEnglish/Web` 的 native 状态须随之调整；交互与合规边界见 ADR-0004，翻译分层见 ADR-0005。
 - DEV-PLAN Phase 6.6 必须先建立 YouTube 视频沉浸翻译基线：watch / Shorts 不使用阅读显示模式，不展示底部模式分段控件；新增 `VideoCaptionSegment` / `VideoCaptionOverlayState` contract 与双端 fixture；字幕不可用、叠层不安全和降级显示都必须可测试。
 - DEV-PLAN 必须新增“YouTube 整站沉浸重构”phase（v2.6，依据 ADR-0004 v2.6 修订段）：`apps/ios` WebBrowserView 对 YouTube 整站（首页 / 列表 / 搜索 / Shorts / 视频页）走极简 chrome、不显示阅读模式 UI 和浏览工具条，YouTube“整站隐形 + 仅视频页叠字幕”的判定不能只看 /watch、/shorts；`browser-agent` YouTube adapter 改 SPA 友好轻注入（监听前端路由、不全量扫描、不注册干扰原生滚动 / 点击的全局事件、overlay 不破坏布局），首页 / 列表 / 搜索不注入翻译；真机 / 模拟器验证 YouTube 整站能正常滑 / 点 / 进视频不报错、视频字幕仍可用；本版移除 YouTube 页面文字翻译。
