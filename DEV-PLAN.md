@@ -4,11 +4,11 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.7
-- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦；v2.7 修订：Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions）
+- 源 Spec：Product-Spec.md v2.8
+- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入；v2.8 修订：视频字幕来源从渲染 DOM 改为视频自带字幕轨数据 / player response / timedtext，按播放进度同步）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦；v2.7 修订：Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions）
 - 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准；v2.6 YouTube 整站重定位为交互 / 注入修正，沿用 v2.5 视频页隐形态 / 召唤态视觉，未引入新视觉稿；v2.7 仅替换 translation-proxy 内部 provider 实现（服务端后端变更），用户无感、界面仍只显示 free translation，未引入新视觉稿
 - 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25；v2.7 修订：2026-05-26）
-- 覆盖 Spec 功能：v2.7 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地
+- 覆盖 Spec 功能：v2.8 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地；v2.8 YouTube 视频字幕来源从渲染 DOM 改为视频自带字幕轨数据（player response / timedtext，按播放进度同步、覆盖 Shorts 与横屏、不依赖手动开 CC）由新增 Phase 8.9 落地（含第一步技术 spike 闸门）
 
 **当前进度（2026-05-25，已迭代到 v2.6）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
@@ -28,7 +28,9 @@
 - 产品决策已调整到 v2.6（在 v2.5 基础上，真机验证后修正）：v2.5 只把 YouTube **视频播放页**做了隐形（Phase 8.6），但 YouTube **首页 / 列表 / 搜索 / Shorts** 仍被当普通文本网页处理——套了「原文 / 双语 / 学习」阅读显示模式控件 + 常驻浏览工具条；且 `browser-agent` 注入（`.atDocumentEnd` 一次性注入 + 全量 DOM 扫描 + 全局 touch / mouse 事件监听 + fixed overlay + 不监听 SPA 路由）破坏了 YouTube 单页应用的原生滑动 / 点击 / 路由。v2.6 把 YouTube 从「普通可翻译网页 + 视频页特殊」重定位为「专门适配的视频站点」：YouTube **整站**（首页 / 列表 / 搜索 / Shorts / 视频页）保持原生操作体验、App 整站几乎隐形、整站不套阅读显示模式控件 / 浏览工具条；App 在 YouTube 的唯一增强是视频播放页的可开关双语字幕（沿用 v2.5 隐形态 / 召唤态）；本版不做 YouTube 页面文字翻译（标题 / 简介 / 评论 / 搜索结果），该能力从当前范围移除、留作后续；注入必须 SPA 友好、绝不破坏 YouTube 原生交互（属 review 阻断项）。
 - 当前现状技术债（v2.6 待收敛）：① `WebBrowserView` 对 YouTube 仅在视频页做隐形，首页 / 列表 / 搜索仍走文本网页 chrome（阅读模式分段控件 + 浏览工具条）；② iOS 侧 `WebBridgeController+VideoCaption.swift` 的 `isVideoImmersiveMode` / `isYouTubeVideoURL` 仅按 `/watch`、`/shorts` 路径识别，未做「YouTube 域名整站识别」；③ `browser-agent` YouTube adapter（`site-adapters/youtube.ts`）与 runtime 注入（`runtime-source/scanner.ts` 全量扫描、`runtime-source/ui-bridge.ts`、`runtime-source/bootstrap.ts`）走通用文本网页注入路径，不监听 SPA 前端路由、做全量 DOM 扫描、注册干扰原生滚动 / 点击的全局事件、overlay 布局干扰 YouTube 虚拟滚动。三项均在新增 Phase 8.7 收敛。
 - 产品决策已调整到 v2.7（在 v2.6 基础上，仅服务端后端实现变更）：Free 文本 / 字幕翻译的 provider 从「第三方通用翻译（Google / 微软）」改为「产品方在服务端配置的便宜大模型（OpenAI 兼容 Chat Completions，如 DeepSeek V3 / Kimi / GLM / Qwen）」。动机：Google Cloud / Azure 翻译账号申请麻烦、需信用卡；大模型 API（DeepSeek 等）注册充值简单、成本低、翻译质量优于通用机器翻译。本次只改 `services/translation-proxy` **内部 provider 实现**——iOS `AgentEnglishCore/Providers` 按 entitlement 路由（Free→translation-proxy，Pro / Max→model-gateway）与 `services/model-gateway` **都不动**；翻译分层 / 独立部署 / 故障隔离 / key 只在服务端 / 不做 BYOK / 跨端复用等 ADR-0005 核心决策全部保留（见 ADR-0005「v2.7 修订」段）；用户无感，界面仍只显示 free translation。
-- 下一步进入 Phase 8.7：YouTube 整站沉浸重构 + 修交互破坏（`WebBrowserView` 对 YouTube 整站走极简 chrome + 整站判定、YouTube adapter 改 SPA 友好轻注入、首页 / 列表 / 搜索不注入翻译、移除 YouTube 页面文字翻译、视频页字幕叠层 + 隐形态 / 召唤态保持不回退）。随后 Phase 8.8：translation-proxy Free 翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions），只换 proxy 内部 provider 实现、保留既有限额 / 分块 / 缓存 / fallback / 错误归一基建，iOS 与 model-gateway 不动。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
+- Phase 8.7（YouTube 整站沉浸重构 + 修交互破坏）、Phase 8.8（translation-proxy Free 翻译 provider 改用便宜大模型）均已落地（见上方提交记录）。
+- 产品决策已调整到 v2.8（在 v2.7 基础上，真机验证后修正字幕来源）：v2.4–v2.7 的 YouTube 视频字幕来源是「读播放器渲染的 DOM（`.ytp-caption-segment`）」，真机暴露只在「横屏 watch + 用户手动开 CC」时可读、翻不了 Shorts（用户核心场景，竞品能翻）。v2.8 把字幕来源改为「读取视频自带的字幕轨数据（player response / timedtext，含自动生成字幕）」，按播放进度（`video.currentTime`）时间同步显示当前句，不依赖手动开 CC、覆盖 Shorts 与横屏；无字幕轨视频走听音 Beta 或提示（不做 OCR）。合规边界调整为「实时读字幕轨用于翻译显示、只取当前播放所需、不保存为文件、不离线缓存整轨、不再分发」（已写入 Spec v2.8 / ADR-0004 v2.8 修订段 / ARCHITECTURE v2.8）。
+- 下一步进入 Phase 8.9：YouTube 视频字幕轨读取 + 播放进度同步——**第一步技术 spike 验证 WKWebView 内能读到 `captionTracks` + timedtext fetch 成功**（依赖 YouTube 内部接口，移动版结构 / SPA 路由 / fetch 鉴权有失败风险，spike 通过再做时间同步 + 翻译 + overlay）；改动集中在 `packages/browser-agent`（`site-adapters/youtube.ts`、`runtime-source/youtube-injection.ts` 及必要的 overlay）+ 重新生成 `BrowserAgentRuntimeSource.generated.swift`，下游翻译（Free→translation-proxy）/ overlay 复用既有链路，不重做整站沉浸 / 隐形态 / 翻译分层。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
 
 ---
 
@@ -708,6 +710,64 @@
 - 安全：大模型 / 翻译 key 与 Base URL 只在 `translation-proxy` 服务端，不进入 iOS / `browser-agent` / App bundle；不向用户暴露任何 Provider / key / 配置入口。
 - 端到端（人工验收项）：在服务端配好便宜模型 key（OpenAI 兼容）+ 启动 translation-proxy 后，App 内用一个带可访问 CC 字幕的 YouTube 视频，能看到视频画面安全区域出现「英文原句 + 中文翻译」的双语字幕（Free 档、无需登录 / 配置），界面仍只显示 free translation、不暴露背后模型 / 厂商。
 - 回归：Phase 8.5 的翻译分层与解耦、Phase 8.6 视频页隐形态 / 召唤态、Phase 8.7 YouTube 整站沉浸与 SPA 友好注入、Phase 8 其他站点适配与通用文本网页翻译均不被破坏。
+
+---
+
+## Phase 8.9: YouTube 视频字幕轨读取 + 播放进度同步
+
+> 依据 ADR-0004「v2.8 修订」段 + Product-Spec v2.8（YouTube 边界字幕来源 + YouTube 视频沉浸翻译核心功能）+ ARCHITECTURE v2.8（Browser agent 层「视频自带字幕轨数据读取」职责、Input/Output boundary、YouTube caption 隐私行、YouTube Developer Policies 合规行）。真机验证暴露：现状字幕来源是「读播放器渲染的 DOM」（`packages/browser-agent/src/site-adapters/youtube.ts` 的 `readActiveYouTubeCaptionText` 读 `.ytp-caption-segment` 等渲染节点，`runtime-source/youtube-injection.ts` 同样 `document.querySelectorAll(".ytp-caption-segment")`），只在「横屏 watch + 用户手动开 CC」时可读，翻不了 Shorts（用户核心场景，竞品 Immersive Translate / Trancy 能翻）。本 Phase 把字幕来源从「渲染 DOM / 可见字幕」改为「读取视频自带的字幕轨数据（player response / timedtext，含自动生成字幕）」，按播放进度（`video.currentTime`）时间同步显示当前句，不依赖用户开 CC、覆盖 Shorts 与横屏。**这依赖 YouTube 内部接口（WKWebView 移动版 player response 结构、SPA 路由、timedtext fetch 鉴权都有失败风险），故第一步必须在真机 / 模拟器 WKWebView 的 YouTube 页面做技术 spike 验证「能读到 captionTracks + timedtext fetch 成功拿到带时间轴的字幕」，spike 通过再做时间同步 + 翻译 + overlay。** 本 Phase 只改「字幕文本怎么来」（DOM → 字幕轨数据 + 播放进度同步），下游翻译（Free→translation-proxy 分层，已解耦兜底）/ overlay 渲染链路尽量复用 Phase 6.6 / 8.6 / 8.7 现有实现；不重做整站沉浸（沿用 8.7）、不重做隐形态 / 召唤态（沿用 8.6）、不重做翻译分层（沿用 8.5 / 8.8）。
+
+**交付内容**：
+- **第一步技术 spike（前置闸门，spike 不通过不投入完整实现）**：在真机 / 模拟器 WKWebView 的 YouTube watch + Shorts 页面验证字幕轨可读链路——读 `ytInitialPlayerResponse` 或 `document.querySelector('#movie_player').getPlayerResponse()` 的 `.captions.playerCaptionsTracklistRenderer.captionTracks`，取轨的 `baseUrl`（timedtext），在页面上下文内 `fetch(baseUrl + "&fmt=json3")` 拿到带时间轴的字幕句并打通一次到 native 的桥接；产出一段可在真机跑、记录「能否读到 captionTracks / 各轨语言与是否自动生成 / timedtext fetch 是否成功（含 403 / 同源情况）/ WKWebView 移动版 player response 结构差异」的最小验证（spike 探针 + 真机验证笔记，结论写入本 Phase 验收记录）。spike 失败（如 timedtext fetch 在 WKWebView 内被鉴权拦截）→ 暂停后续实现并回报，不强行交付。
+- spike 通过后实现字幕轨读取与解析（只在视频播放页）：在 `site-adapters/youtube.ts` 与 `runtime-source/youtube-injection.ts` 用字幕轨数据读取替换现状 `.ytp-caption-segment` DOM 读取——解析 `captionTracks`、按「英文 / 目标语言 / 自动生成轨」优先级选轨、fetch 选中轨的 timedtext（json3）解析为带 `startTimeSeconds` / `endTimeSeconds` 的字幕句序列；SPA 切视频后用 `getPlayerResponse()` 重取当前视频字幕轨（沿用 8.7 的 SPA 前端路由重判时机）。
+- 实现按播放进度的时间同步：监听 `video` 的 `timeupdate`（节流）按 `currentTime` 在已解析字幕句序列中定位当前句，驱动 `VideoCaptionSegment.activeSegment` 更新与 overlay 渲染；当前句去重（沿用 `lastVideoCaptionSignature` 思路）避免重复 post / 重复翻译，逐句翻译请求做节流 + 缓存（相同句不重复打 proxy）。
+- 复用既有翻译 / overlay 下游：当前句 `sourceText` 仍走现状链路（browser-agent 构建 `VideoCaptionOverlayState` → native `handleVideoCaptionState` → Free 走 translation-proxy / Pro·Max 走 model-gateway → `applyVideoCaptionOverlayState` 渲染双语 overlay），不在 browser-agent 直连模型；overlay 仍避开播放器控件 / 广告 / 品牌区域，无法安全叠加时降级（沿用 6.6 / 8.6）。
+- 无字幕轨视频降级：无 `captionTracks`（如纯烧录字幕视频）时不报错，走听音翻译 Beta（Phase 6.7 已建，Free 每天 10 分钟）或字幕不可用提示；不做 OCR、不做画面字幕识别。
+- 如契约需扩展则同步双端：`VideoCaptionSegment` 已有可选 `startTimeSeconds` / `endTimeSeconds`（字幕轨来源将实际填充）；如需新增字段（如选中轨语言 / 是否自动生成轨标识）则在 `packages/contracts/src/video-caption.ts` 做向后兼容扩展，并保持 TS fixture 与 Swift decoder 字段等价；改 `runtime-source/` 后重新生成 `apps/ios/AgentEnglish/Generated/BrowserAgentRuntimeSource.generated.swift`，确保无漂移。
+
+**关键文件**：
+- `[修改] packages/browser-agent/src/site-adapters/youtube.ts` — 字幕识别从读 `.ytp-caption-segment` 渲染 DOM 改为读字幕轨数据：解析 `getPlayerResponse()` / `ytInitialPlayerResponse` 的 `captionTracks`、按语言 / 自动生成优先级选轨、声明字幕轨来源下的字幕可用 / 不可用 / 降级能力（`readActiveYouTubeCaptionText` 改为字幕轨来源，或新增字幕轨读取并退役 DOM 读取路径）
+- `[修改] packages/browser-agent/src/runtime-source/youtube-injection.ts` — 注入侧字幕来源改写：从 `document.querySelectorAll(".ytp-caption-segment")` 改为读 player response 的 `captionTracks` + 同源 fetch timedtext（json3）解析带时间轴字幕句；监听 `video` `timeupdate`（节流）按 `currentTime` 定位当前句、去重、驱动 overlay；SPA 切视频用 `getPlayerResponse()` 重取字幕轨
+- `[修改] packages/browser-agent/src/runtime-source/youtube-overlay.ts` — 如时间同步导致 overlay 更新频次 / 当前句渲染方式变化所需的最小调整（仍避开播放器控件 / 广告 / 品牌区域、不破坏 YouTube 布局；无变化则保持现状）
+- `[修改] packages/browser-agent/src/overlay/video-caption-overlay.ts` — 如当前句滚动显示 / 去重渲染需要的最小调整（仍只在视频播放页、降级为视频下方字幕条的逻辑不回退；无变化则保持现状）
+- `[修改] packages/contracts/src/video-caption.ts` — 字幕轨来源填充已有 `startTimeSeconds` / `endTimeSeconds`；仅在确需时新增向后兼容字段（选中轨语言 / 自动生成轨标识等），保持 `VideoCaptionSegment` / `VideoCaptionOverlayState` 双端等价
+- `[修改] apps/ios/AgentEnglish/Generated/BrowserAgentRuntimeSource.generated.swift` — 改 `runtime-source/` 后按既有生成流程重新生成，确保 Swift 侧注入源与 TS 源一致、无漂移（不手改）
+- `[修改] packages/contracts/tests/fixtures/video-caption-youtube-watch.json` — 如契约扩展或时间轴字段语义变化，更新 watch 字幕状态 fixture 以反映字幕轨来源 + 时间轴；新增 Shorts 字幕轨来源 fixture（如 `video-caption-youtube-shorts.json`）覆盖 Shorts 场景
+- `[新增] packages/browser-agent/tests/youtube-caption-track.test.mjs` — 字幕轨选轨（语言 / 自动生成优先级）、timedtext json3 解析为带时间轴字幕句、按 `currentTime` 时间同步定位当前句、当前句去重、无 `captionTracks` 降级到听音 / 提示的注入行为测试（以注入式 stub player response / timedtext payload 断言，不连真实 YouTube 接口）
+
+**依赖前置 Phase**：
+- 依赖 Phase 6.6（需要 YouTube 视频模式识别基线、`VideoCaptionSegment` / `VideoCaptionOverlayState` contract 与双端 fixture、视频字幕叠层 / 降级条 / 收藏当前句入口）
+- 依赖 Phase 6.7（无字幕轨视频的听音翻译 Beta 降级路径、音频分钟额度、Free 每天 10 分钟）
+- 依赖 Phase 8.6（视频页隐形态 / 召唤态 + 左侧召唤把手 + 精简胶囊菜单，本 Phase 在其上叠字幕轨来源的当前句，不得回退视频页交互）
+- 依赖 Phase 8.7（YouTube 整站 SPA 友好轻注入 + 前端路由重判页面类型 + 整站只在视频播放页叠字幕；本 Phase 复用其 SPA 切视频重判时机来重取字幕轨，且不得破坏整站原生交互）
+- 依赖 Phase 8.5 / 8.8（Free 文本 / 字幕翻译走 translation-proxy 分层、已解耦兜底；本 Phase 当前句翻译复用该链路，不改翻译分层）
+- 依赖 ADR-0004 v2.8 修订段（字幕来源：渲染 DOM → 视频自带字幕轨数据）、Product-Spec v2.8 与 ARCHITECTURE v2.8（Browser agent 层字幕轨读取职责 + 合规边界）
+
+**架构约束映射**：
+- 层次边界（review 阻断）：字幕轨数据读取 / `captionTracks` 解析 / timedtext fetch + 解析 / 按 `currentTime` 的时间同步 / 当前句定位**只在 `packages/browser-agent`**（`site-adapters/youtube.ts`、`runtime-source/youtube-injection.ts`、必要时 `runtime-source/youtube-overlay.ts` / `overlay/video-caption-overlay.ts`）；`apps/ios` 入口层只承载视频字幕状态展示，不硬编码 YouTube DOM selector / 不解析字幕轨；当前句翻译仍由 native `ModelServiceClient` / 分层 `Providers`（Free→translation-proxy，Pro·Max→model-gateway）路由，**browser-agent 不直连模型 / 不持有翻译 key**。
+- 目录职责：允许修改上述 `browser-agent` 字幕轨 / 注入 / overlay 文件、`contracts/src/video-caption.ts`（如需扩展）、相应 fixture，并重新生成 `BrowserAgentRuntimeSource.generated.swift`；禁止在 `apps/ios` 写字幕轨解析规则，禁止 `browser-agent` 调用模型服务 / 写本地数据库 / 修改 YouTube 播放器。
+- ADR / 合规约束（review 阻断，ADR-0004 v2.8）：字幕只在播放当前视频时**实时读取其自带字幕轨数据用于翻译显示、只取当前播放所需**；**不保存为字幕文件、不离线缓存整轨、不再分发或搬运**；不下载 / 分离音视频、不替换 / 遮挡播放器控件 / 进度条 / 广告 / 品牌区域，无法安全叠加时降级为视频下方字幕条或提示；仍只在视频播放页做字幕翻译（v2.6 整站边界不变）。
+- SPA / 交互约束（review 阻断，沿用 8.7）：SPA 切视频后用 `getPlayerResponse()` 重取当前视频字幕轨（接 8.7 前端路由重判时机）；不破坏 YouTube 原生交互（滑动 / 点击 / SPA 路由）、不注册干扰原生滚动 / 点击的全局事件、overlay 不破坏 YouTube 虚拟滚动布局；YouTube 非视频页不注入字幕逻辑。
+- 后续范围：不做 OCR / 画面烧录字幕识别（无字幕轨走听音 Beta 或提示）；不重做整站沉浸 / 隐形态 / 召唤态 / 翻译分层（沿用既有 Phase）；不做字幕文件下载 / 离线整轨缓存 / 媒体下载；不扩展 Reddit / Wikipedia / AO3 / X；不做 Netflix / Disney+ / TED / Coursera。
+
+**已知风险**：
+- WKWebView 移动版 player response 结构可能与桌面版不同（字段路径 / `captionTracks` 位置差异），spike 必须先在真机 / 模拟器确认实际结构，不能假设与桌面 Web 一致。
+- SPA 路由切换重取字幕轨的时机：切到新视频后 player response 可能尚未就绪 / 仍是上一个视频，需结合 8.7 的前端路由重判 + 适当重试 / 就绪判定，避免读到旧轨或读空。
+- timedtext fetch 鉴权 / 同源风险：`baseUrl` fetch 可能需要页面上下文 / 同源 cookie，外部或跨上下文 fetch 易 403；spike 必须验证在 WKWebView 页面上下文内 fetch 能否成功，失败则回报（属 spike 闸门项）。
+- 字幕轨多语言 / 自动生成轨选择：同一视频可能有多条轨（人工 / 自动生成 / 多语言），选轨优先级（英文 / 目标语言 / 自动生成）需明确且可降级，避免选错轨或在只有自动生成轨时漏选。
+- 时间同步性能：`timeupdate` 触发频繁，未节流会导致过度计算 / 过度 post / 过度翻译；需节流 + 当前句去重，保证 Shorts 快切与长视频都流畅。
+- 逐句翻译请求节流 / 缓存：按播放进度逐句翻译若不节流 / 不缓存会频繁打 translation-proxy；需相同句缓存命中、避免重复请求，且单句翻译失败不影响后续句与播放。
+- 无字幕轨视频降级：纯烧录字幕 / 无 `captionTracks` 视频必须稳妥降级到听音 Beta 或字幕不可用提示，不报错、不空转、不伪装成功。
+- 合规长期风险：字幕轨读取依赖 YouTube 内部接口，YouTube ToS / App Store 审核存在长期合规风险（与沉浸翻译类竞品同等做法），由产品方知情采用（ADR-0004 v2.8 已记录）。
+
+**验收标准**：
+- 闸门（技术 spike）：真机 / 模拟器 WKWebView 内打开 YouTube watch + Shorts，能读到 `captionTracks`、timedtext（json3）fetch 成功拿到带时间轴的字幕句，并打通一次到 native 的桥接；spike 结论（含 WKWebView 移动版结构差异 / fetch 鉴权情况）记录在案。spike 不通过则本 Phase 暂停并回报，不进入后续验收。
+- 核心：真机上有字幕轨的 Shorts 与横屏 watch 视频**都能出按播放进度滚动的双语字幕**（英文原句 + 中文翻译），**不依赖用户手动开 CC**；SPA 切到新视频后能重取并显示新视频的字幕轨当前句。
+- 降级：无字幕轨视频（纯烧录字幕等）走听音翻译 Beta 或字幕不可用提示，不报错、不空转。
+- 合规（review 阻断）：字幕轨只实时读取用于翻译显示、不保存为文件、不离线缓存整轨、不再分发；不下载 / 分离媒体；overlay 不遮挡播放器控件 / 广告 / 品牌区域，无法安全叠加时降级。
+- 交互（review 阻断）：不破坏 Phase 8.7 的 YouTube 整站原生交互（滑动 / 点击 / SPA 路由）；非视频页不注入字幕逻辑；时间同步的 `timeupdate` 监听已节流、当前句已去重，不卡顿。
+- 质量门槛：TS strict 无 `any`、改动单文件 ≤300 行、`BrowserAgentRuntimeSource.generated.swift` 无漂移（按生成流程重生成、不手改）、`packages/browser-agent` 测试（含新增 `youtube-caption-track.test.mjs`）通过；如扩展契约则 TS fixture 与 Swift decoder 字段等价测试通过。
+- 回归：Phase 6.6 / 6.7 视频模式与字幕 / 听音双路径、Phase 8.6 隐形态 / 召唤态、Phase 8.7 YouTube 整站沉浸与 SPA 友好注入、Phase 8.5 / 8.8 翻译分层与解耦、Phase 8 其他站点适配与通用文本网页翻译均不被破坏。
 
 ---
 

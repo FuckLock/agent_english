@@ -57,6 +57,16 @@ YouTube watch / Shorts 页面采用独立的“视频沉浸翻译模式”：
 - 本版不做 YouTube 页面文字翻译（标题 / 简介 / 评论 / 搜索结果），该能力从当前范围移除、留作后续。
 - 由 DEV-PLAN 新增的 “YouTube 整站沉浸重构” phase 落地。
 
+### v2.8 修订（视频字幕来源：渲染 DOM / 可见字幕 → 视频自带字幕轨数据）
+
+真机验证暴露：v2.4–v2.7 的字幕来源「读播放器渲染的可见字幕 / DOM（`.ytp-caption-segment`）」只在「横屏 watch + 用户手动开 CC」时可读，翻不了 Shorts（用户核心场景）——Shorts 默认不开 CC、播放器 DOM 不同。竞品（Immersive Translate / Trancy）用「读取视频自带的字幕轨数据」（`ytInitialPlayerResponse` / `movie_player.getPlayerResponse()` 的 `captionTracks` → `timedtext`），不依赖 CC 开启、覆盖 Shorts。
+
+- 字幕来源从「渲染 DOM / 可见字幕」改为「读取视频自带的字幕轨数据（player response / timedtext，含自动生成字幕）」，按播放进度（`video.currentTime`）显示当前句；不依赖用户手动开 CC，覆盖 Shorts 与横屏。
+- `browser-agent` 的 YouTube adapter 字幕识别相应重写：读 `captionTracks`（优先英文 / 目标语言 / 自动生成轨）→ 取 `baseUrl`（timedtext，同源 fetch）→ 解析带时间轴的字幕句 → 跟随播放进度；SPA 切视频后用 `getPlayerResponse()` 重取当前视频字幕轨。仍只在视频播放页做字幕翻译（v2.6 整站边界不变）；无字幕轨的视频（如纯烧录字幕）走听音翻译 Beta 或提示。
+- 合规边界调整：从「不通过非官方下载接口抓取字幕文件、不保存完整字幕文件」调整为「仅在播放当前视频时实时读取其自带字幕轨数据用于翻译显示、只取当前播放所需、不保存为字幕文件、不离线缓存整轨、不再分发或搬运」；保留不下载视频 / 音频、不分离音视频、不替换 / 遮挡播放器控件 / 广告 / 品牌。
+- 风险：字幕轨读取依赖 YouTube 内部接口（WKWebView 移动版 / SPA 路由 / timedtext fetch 鉴权有技术风险，需开发阶段技术验证 + 真机迭代）；YouTube ToS / App Store 审核的长期合规风险由产品方知情采用（与沉浸翻译类竞品同等做法）。
+- 由 DEV-PLAN 新增的「YouTube 视频字幕轨读取」phase 落地。
+
 ## Consequences
 
 - 普通文本网页和 YouTube 视频页拥有不同交互模型，避免把阅读器控件套到视频页。
@@ -78,7 +88,7 @@ YouTube watch / Shorts 页面采用独立的“视频沉浸翻译模式”：
 ## Non-Goals
 
 - 不做 YouTube 替代客户端。
-- 不下载视频、音频或完整字幕文件。
+- 不下载视频、音频；不把字幕保存为文件、不离线缓存整轨、不再分发或搬运（v2.8：允许在播放当前视频时实时读取其自带字幕轨数据用于翻译显示，详见 v2.8 修订段）。
 - 不去广告、不后台播放、不分离音视频。
 - 不做无限制听音识别、后台听音识别、下载音视频后转写或保存完整音频。
 - 不在 YouTube 视频页展示阅读型底部分段控件，也不在视频页底部常驻任何 App 工具条 / 状态栏（v2.5 强化：改隐形态 + 召唤态）。

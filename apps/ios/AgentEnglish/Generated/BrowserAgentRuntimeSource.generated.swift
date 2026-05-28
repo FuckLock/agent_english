@@ -45,6 +45,15 @@ enum BrowserAgentRuntimeSource {
   let lastVideoAudioSignature = "";
   let videoCaptionTimer = null;
   let pendingSelectionTimer = null;
+  // Phase 8.9：视频自带字幕轨数据时间同步状态（IIFE 词法作用域共享）。
+  let videoCaptionLines = [];        // 当前视频解析后的字幕句序列（仅内存，不缓存整轨 / 不持久化）
+  let videoCaptionTrackVideoId = ""; // 已加载字幕轨对应的 videoId（防重复 fetch；SPA 切视频时重置）
+  let videoCaptionTrackLoading = false;
+  let videoCaptionTrackLanguage = "";
+  let videoCaptionTrackIsAuto = false;
+  let videoCaptionTrackUnavailable = false;
+  let videoTimeUpdateBound = false;
+  let lastVideoTimeUpdateAt = 0;
 
   const postBridgeEvent = (eventType, payload, metadata = {}) => {
     bridge.postMessage({
@@ -537,7 +546,235 @@ enum BrowserAgentRuntimeSource {
     return true;
   };
 
+  const CAPTION_TIMEUPDATE_THROTTLE_MS = 120;
+  const readYouTubePlayerResponse = () => {
+    const player = document.querySelector("#movie_player, .html5-video-player, ytd-player");
+    if (player && typeof player.getPlayerResponse === "function") {
+      try {
+        const response = player.getPlayerResponse();
+        if (response) {
+          return response;
+        }
+      } catch (error) {
+        // getPlayerResponse 在切视频瞬间可能抛错 / 返回旧值；回退到 ytInitialPlayerResponse。
+      }
+    }
+    return window.ytInitialPlayerResponse || null;
+  };
+  const parseCaptionTracks = (playerResponse) => {
+    const tracks = playerResponse
+      && playerResponse.captions
+      && playerResponse.captions.playerCaptionsTracklistRenderer
+      && playerResponse.captions.playerCaptionsTracklistRenderer.captionTracks;
+    if (!Array.isArray(tracks)) {
+      return [];
+    }
+    return tracks.filter((track) => track && typeof track.baseUrl === "string" && track.baseUrl.length > 0);
+  };
+  const captionTrackIsAuto = (track) => {
+    if (track.kind === "asr") {
+      return true;
+    }
+    return typeof track.vssId === "string" && track.vssId.indexOf("a.") === 0;
+  };
+  const captionLanguageMatches = (track, prefix) => {
+    const code = (track.languageCode || "").toLowerCase();
+    return code === prefix || code.indexOf(prefix + "-") === 0;
+  };
+  const selectCaptionTrack = (tracks, targetLanguageCode) => {
+    if (!tracks.length) {
+      return null;
+    }
+    const manual = tracks.filter((track) => !captionTrackIsAuto(track));
+    const target = (targetLanguageCode || "").toLowerCase();
+    const englishManual = manual.find((track) => captionLanguageMatches(track, "en"));
+    if (englishManual) {
+      return englishManual;
+    }
+    if (target && target !== "en") {
+      const targetManual = manual.find((track) => captionLanguageMatches(track, target));
+      if (targetManual) {
+        return targetManual;
+      }
+    }
+    const englishAuto = tracks.find((track) => captionTrackIsAuto(track) && captionLanguageMatches(track, "en"));
+    if (englishAuto) {
+      return englishAuto;
+    }
+    if (target && target !== "en") {
+      const targetAuto = tracks.find((track) => captionTrackIsAuto(track) && captionLanguageMatches(track, target));
+      if (targetAuto) {
+        return targetAuto;
+      }
+    }
+    return manual[0] || tracks[0] || null;
+  };
+  const buildJson3CaptionUrl = (baseUrl) => {
+    if (/[?&]fmt=json3(&|$)/.test(baseUrl)) {
+      return baseUrl;
+    }
+    return baseUrl + (baseUrl.indexOf("?") >= 0 ? "&" : "?") + "fmt=json3";
+  };
+  const parseJson3Captions = (payload) => {
+    const events = payload && payload.events;
+    if (!Array.isArray(events)) {
+      return [];
+    }
+    const lines = [];
+    for (const event of events) {
+      if (!event || typeof event.tStartMs !== "number") {
+        continue;
+      }
+      const segs = Array.isArray(event.segs) ? event.segs : [];
+      const joined = segs.map((seg) => (seg && seg.utf8) || "").join("");
+      const sourceText = normalizeText(joined);
+      if (!sourceText.length) {
+        continue;
+      }
+      const durationMs = typeof event.dDurationMs === "number" ? event.dDurationMs : 0;
+      lines.push({
+        startTimeSeconds: event.tStartMs / 1000,
+        endTimeSeconds: (event.tStartMs + durationMs) / 1000,
+        sourceText,
+      });
+    }
+    lines.sort((left, right) => left.startTimeSeconds - right.startTimeSeconds);
+    return lines;
+  };
+  const findActiveCaptionLine = (lines, currentTime) => {
+    let active = null;
+    for (const line of lines) {
+      if (currentTime < line.startTimeSeconds || currentTime >= line.endTimeSeconds) {
+        continue;
+      }
+      if (!active || line.startTimeSeconds > active.startTimeSeconds) {
+        active = line;
+      }
+    }
+    return active;
+  };
+  const captionLineSignature = (line) => (line ? line.startTimeSeconds.toFixed(3) + ":" + line.sourceText : "");
+  const resetVideoCaptionTrack = () => {
+    // SPA 切视频：丢弃上一个视频字幕序列（合规：不缓存整轨）+ 重置去重签名。
+    videoCaptionLines = [];
+    videoCaptionTrackVideoId = "";
+    videoCaptionTrackLoading = false;
+    videoCaptionTrackLanguage = "";
+    videoCaptionTrackIsAuto = false;
+    videoCaptionTrackUnavailable = false;
+    lastVideoCaptionSignature = "";
+    lastVideoTimeUpdateAt = 0;
+  };
+  const captionTrackTargetLanguageCode = () => (
+    typeof window.__agentEnglishTargetLanguageCode === "string"
+      ? window.__agentEnglishTargetLanguageCode
+      : ""
+  );
+  const ensureVideoCaptionTrackLoaded = () => {
+    const detection = detectYouTubePage();
+    if (!detection.isVideoPage) {
+      return Promise.resolve(false);
+    }
+    const videoId = detection.videoId || "";
+    if (videoId && videoId === videoCaptionTrackVideoId) {
+      return Promise.resolve(videoCaptionLines.length > 0);
+    }
+    if (videoCaptionTrackLoading) {
+      return Promise.resolve(false);
+    }
+    const playerResponse = readYouTubePlayerResponse();
+    const tracks = parseCaptionTracks(playerResponse);
+    const track = selectCaptionTrack(tracks, captionTrackTargetLanguageCode());
+    if (!track) {
+      // A6：无 captionTracks / 空轨 / 仅损坏轨 -> 标记不可用，不抛错 / 不重试空转。
+      videoCaptionLines = [];
+      videoCaptionTrackVideoId = videoId;
+      videoCaptionTrackUnavailable = true;
+      videoCaptionTrackLanguage = "";
+      videoCaptionTrackIsAuto = false;
+      return Promise.resolve(false);
+    }
+    videoCaptionTrackLoading = true;
+    videoCaptionTrackUnavailable = false;
+    videoCaptionTrackLanguage = track.languageCode || "";
+    videoCaptionTrackIsAuto = captionTrackIsAuto(track);
+    // 同源 fetch（页面上下文，带 cookie / visitor data）；不经 native、不外部请求。
+    return fetch(buildJson3CaptionUrl(track.baseUrl), { credentials: "same-origin" })
+      .then((response) => (response && response.ok ? response.json() : null))
+      .then((payload) => {
+        videoCaptionTrackLoading = false;
+        const lines = parseJson3Captions(payload);
+        videoCaptionLines = lines;
+        videoCaptionTrackVideoId = videoId;
+        if (!lines.length) {
+          videoCaptionTrackUnavailable = true;
+        }
+        return lines.length > 0;
+      })
+      .catch((error) => {
+        // fetch 失败（403 / 网络）-> 降级不可用；不持续重试空转。
+        videoCaptionTrackLoading = false;
+        videoCaptionLines = [];
+        videoCaptionTrackVideoId = videoId;
+        videoCaptionTrackUnavailable = true;
+        return false;
+      });
+  };
+  const buildCaptionLineOverrides = (line) => {
+    if (!line) {
+      return videoCaptionTrackUnavailable
+        ? { sourceText: "", failureReason: "caption-unavailable" }
+        : { sourceText: "" };
+    }
+    return {
+      sourceText: line.sourceText,
+      startTimeSeconds: line.startTimeSeconds,
+      endTimeSeconds: line.endTimeSeconds,
+      selectedTrackLanguage: videoCaptionTrackLanguage || undefined,
+      selectedTrackIsAutoGenerated: videoCaptionTrackIsAuto,
+      containerPath: "caption-track",
+    };
+  };
+  const syncActiveCaptionLine = (currentTime, force = false) => {
+    if (!detectYouTubePage().isVideoPage) {
+      return false;
+    }
+    const line = findActiveCaptionLine(videoCaptionLines, currentTime);
+    const state = buildYouTubeVideoCaptionState(buildCaptionLineOverrides(line));
+    return postVideoCaptionState(state, force);
+  };
+  const installVideoTimeUpdateListener = () => {
+    // A4 / A8：仅在视频播放页装配 timeupdate 监听；节流 >=120ms；只装一次（videoTimeUpdateBound）。
+    if (videoTimeUpdateBound || !detectYouTubePage().isVideoPage) {
+      return false;
+    }
+    const video = document.querySelector("video");
+    if (!video || typeof video.addEventListener !== "function") {
+      return false;
+    }
+    videoTimeUpdateBound = true;
+    video.addEventListener("timeupdate", () => {
+      const nowMs = Date.now();
+      if (nowMs - lastVideoTimeUpdateAt < CAPTION_TIMEUPDATE_THROTTLE_MS) {
+        return;
+      }
+      lastVideoTimeUpdateAt = nowMs;
+      syncActiveCaptionLine(typeof video.currentTime === "number" ? video.currentTime : 0, false);
+    });
+    return true;
+  };
+
   const readActiveYouTubeCaptionText = () => {
+    // Phase 8.9：字幕轨来源优先——视频自带字幕轨已解析出当前句时直接用（不读渲染 DOM）；
+    // 字幕轨不可用时回退 .ytp-caption-segment DOM 兜底（保留以做降级 / 旧路径兼容）。
+    if (Array.isArray(videoCaptionLines) && videoCaptionLines.length) {
+      const video = document.querySelector("video");
+      const currentTime = video && typeof video.currentTime === "number" ? video.currentTime : 0;
+      const line = findActiveCaptionLine(videoCaptionLines, currentTime);
+      if (line) {
+        return line.sourceText;
+      }
+    }
     const primaryNodes = Array.from(document.querySelectorAll(".ytp-caption-segment"));
     const fallbackNodes = primaryNodes.length
       ? primaryNodes
@@ -550,8 +787,11 @@ enum BrowserAgentRuntimeSource {
       return null;
     }
     const updatedAt = new Date().toISOString();
-    const sourceText = normalizeText(overrides.sourceText || readActiveYouTubeCaptionText());
+    const sourceText = normalizeText(
+      typeof overrides.sourceText === "string" ? overrides.sourceText : readActiveYouTubeCaptionText(),
+    );
     const hasCaption = sourceText.length > 0;
+    const fromTrack = typeof overrides.containerPath === "string" && overrides.containerPath === "caption-track";
     const segment = hasCaption ? {
       pageId,
       segmentId: hashSeed("vcap", pageId + ":" + sourceText + ":" + updatedAt.slice(0, 19)),
@@ -560,7 +800,11 @@ enum BrowserAgentRuntimeSource {
       translatedText: overrides.translatedText,
       sourceLanguage: overrides.sourceLanguage || "English",
       targetLanguage: overrides.targetLanguage || "简体中文",
-      containerPath: ".ytp-caption-segment",
+      startTimeSeconds: typeof overrides.startTimeSeconds === "number" ? overrides.startTimeSeconds : undefined,
+      endTimeSeconds: typeof overrides.endTimeSeconds === "number" ? overrides.endTimeSeconds : undefined,
+      selectedTrackLanguage: fromTrack ? overrides.selectedTrackLanguage : undefined,
+      selectedTrackIsAutoGenerated: fromTrack ? Boolean(overrides.selectedTrackIsAutoGenerated) : undefined,
+      containerPath: overrides.containerPath || ".ytp-caption-segment",
       capturedAt: updatedAt,
     } : undefined;
     return {
@@ -707,22 +951,45 @@ enum BrowserAgentRuntimeSource {
   };
   const syncVideoCaptionState = (force = false) => {
     // A5 / A7.2：非视频页（含 YouTube 整站非视频页与非 YouTube 页面）不产字幕状态、
-    // 不渲染 overlay；切换到非视频页时清除任何残留 surface。
+    // 不渲染 overlay；切换到非视频页时清除任何残留 surface 并重置字幕轨状态。
     if (!detectYouTubePage().isVideoPage) {
       removeVideoCaptionSurfaces();
-      lastVideoCaptionSignature = "";
+      resetVideoCaptionTrack();
       lastVideoAudioSignature = "";
       return false;
     }
-    const state = buildYouTubeVideoCaptionState();
+    // A1 / A3 / A4：视频页——确保已读取并解析视频自带字幕轨（异步同源 fetch json3），
+    // 并装配 timeupdate 监听（按 currentTime 时间同步当前句）。
+    installVideoTimeUpdateListener();
+    ensureVideoCaptionTrackLoaded().then((hasLines) => {
+      if (hasLines) {
+        const loadedVideo = document.querySelector("video");
+        const loadedTime = loadedVideo && typeof loadedVideo.currentTime === "number" ? loadedVideo.currentTime : 0;
+        syncActiveCaptionLine(loadedTime, true);
+      } else if (videoCaptionTrackUnavailable) {
+        // A6：无字幕轨则降级（caption-unavailable）+ 听音 Beta 入口仍可被 native 调起。
+        const fallbackState = buildYouTubeVideoCaptionState({ sourceText: "", failureReason: "caption-unavailable" });
+        postVideoCaptionState(fallbackState, true);
+        postVideoAudioState(buildYouTubeVideoAudioState(), true);
+      }
+    });
+    // 立即按当前已有字幕序列同步一次当前句（首取尚未就绪时回退 DOM 兜底，等 fetch 回调补发）。
+    const video = document.querySelector("video");
+    const currentTime = video && typeof video.currentTime === "number" ? video.currentTime : 0;
+    const state = videoCaptionLines.length
+      ? buildYouTubeVideoCaptionState(buildCaptionLineOverrides(findActiveCaptionLine(videoCaptionLines, currentTime)))
+      : buildYouTubeVideoCaptionState();
     const postedCaption = postVideoCaptionState(state, force);
-    if (state?.captionAvailability === "unavailable") {
+    if (state && state.captionAvailability === "unavailable" && videoCaptionTrackUnavailable) {
       postVideoAudioState(buildYouTubeVideoAudioState(), force);
     }
     return postedCaption;
   };
   const handleYouTubeRouteChange = () => {
-    // A4.2：SPA 前端路由切换后重判页面类型；非视频页清残留、视频页重新同步字幕。
+    // A4.2 / A5：SPA 前端路由切换后重判页面类型；切视频时丢弃上一个视频字幕轨序列并重置
+    // 去重签名 + 解绑旧 timeupdate（视频元素会被 SPA 替换），再重新同步当前视频字幕。
+    resetVideoCaptionTrack();
+    videoTimeUpdateBound = false;
     syncVideoCaptionState(true);
   };
   const installYouTubeRouteListeners = () => {
@@ -758,6 +1025,19 @@ enum BrowserAgentRuntimeSource {
     requestVideoAudioTranslation,
     syncVideoCaptionState,
     installYouTubeRouteListeners,
+    // Phase 8.9：视频自带字幕轨数据读取 / 解析 / 时间同步（注入式单测入口；不出网）。
+    readYouTubePlayerResponse,
+    parseCaptionTracks,
+    selectCaptionTrack,
+    buildJson3CaptionUrl,
+    parseJson3Captions,
+    findActiveCaptionLine,
+    captionLineSignature,
+    ensureVideoCaptionTrackLoaded,
+    installVideoTimeUpdateListener,
+    syncActiveCaptionLine,
+    resetVideoCaptionTrack,
+    getVideoCaptionLines: () => videoCaptionLines,
   };
 
   // YouTube 整站识别 / 字幕状态 / overlay 渲染 / SPA 路由监听由 youtube-overlay +

@@ -1,5 +1,18 @@
 # 变更记录
 
+## [v2.8] - 2026-05-27
+
+### 修改
+
+- 🔴 YouTube 视频字幕来源从「读播放器渲染的可见字幕 / DOM（`.ytp-caption-segment`，需手动开 CC、横屏播放器）」改为「读取视频自带的字幕轨数据（player response / timedtext，含自动生成字幕、无需手动开 CC、覆盖 Shorts 与横屏）」，按播放进度显示当前句（位置：[应用场景] / [核心功能] YouTube 视频沉浸翻译 / [用户使用流程] 路径 2A / [YouTube 边界] / [MVP 范围]）—— 原因：真机验证旧 DOM 读取方式只能翻横屏 + 手动开 CC 的视频、翻不了 Shorts（用户核心场景）；竞品（Immersive Translate / Trancy）用字幕轨数据、不依赖 CC 开启、能翻 Shorts，本版追齐。
+- 🔴 调整 YouTube 字幕合规边界：从「不通过非官方下载接口抓取字幕文件、不保存完整字幕文件」改为「仅在播放当前视频时实时读取其自带字幕轨数据用于翻译显示、只取当前播放所需、不保存为字幕文件、不离线缓存整轨、不再分发或搬运、不下载视频 / 音频」（位置：[YouTube 边界]）—— 原因：字幕轨读取是实现 Shorts / 视频字幕翻译的必要手段（行业通行、与沉浸翻译类竞品一致）；保留「不保存、不搬运、不下载媒体」核心约束。
+
+### 风险
+
+- 🟡 字幕轨读取依赖 YouTube 内部接口（`ytInitialPlayerResponse` / `movie_player.getPlayerResponse` / `timedtext`），在 WKWebView 移动版、SPA 路由切换、timedtext fetch 鉴权上有技术风险，需开发阶段技术验证 + 真机迭代；并需关注 YouTube ToS / App Store 审核的长期合规风险（产品方知情采用）。
+
+---
+
 ## [v2.7] - 2026-05-26
 
 ### 修改

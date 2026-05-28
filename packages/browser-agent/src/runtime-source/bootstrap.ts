@@ -40,6 +40,15 @@ export const RUNTIME_BOOTSTRAP_SOURCE = String.raw`(() => {
   let lastVideoAudioSignature = "";
   let videoCaptionTimer = null;
   let pendingSelectionTimer = null;
+  // Phase 8.9：视频自带字幕轨数据时间同步状态（IIFE 词法作用域共享）。
+  let videoCaptionLines = [];        // 当前视频解析后的字幕句序列（仅内存，不缓存整轨 / 不持久化）
+  let videoCaptionTrackVideoId = ""; // 已加载字幕轨对应的 videoId（防重复 fetch；SPA 切视频时重置）
+  let videoCaptionTrackLoading = false;
+  let videoCaptionTrackLanguage = "";
+  let videoCaptionTrackIsAuto = false;
+  let videoCaptionTrackUnavailable = false;
+  let videoTimeUpdateBound = false;
+  let lastVideoTimeUpdateAt = 0;
 
   const postBridgeEvent = (eventType, payload, metadata = {}) => {
     bridge.postMessage({
