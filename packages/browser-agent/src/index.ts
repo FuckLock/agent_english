@@ -69,6 +69,7 @@ export {
   type SiteAdapterProfile,
 } from "./site-adapters";
 export {
+  buildInnerTubePlayerRequest,
   buildJson3CaptionUrl,
   captionLineSignature,
   createYouTubeVideoCaptionState,
@@ -82,6 +83,7 @@ export {
   selectCaptionTrack,
   youtubePageCapabilities,
   type CreateYouTubeVideoCaptionStateOptions,
+  type InnerTubePlayerRequest,
   type SelectCaptionTrackOptions,
   type YouTubeCaptionDocumentLike,
   type YouTubeCaptionLine,

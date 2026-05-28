@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 
-import { BROWSER_AGENT_RUNTIME_SOURCE } from "../dist/index.js";
+import {
+  BROWSER_AGENT_RUNTIME_SOURCE,
+  buildInnerTubePlayerRequest,
+} from "../dist/index.js";
 
 // ---------------------------------------------------------------------------
 // Phase 8.9 — 注入式单测：视频自带字幕轨数据读取 / 选轨 / json3 解析 / currentTime
@@ -99,6 +102,7 @@ function createCaptionHarness({
   playerResponse = null,
   json3Payload = null,
   fetchOk = true,
+  innerTubeOk = true,
   hasVideoElement = true,
   currentTime = 0,
 }) {
@@ -108,6 +112,7 @@ function createCaptionHarness({
     fetch: 0,
     timeupdateListener: 0,
     fetchUrls: [],
+    fetchBodies: [],
   };
   let playerResponseRef = playerResponse;
   let json3PayloadRef = json3Payload;
@@ -234,10 +239,19 @@ function createCaptionHarness({
     getComputedStyle() {
       return { position: "static", display: "block", visibility: "visible", opacity: "1" };
     },
-    // stub fetch：不出网；统计调用 + 记录 URL + 返回 stub json3（可经 setJson3Payload 切换）。
-    fetch(requestUrl) {
+    // stub fetch：不出网；统计调用 + 记录 URL/body。区分两类请求：
+    // - InnerTube（POST /youtubei/v1/player）→ 返回 player response（含 captionTracks），ok 受 innerTubeOk 控制；
+    // - timedtext（其余）→ 返回 stub json3（可经 setJson3Payload 切换；null → 空体），ok 受 fetchOk 控制。
+    fetch(requestUrl, init) {
       counters.fetch += 1;
       counters.fetchUrls.push(String(requestUrl));
+      counters.fetchBodies.push(init && init.body ? String(init.body) : "");
+      if (String(requestUrl).indexOf("/youtubei/v1/player") >= 0) {
+        return Promise.resolve({
+          ok: innerTubeOk,
+          json: () => Promise.resolve(playerResponseRef),
+        });
+      }
       return Promise.resolve({
         ok: fetchOk,
         json: () => Promise.resolve(json3PayloadRef),
@@ -295,6 +309,7 @@ function createCaptionHarness({
 const WATCH_URL = "https://www.youtube.com/watch?v=abc123";
 const WATCH_URL_B = "https://www.youtube.com/watch?v=def456";
 const HOME_URL = "https://www.youtube.com/";
+const SHORTS_URL = "https://www.youtube.com/shorts/shortAbc";
 
 // boot 时 syncVideoCaptionState 会发起 in-flight fetch（.then().then().catch() 多跳微任务）。
 // 用真实定时器宏任务排空，确保 boot 的字幕轨加载在测试断言前完全 settle，避免竞态。
@@ -421,16 +436,25 @@ test("E4: parseJson3Captions returns empty for missing/empty events", () => {
   assert.equal(yt.parseJson3Captions({ events: [] }).length, 0);
 });
 
-test("E4: buildJson3CaptionUrl appends fmt=json3 idempotently", () => {
+test("E4: buildJson3CaptionUrl 规整为 fmt=json3（无 fmt 追加 / 清掉已有 fmt 再加）", () => {
   const { youtube: yt } = createCaptionHarness({ url: WATCH_URL });
   assert.equal(
     yt.buildJson3CaptionUrl("https://www.youtube.com/api/timedtext?v=abc&lang=en"),
     "https://www.youtube.com/api/timedtext?v=abc&lang=en&fmt=json3",
   );
-  // 幂等：已含 fmt=json3 不重复追加。
+  // 幂等：已含 fmt=json3 仍只有一个 fmt=json3。
   assert.equal(
     yt.buildJson3CaptionUrl("https://x/timedtext?v=abc&fmt=json3"),
     "https://x/timedtext?v=abc&fmt=json3",
+  );
+  // 关键修复：baseUrl 已带其他 fmt（如 srv3）→ 清掉再加 json3，避免重复 fmt 被取第一个返回 XML。
+  assert.equal(
+    yt.buildJson3CaptionUrl("https://x/timedtext?v=abc&fmt=srv3&lang=en"),
+    "https://x/timedtext?v=abc&lang=en&fmt=json3",
+  );
+  assert.equal(
+    yt.buildJson3CaptionUrl("https://x/timedtext?fmt=vtt"),
+    "https://x/timedtext?fmt=json3",
   );
 });
 
@@ -663,4 +687,98 @@ test("E8: video page fetches timedtext once and binds timeupdate", async () => {
   await flushMicrotasks();
   assert.ok(harness.counters.fetch >= 1, "video page fetches timedtext on boot");
   assert.ok(harness.counters.timeupdateListener >= 1, "video page binds timeupdate on boot");
+});
+
+// ===========================================================================
+// E9 — InnerTube ANDROID client 取字幕轨（移动版 / Shorts / SPA 修复核心）
+//
+// 真机根因：iOS WKWebView 加载移动版 m.youtube.com，其播放器无 getPlayerResponse()，
+// Shorts/SPA 切换后 ytInitialPlayerResponse 不更新 → 读不到当前视频字幕轨。修复改为
+// InnerTube /youtubei/v1/player（ANDROID client，按 URL videoId 重取）优先，DOM 兜底。
+// ===========================================================================
+test("E9: buildInnerTubePlayerRequest 纯函数构造 ANDROID client 请求（锁定 site-adapter ↔ 注入侧不漂移）", () => {
+  // 带 key：endpoint 带 key，body 用 ANDROID client + clientVersion + videoId。
+  const withKey = buildInnerTubePlayerRequest("vid123", "API_KEY_X");
+  assert.equal(withKey.url, "/youtubei/v1/player?key=API_KEY_X");
+  const parsed = JSON.parse(withKey.body);
+  assert.equal(parsed.context.client.clientName, "ANDROID", "必须 ANDROID client（WEB client 取不到 captionTracks）");
+  assert.equal(parsed.context.client.clientVersion, "20.10.38", "clientVersion 与注入侧 E9 断言一致");
+  assert.equal(parsed.videoId, "vid123");
+  // 无 key（key 非必需）：endpoint 不带 query。
+  const noKey = buildInnerTubePlayerRequest("vid456");
+  assert.equal(noKey.url, "/youtubei/v1/player");
+  assert.equal(JSON.parse(noKey.body).videoId, "vid456");
+  // 同源相对路径（不打外部域）。
+  assert.ok(withKey.url.indexOf("http") < 0 && withKey.url.indexOf("//") < 0, "endpoint 为同源相对路径");
+});
+
+test("E9: ensure 先打 InnerTube /youtubei/v1/player（ANDROID client + videoId）再取 timedtext", async () => {
+  const harness = createCaptionHarness({
+    url: WATCH_URL,
+    playerResponse: buildPlayerResponse(watchCaptionTracks()),
+    json3Payload: buildJson3Payload(),
+  });
+  const yt = harness.youtube;
+  await flushMicrotasks();
+  yt.resetVideoCaptionTrack();
+  harness.counters.fetchUrls.length = 0;
+  harness.counters.fetchBodies.length = 0;
+
+  const hasLines = await yt.ensureVideoCaptionTrackLoaded();
+  assert.equal(hasLines, true, "InnerTube → player response → 选轨 → timedtext → 解析到字幕");
+  assert.equal(yt.getVideoCaptionLines().length, 3);
+
+  // 第一跳必须打到 InnerTube player endpoint。
+  assert.ok(
+    harness.counters.fetchUrls[0].indexOf("/youtubei/v1/player") >= 0,
+    "first fetch hits InnerTube /youtubei/v1/player",
+  );
+  // 请求体用 ANDROID client + 当前 videoId（abc123）。
+  const innerTubeBody = harness.counters.fetchBodies[0];
+  assert.ok(innerTubeBody.indexOf("ANDROID") >= 0, "InnerTube body uses ANDROID client");
+  assert.ok(innerTubeBody.indexOf("20.10.38") >= 0, "InnerTube body pins ANDROID clientVersion（与纯函数锁定一致）");
+  assert.ok(innerTubeBody.indexOf("abc123") >= 0, "InnerTube body carries current videoId");
+  // 随后取 timedtext（带 fmt=json3）。
+  assert.ok(
+    harness.counters.fetchUrls.some(
+      (u) => u.indexOf("timedtext") >= 0 && u.indexOf("fmt=json3") >= 0,
+    ),
+    "timedtext fetched with fmt=json3",
+  );
+});
+
+test("E9: InnerTube 不可用时回退 getPlayerResponse 兜底仍取到字幕", async () => {
+  const harness = createCaptionHarness({
+    url: WATCH_URL,
+    playerResponse: buildPlayerResponse(watchCaptionTracks()),
+    json3Payload: buildJson3Payload(),
+    innerTubeOk: false, // InnerTube 请求失败（403/网络）→ 回退页面 player response
+  });
+  const yt = harness.youtube;
+  await flushMicrotasks();
+  yt.resetVideoCaptionTrack();
+
+  const hasLines = await yt.ensureVideoCaptionTrackLoaded();
+  assert.equal(hasLines, true, "InnerTube 失败 → 回退 getPlayerResponse → 仍取到字幕");
+  assert.equal(yt.getVideoCaptionLines().length, 3);
+});
+
+test("E9: Shorts 视频页也走 InnerTube 取字幕（按 URL videoId，不依赖播放器 DOM）", async () => {
+  const harness = createCaptionHarness({
+    url: SHORTS_URL,
+    playerResponse: buildPlayerResponse(watchCaptionTracks()),
+    json3Payload: buildJson3Payload(),
+  });
+  const yt = harness.youtube;
+  await flushMicrotasks();
+  yt.resetVideoCaptionTrack();
+  harness.counters.fetchBodies.length = 0;
+
+  const hasLines = await yt.ensureVideoCaptionTrackLoaded();
+  assert.equal(hasLines, true, "Shorts 页经 InnerTube 取到字幕");
+  // InnerTube body 携带 Shorts 的 videoId（来自 /shorts/shortAbc）。
+  assert.ok(
+    harness.counters.fetchBodies.some((b) => b.indexOf("shortAbc") >= 0),
+    "InnerTube body carries shorts videoId from URL",
+  );
 });

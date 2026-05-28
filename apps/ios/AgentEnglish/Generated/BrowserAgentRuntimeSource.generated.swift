@@ -561,6 +561,40 @@ enum BrowserAgentRuntimeSource {
     }
     return window.ytInitialPlayerResponse || null;
   };
+  const readInnerTubeApiKey = () => {
+    try {
+      if (window.ytcfg && typeof window.ytcfg.get === "function") {
+        const key = window.ytcfg.get("INNERTUBE_API_KEY");
+        if (typeof key === "string" && key.length > 0) {
+          return key;
+        }
+      }
+    } catch (error) {
+      // ytcfg 不可用 -> 无 key（InnerTube 无 key 也能取 caption metadata）。
+    }
+    return "";
+  };
+  const fetchPlayerResponseViaInnerTube = (videoId) => {
+    // 用 ANDROID client 按 videoId 重取 player response —— 不依赖播放器 DOM / ytInitialPlayerResponse，
+    // 天然覆盖移动版 m.youtube.com + Shorts + SPA（WEB client 反爬返回空轨，ANDROID client 可取）。
+    if (!videoId) {
+      return Promise.resolve(null);
+    }
+    const apiKey = readInnerTubeApiKey();
+    const endpoint = apiKey ? "/youtubei/v1/player?key=" + encodeURIComponent(apiKey) : "/youtubei/v1/player";
+    const body = JSON.stringify({
+      context: { client: { clientName: "ANDROID", clientVersion: "20.10.38", androidSdkVersion: 31, hl: "en", gl: "US" } },
+      videoId: videoId,
+    });
+    return fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body,
+      credentials: "same-origin",
+    })
+      .then((response) => (response && response.ok ? response.json() : null))
+      .catch(() => null);
+  };
   const parseCaptionTracks = (playerResponse) => {
     const tracks = playerResponse
       && playerResponse.captions
@@ -610,10 +644,10 @@ enum BrowserAgentRuntimeSource {
     return manual[0] || tracks[0] || null;
   };
   const buildJson3CaptionUrl = (baseUrl) => {
-    if (/[?&]fmt=json3(&|$)/.test(baseUrl)) {
-      return baseUrl;
-    }
-    return baseUrl + (baseUrl.indexOf("?") >= 0 ? "&" : "?") + "fmt=json3";
+    // 先清掉 baseUrl 已有的 fmt（部分来源带 &fmt=srv3），再加 &fmt=json3；
+    // 重复 fmt 参数会被 YouTube 取第一个 -> 返回 XML 而非 json3（真机踩坑）。
+    const withoutFmt = baseUrl.replace(/([?&])fmt=[^&]*&?/g, "$1").replace(/[?&]$/, "");
+    return withoutFmt + (withoutFmt.indexOf("?") >= 0 ? "&" : "?") + "fmt=json3";
   };
   const parseJson3Captions = (payload) => {
     const events = payload && payload.events;
@@ -682,37 +716,43 @@ enum BrowserAgentRuntimeSource {
     if (videoCaptionTrackLoading) {
       return Promise.resolve(false);
     }
-    const playerResponse = readYouTubePlayerResponse();
-    const tracks = parseCaptionTracks(playerResponse);
-    const track = selectCaptionTrack(tracks, captionTrackTargetLanguageCode());
-    if (!track) {
-      // A6：无 captionTracks / 空轨 / 仅损坏轨 -> 标记不可用，不抛错 / 不重试空转。
-      videoCaptionLines = [];
-      videoCaptionTrackVideoId = videoId;
-      videoCaptionTrackUnavailable = true;
-      videoCaptionTrackLanguage = "";
-      videoCaptionTrackIsAuto = false;
-      return Promise.resolve(false);
-    }
     videoCaptionTrackLoading = true;
     videoCaptionTrackUnavailable = false;
-    videoCaptionTrackLanguage = track.languageCode || "";
-    videoCaptionTrackIsAuto = captionTrackIsAuto(track);
-    // 同源 fetch（页面上下文，带 cookie / visitor data）；不经 native、不外部请求。
-    return fetch(buildJson3CaptionUrl(track.baseUrl), { credentials: "same-origin" })
-      .then((response) => (response && response.ok ? response.json() : null))
-      .then((payload) => {
-        videoCaptionTrackLoading = false;
-        const lines = parseJson3Captions(payload);
-        videoCaptionLines = lines;
-        videoCaptionTrackVideoId = videoId;
-        if (!lines.length) {
+    // 优先 InnerTube ANDROID client 按 videoId 重取（覆盖移动版 / Shorts / SPA）；
+    // 失败回退页面 player response（getPlayerResponse / ytInitialPlayerResponse，桌面场景兜底）。
+    return fetchPlayerResponseViaInnerTube(videoId)
+      .then((innerTubeResponse) => {
+        const playerResponse = innerTubeResponse || readYouTubePlayerResponse();
+        const tracks = parseCaptionTracks(playerResponse);
+        const track = selectCaptionTrack(tracks, captionTrackTargetLanguageCode());
+        if (!track) {
+          // A6：无 captionTracks / 空轨 / 仅损坏轨 -> 标记不可用，不抛错 / 不重试空转。
+          videoCaptionTrackLoading = false;
+          videoCaptionLines = [];
+          videoCaptionTrackVideoId = videoId;
           videoCaptionTrackUnavailable = true;
+          videoCaptionTrackLanguage = "";
+          videoCaptionTrackIsAuto = false;
+          return false;
         }
-        return lines.length > 0;
+        videoCaptionTrackLanguage = track.languageCode || "";
+        videoCaptionTrackIsAuto = captionTrackIsAuto(track);
+        // 同源 fetch（页面上下文，带 cookie / visitor data）；不经 native、不外部请求。
+        return fetch(buildJson3CaptionUrl(track.baseUrl), { credentials: "same-origin" })
+          .then((response) => (response && response.ok ? response.json() : null))
+          .then((payload) => {
+            videoCaptionTrackLoading = false;
+            const lines = parseJson3Captions(payload);
+            videoCaptionLines = lines;
+            videoCaptionTrackVideoId = videoId;
+            if (!lines.length) {
+              videoCaptionTrackUnavailable = true;
+            }
+            return lines.length > 0;
+          });
       })
       .catch((error) => {
-        // fetch 失败（403 / 网络）-> 降级不可用；不持续重试空转。
+        // InnerTube / timedtext fetch 失败（403 / 网络）-> 降级不可用；不持续重试空转。
         videoCaptionTrackLoading = false;
         videoCaptionLines = [];
         videoCaptionTrackVideoId = videoId;

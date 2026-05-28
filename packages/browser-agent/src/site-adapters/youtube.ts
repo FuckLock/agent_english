@@ -12,6 +12,7 @@ import {
 } from "./youtube-caption-track";
 
 export {
+  buildInnerTubePlayerRequest,
   buildJson3CaptionUrl,
   captionLineSignature,
   findActiveCaptionLine,
@@ -19,6 +20,7 @@ export {
   parseCaptionTracks,
   parseJson3Captions,
   selectCaptionTrack,
+  type InnerTubePlayerRequest,
   type SelectCaptionTrackOptions,
   type YouTubeCaptionLine,
   type YouTubeCaptionTrack,

@@ -148,6 +148,12 @@ function createHarness({ url, readyState = "complete" }) {
     getComputedStyle() {
       return { position: "static", display: "block", visibility: "visible", opacity: "1" };
     },
+    // 字幕轨 ensure 在视频页 boot/路由切换会发起 InnerTube/timedtext fetch；本 SPA 测试只关心
+    // 路由识别 / 全局监听 / overlay 清理，不关心字幕内容。stub 返回空体即可（InnerTube null →
+    // 回退页面 player response；无轨 → unavailable，不影响路由/监听/overlay 断言）。
+    fetch() {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
+    },
     URL,
     Set,
     Map,

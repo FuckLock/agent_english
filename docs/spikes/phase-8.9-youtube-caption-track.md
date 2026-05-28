@@ -3,7 +3,13 @@
 > 关联：criteria `.claude/criteria/phase-8.9.md`（A0 闸门）、ADR-0004 v2.8、ARCHITECTURE v2.8
 > Browser-agent 层「视频自带字幕轨数据读取」职责、Product-Spec v2.8 YouTube 边界。
 >
-> **闸门状态：A0 真机 fetch 验证待 caller 在 WKWebView 真机 / 模拟器内确认（见下方第 4 节）。**
+> **v2.8 真机修订（player response 获取：DOM 播放器 → InnerTube ANDROID client）**：真机暴露字幕轨方案翻不了
+> Shorts，根因定位为「iOS WKWebView 加载移动版 m.youtube.com，其播放器无 getPlayerResponse() + Shorts/SPA 下
+> ytInitialPlayerResponse 不随路由更新 → 读不到当前视频 captionTracks」，已改为 InnerTube `/youtubei/v1/player`
+> （ANDROID client，按 URL videoId 重取）优先、DOM 兜底（详见 ADR-0004 v2.8 真机修订段）。curl 自测确认 InnerTube
+> ANDROID client 可取（同视频 WEB client 0 条 / ANDROID client 6 条 captionTracks + timedtext json3 正文，key 非必需）。
+>
+> **闸门状态：A0 真机 fetch 验证仍待 caller 在 WKWebView 真机 / 模拟器内确认（见下方第 4 节）——curl 外部验证 ≠ WKWebView 页面上下文同源 fetch。**
 > 本文档「真机结论」一栏一律据实标注「待真机验证」，未编造任何真机抓包 / 状态码结果。
 
 ---
@@ -21,8 +27,9 @@
   `packages/browser-agent/src/runtime-source/youtube-injection.ts`
 
 ### 1.1 读 player response captionTracks
-- `readYouTubePlayerResponse()`：优先 `document.querySelector("#movie_player, .html5-video-player, ytd-player").getPlayerResponse()`；
-  切视频瞬间抛错 / 返回旧值时回退 `window.ytInitialPlayerResponse`。
+- player response 获取（v2.8 真机修订）：优先 `fetchPlayerResponseViaInnerTube(videoId)`——同源 POST
+  `/youtubei/v1/player`（ANDROID client，按 URL videoId 重取，覆盖移动版 / Shorts / SPA；WEB client 取不到轨）；
+  失败回退 `readYouTubePlayerResponse()`（`#movie_player.getPlayerResponse()` → `window.ytInitialPlayerResponse`，桌面兜底）。
 - `parseCaptionTracks(playerResponse)`：取
   `.captions.playerCaptionsTracklistRenderer.captionTracks`，过滤无 `baseUrl` 的损坏轨；
   无 captions / 空轨 → 返回空数组（不抛异常）。
@@ -35,7 +42,7 @@
 - 无可用轨 → `null` → 下游 `captionAvailability="unavailable"` 降级。
 
 ### 1.3 timedtext json3 解析为带时间轴字幕句
-- `buildJson3CaptionUrl(baseUrl)`：在 baseUrl 上幂等追加 `&fmt=json3`。
+- `buildJson3CaptionUrl(baseUrl)`：先清掉 baseUrl 已有的 `fmt`（部分来源带 `&fmt=srv3`），再追加 `&fmt=json3`；重复 `fmt` 会被取第一个 → 返回 XML 而非 json3（真机踩坑）。
 - 同源 fetch：`fetch(buildJson3CaptionUrl(track.baseUrl), { credentials: "same-origin" })`
   —— 在 WKWebView **页面上下文**内发起，带页面 cookie / visitor data；不经 native、不外部请求。
 - `parseJson3Captions(payload)`：`events[]` → 字幕句序列：
@@ -75,14 +82,15 @@ stub `fetch` 返回 json3 / stub `video.currentTime`，**不真实出网**）。
 | E1 | 注入入口存在 | 字幕轨函数全部经 `window.__agentEnglishYouTubeInjection` 暴露 |
 | E2 | A1 captionTracks 读取 | 解析出可用轨清单（languageCode / kind 保留），无 baseUrl 的轨被过滤，无 captions / 空轨 → 空数组 |
 | E3 | A2 选轨优先级（4 子项） | en 人工 > ASR / 仅 ASR 选 ASR / en vs zh-Hans 选 en / 空轨返回 null（不抛 / 不卡） |
-| E4 | A3 json3 解析 | 时间轴 ms/1000（误差 ≤0.001）、空 segs / 纯换行过滤、升序、`fmt=json3` 幂等追加 |
+| E4 | A3 json3 解析 | 时间轴 ms/1000（误差 ≤0.001）、空 segs / 纯换行过滤、升序、`buildJson3CaptionUrl` 规整（清已有 fmt 再加 json3，srv3/vtt → json3）|
 | E5 | A4 currentTime 定位 + 去重 + 节流 | 区间内 / 边界（左闭右开）/ 同句去重只 post 1 次 / 跨句切换再 post / 节流窗口内连发跳过 |
 | E6 | A5 SPA 重取 | A→B 切换后序列来自 B（不复用 A）、签名重置（B 首句不被视为重复）、非视频页路由不 fetch |
 | E7 | A6 无字幕轨降级 | 无 captionTracks / 空轨 → `captionAvailability="unavailable"`、`activeSegment` 缺省、无异常 |
 | E8 | A8 非视频页不注入 | 首页 fetch / timeupdate 计数 = 0；视频页 boot 各 ≥1 |
-| E9 | 不回退 8.7/8.5 | `youtube-spa-injection` / `youtube-adapter` / `video-caption-overlay` / `translation-events` 用例未改动且全过 |
+| E9（v2.8 真机修订）| InnerTube ANDROID client 取轨 | `buildInnerTubePlayerRequest` 纯函数锁定 ANDROID client + clientVersion + videoId（与注入侧 fetch body 断言一致，防漂移）；ensure 优先打 `/youtubei/v1/player` 再取 timedtext；InnerTube 失败回退 getPlayerResponse；Shorts 按 URL videoId 走 InnerTube |
+| 回归 | 不回退 8.7/8.5 | `youtube-spa-injection`（补 fetch stub）/ `youtube-adapter` / `video-caption-overlay` / `translation-events` 全过 |
 
-测试套件结果（本机执行）：`pnpm --filter @agent-english/browser-agent test` → **80 pass / 0 fail**
+测试套件结果（本机执行）：`pnpm --filter @agent-english/browser-agent test` → **84 pass / 0 fail**
 （60 既有 + 20 本 phase 新增）。
 
 > 注：单测仅验证「代码逻辑链路」（读 player response → 选轨 → json3 解析 → 时间同步 → 去重 / 节流 / SPA 重取 / 降级）。
@@ -112,7 +120,7 @@ stub `fetch` 返回 json3 / stub `video.currentTime`，**不真实出网**）。
 ### 4.2 选中轨 `baseUrl` 同源 `fetch(baseUrl + "&fmt=json3")` 的实际状态码 / 是否带回带时间轴字幕
 - **待真机验证（A0 核心闸门项）。**
 - 已知事实锚点：
-  - 外部 `curl` timedtext（fmt=json3/srv3/默认）HTTP 200 但 **0 字节**（无 cookie / visitor data 被反爬）；InnerTube `/youtubei/v1/player` POST 返回 captionTracks 空（2024+ 反爬）；
+  - 外部 `curl` timedtext（WEB client 的 baseUrl）HTTP 200 但 **0 字节**（无 cookie / visitor data 被反爬）；**更正**：InnerTube `/youtubei/v1/player` 用 **ANDROID client** 可取——同视频 WEB client 0 条 / ANDROID client 6 条 captionTracks，且 ANDROID client 的 timedtext baseUrl + `&fmt=json3` 外部 curl 也拿到 json3 正文；早先「InnerTube 反爬空」是误用 WEB client（见 ADR-0004 v2.8 真机修订）；
   - 竞品 Immersive Translate / Trancy 在**浏览器同源上下文**实测可用 → WKWebView 内同源 fetch（带页面 cookie / visitor data）行为预期不同，且本实现采用竞品同款方案。
 - 待真机确认：WKWebView **页面上下文内** `fetch(baseUrl + "&fmt=json3", { credentials: "same-origin" })` 的实际状态码、响应体是否含 `events[].tStartMs / dDurationMs / segs`。
 - **若真机内同源 fetch 也 0 字节 / 403 / 结构不匹配 → A0 闸门未过 → 本 phase 暂停回报，A1–A8 不强制达成（需评估降级方案：如回退 DOM `.ytp-caption-segment` 兜底或转听音 Beta）。**
@@ -130,7 +138,7 @@ stub `fetch` 返回 json3 / stub `video.currentTime`，**不真实出网**）。
 
 ## 5. 闸门结论
 
-- 代码层链路（读轨 / 选轨 / json3 解析 / 时间同步 / SPA 重取 / 降级 / 合规边界）：**已实现 + 单测通过（80 pass）**。
+- 代码层链路（读轨 / 选轨 / json3 解析 / 时间同步 / SPA 重取 / 降级 / 合规边界）：**已实现 + 单测通过（84 pass）**。
 - A0 真机 fetch 闸门（4.2 为核心）：**待 caller 在 WKWebView 真机 / 模拟器内确认**。
 - 在真机 fetch 未确认前，本实现的「字幕轨优先、DOM `.ytp-caption-segment` 兜底」结构已就位——
   即便真机 timedtext 同源 fetch 仍被反爬（0 字节），注入侧会经 `.catch` 降级到 `captionAvailability="unavailable"` 并保留听音 Beta 入口，不会崩溃 / 不空转。

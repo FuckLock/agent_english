@@ -67,6 +67,21 @@ YouTube watch / Shorts 页面采用独立的“视频沉浸翻译模式”：
 - 风险：字幕轨读取依赖 YouTube 内部接口（WKWebView 移动版 / SPA 路由 / timedtext fetch 鉴权有技术风险，需开发阶段技术验证 + 真机迭代）；YouTube ToS / App Store 审核的长期合规风险由产品方知情采用（与沉浸翻译类竞品同等做法）。
 - 由 DEV-PLAN 新增的「YouTube 视频字幕轨读取」phase 落地。
 
+### v2.8 真机修订（player response 获取：DOM 播放器 → InnerTube ANDROID client）
+
+字幕轨方案上真机后仍翻不了 Shorts。根因（自测定位，非视频问题）：iOS WKWebView 未设 customUserAgent → 加载移动版 `m.youtube.com`，其播放器无 `getPlayerResponse()`；Shorts 是 SPA 前端路由，`ytInitialPlayerResponse` 切视频后不更新（仍是首屏 / 上一个视频），导致读不到「当前视频」的 `captionTracks`，proxy 收不到任何字幕翻译请求。
+
+curl 自测对比（同一视频）：
+- InnerTube `/youtubei/v1/player` **WEB client** → `captionTracks` **0 条**（即 v2.8 spike 误记的「InnerTube 反爬空」根因——是 client 选错，不是接口不可用）；
+- InnerTube **ANDROID client**（`clientName:"ANDROID"`）→ `captionTracks` **6 条**、`playabilityStatus:OK`，且 key 非必需（页面 WEB key / 无 key 均可取）；
+- 选轨后 `timedtext baseUrl + &fmt=json3`（先清掉已有 `fmt`）→ json3 正文（`events[].segs[].utf8`）可取（外部 WEB client 的 baseUrl 是 0 字节）。
+
+修订：
+- player response 获取改为优先 **InnerTube `/youtubei/v1/player`（ANDROID client，按 URL 中的 videoId 重取）**；只需 videoId、不依赖播放器 DOM 就绪 / 更新，天然覆盖移动版 + Shorts + SPA。`getPlayerResponse()` / `ytInitialPlayerResponse` 降为桌面场景兜底。
+- timedtext URL 规整修复：追加 `&fmt=json3` 前先清掉 baseUrl 已有的 `fmt`，否则重复 `fmt` 被取第一个 → 返回 XML 而非 json3。
+- InnerTube 请求与 timedtext 一样在 YouTube 页面上下文**同源 fetch**（带 cookie / visitor data），不经 native、不外部抓取；合规边界与 v2.8 相同（只实时读取当前视频字幕轨、不保存 / 不缓存整轨 / 不分离媒体）。
+- 落地：`browser-agent` 注入运行时 `fetchPlayerResponseViaInnerTube` + `site-adapters/youtube-caption-track.ts#buildInnerTubePlayerRequest`；纯逻辑层单测 E9 覆盖（InnerTube 优先 / 兜底回退 / Shorts videoId）。
+
 ## Consequences
 
 - 普通文本网页和 YouTube 视频页拥有不同交互模型，避免把阅读器控件套到视频页。
