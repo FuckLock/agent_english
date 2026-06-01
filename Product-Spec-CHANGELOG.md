@@ -1,5 +1,23 @@
 # 变更记录
 
+## [v2.10] - 2026-06-01
+
+### 修改
+
+- 🔴 YouTube 听音翻译方向收敛：v2.9 的「读不到字幕轨（captionTracks=0）自动切听音 + 整句实时双语」**在 iOS 不可行、已取消**。Phase 8.10 spike 真机实测（iOS WKWebView，无字幕视频播放中 `readyState=4`/`vmuted=false`）：`captureStream()` 音频轨数=0——iOS WKWebView 无法采集正在播放的 YouTube（跨源）视频音频（跨源媒体音频采集被 WebKit 禁用以防盗录，属平台天花板、非代码问题）；竞品 Immersive Translate 靠桌面浏览器扩展 `tabCapture` 特权实现，iOS WKWebView 无此能力。（位置：[状态] / [MVP 范围] 功能优先级 + non-goals）
+
+### 决策
+
+- iOS 听译能力上限确定为「读字幕轨翻译」（有字幕轨的视频，Phase 8.9 已落地、真机通过）；无字幕轨的影视 / 音乐剪辑在 iOS 不做听音翻译。服务端拉流方案（后端下载视频音频做 ASR）因违反 YouTube ToS + 版权 / 非实时 / 成本风险暂不采用；未来若要覆盖无字幕视频需另起独立评估或非 iOS 平台。
+- DEV-PLAN：Phase 8.10 spike 闸门未通过（已记验收结论 + 真机 atks=0 证据），Phase 8.11（实时整句 + captionTracks=0 自动切听音）取消。
+
+### 不变
+
+- 字幕轨翻译（Phase 8.9）不受影响：有字幕轨的视频（解说 / 访谈 / 口播 / 教程）仍正常读字幕轨 + 双语翻译。
+- Phase 6.7 听音契约 / 额度 / 后端骨架 / 隐私 UI 保留（不接入音频采集），不删除。
+
+---
+
 ## [v2.9] - 2026-06-01
 
 ### 修改

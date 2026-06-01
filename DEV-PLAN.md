@@ -822,9 +822,13 @@
 - 质量门槛：TS strict 无 `any`、契约扩展 / fixture 等价测试通过、`model-gateway` ASR provider 单测通过；如采集落 browser-agent 则 `BrowserAgentRuntimeSource.generated.swift` 无漂移（按生成流程重生成、不手改）。
 - 回归：Phase 6.7 听音契约 / 额度 / 隐私提示、Phase 8.9 字幕轨读取 + 播放进度同步、Phase 8.6 隐形态 / 召唤态、Phase 8.7 YouTube 整站沉浸与 SPA 友好注入、Phase 8.5 / 8.8 翻译分层与解耦均不被破坏。
 
+**spike 验收结论（2026-06-01，iOS 真机 / 模拟器 WKWebView）：闸门未通过 ❌。** 真机实测注入探针——无字幕视频播放时（`readyState=4`、`vmuted=false`，视频确在播放且出声）调 `HTMLMediaElement.captureStream()`，音频轨数 `atks=0`：**iOS WKWebView 取不到正在播放的 YouTube（跨源）视频音频轨**（跨源媒体音频采集被 WebKit 禁用以防盗录，属规范级限制）。native 系统音频路径（MTAudioProcessingTap）未实测——iOS WKWebView 媒体在独立进程极难 tap，且本质属「分离音视频 / 系统录音」、触碰 ADR-0004 Non-Goals 合规红线，判定不可行、不投入。**结论：iOS WKWebView 内采集 YouTube 视频音频不可行（平台天花板，非代码问题）**；竞品 Immersive Translate 靠桌面浏览器扩展 `tabCapture` 特权实现，iOS WKWebView 无此能力。**产品决策（caller 已定）：接受 iOS 边界**——iOS 只做「读字幕轨翻译」（有字幕轨的视频，Phase 8.9 已落地、真机通过），无字幕轨的影视 / 音乐剪辑不做听音翻译；服务端拉流方案因违反 YouTube ToS + 版权 / 非实时 / 成本风险暂不采用。spike 探针为临时验证代码、已回退（不入产品）。
+
 ---
 
-## Phase 8.11: 听音实时整句体验 + captionTracks=0 自动切听音（简要草案，待 8.10 spike 通过 + ADR 修订后细化）
+## Phase 8.11: 听音实时整句体验 + captionTracks=0 自动切听音（❌ 已取消 —— 8.10 spike 失败、前置不成立）
+
+> **本 Phase 已取消。** Phase 8.10 spike 真机实测确认 iOS WKWebView 无法采集 YouTube 视频音频（`atks=0`，平台天花板），本 Phase 前置依赖「8.10 spike 通过」不成立，故不开发。听音翻译在 iOS WKWebView 路线不可行；若未来要覆盖无字幕视频，需另起独立评估（服务端拉流的法律 / 成本 trade-off，或非 iOS 平台）。以下为原草案，仅保留作历史记录。
 
 > **本 Phase 为简要草案，不进入开发，待 Phase 8.10 spike 通过后再按本草案细化为完整 Phase 定义。** 依据 Product-Spec v2.9（读不到字幕轨自动切听音、整句完整识别后输出双语、对齐沉浸翻译类竞品「几乎任意视频可翻」）。
 >
