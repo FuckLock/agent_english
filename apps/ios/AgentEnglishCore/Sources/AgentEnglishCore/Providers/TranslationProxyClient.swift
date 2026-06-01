@@ -18,7 +18,13 @@ public enum TranslationProxyEndpointConfiguration {
         {
             return url
         }
+        #if DEBUG
+        // 开发兜底：未配置 TRANSLATION_PROXY_ROOT 时默认连本地 translation-proxy（仅 DEBUG 生效，不影响 release）。
+        // 端口 4200 须与 services/translation-proxy 默认端口（.env.example 的 TRANSLATION_PROXY_PORT）保持一致。
+        return URL(string: "http://localhost:4200")
+        #else
         return nil
+        #endif
     }
 
     private static func validURL(from rawURL: String) -> URL? {

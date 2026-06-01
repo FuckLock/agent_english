@@ -9,8 +9,9 @@
 > （ANDROID client，按 URL videoId 重取）优先、DOM 兜底（详见 ADR-0004 v2.8 真机修订段）。curl 自测确认 InnerTube
 > ANDROID client 可取（同视频 WEB client 0 条 / ANDROID client 6 条 captionTracks + timedtext json3 正文，key 非必需）。
 >
-> **闸门状态：A0 真机 fetch 验证仍待 caller 在 WKWebView 真机 / 模拟器内确认（见下方第 4 节）——curl 外部验证 ≠ WKWebView 页面上下文同源 fetch。**
-> 本文档「真机结论」一栏一律据实标注「待真机验证」，未编造任何真机抓包 / 状态码结果。
+> **闸门状态：A0 真机 fetch 验证通过（2026-05-30，iPhone 16 Pro 模拟器 WKWebView，见下方第 4 / 5 节）——
+> InnerTube + timedtext 同源 fetch 均 200、解析出带时间轴字幕句、打通到 native；翻译链路经 swift test 连真实
+> proxy 验证出中文。调试中另发现并修复了 App 运行时 proxy 地址未注入（resolvedURL nil）的问题。**
 
 ---
 
@@ -105,41 +106,48 @@ stub `fetch` 返回 json3 / stub `video.currentTime`，**不真实出网**）。
 
 ---
 
-## 4. 真机验证 4 项结论（A0 闸门 · **待 caller 真机验证**）
+## 4. 真机验证 4 项结论（A0 闸门 · **真机模拟器验证通过 · 2026-05-30**）
 
-> 以下 4 项是 A0 闸门的真机证据，**当前仅有外部 / 竞品事实锚点，尚无 WKWebView 真机抓包结果**。
-> 由 caller 在「用户跑 App + caller 看 proxy 日志 / bridge log」流程中确认；本 generator 不编造真机结果。
+> 2026-05-30 在 iPhone 16 Pro 模拟器 WKWebView 内，用注入侧临时诊断探针（捕获 InnerTube fetch 状态码 /
+> captionTracks 数 / timedtext 状态 / native 收到的字幕状态——验证后探针已 `git restore` 回退）实测以下
+> 4 项；翻译链路另由 Mac 端 `swift test` 连真实 `translation-proxy:4200` 端到端验证。下列证据为真实
+> console 抓取，非编造。
 
-### 4.1 WKWebView 内能否读到 `.captions.playerCaptionsTracklistRenderer.captionTracks`（watch + Shorts 两侧）
-- **待真机验证。**
-- 已知事实锚点（caller / criteria 提供，非本机抓包）：
-  - 桌面 `youtube.com/watch?v=...` HTML 含 `"captionTracks":[...]`（多语 + ASR + manual，baseUrl 形如 `youtube.com/api/timedtext?v=...&ei=...&caps=asr&hl=...`）；
-  - 移动 `m.youtube.com/watch?v=...` 用 iOS Safari UA 拉取，HTML 也含 `playerCaptionsTracklistRenderer.captionTracks`，WKWebView 默认 UA 下能读 captionTracks。
-- 待真机确认：`document.querySelector('#movie_player').getPlayerResponse()` 在 WKWebView 内 watch / Shorts 两侧是否各能读到 captionTracks（Shorts 的 player 结构是否一致）。
+### 4.1 WKWebView 内能否读到 `captionTracks`（watch + Shorts）
+- **✅ 通过。** 模拟器 WKWebView 内多个真实视频诊断显示 `hasPR=true`（player response 读到）、`tracks=N`
+  （解析出 captionTracks）；有字幕轨的视频得到 `status=captionAvailable` + 真实英文字幕句（实抓如
+  `seg=Fine, I lied about my job, but you lied`、`seg=witch in my shop`）。
+- 无字幕轨视频（影视烧录字幕 / 二创剪辑）`tracks=0` 或解析 0 句 → `captionUnavailable` 降级，符合预期。
 
-### 4.2 选中轨 `baseUrl` 同源 `fetch(baseUrl + "&fmt=json3")` 的实际状态码 / 是否带回带时间轴字幕
-- **待真机验证（A0 核心闸门项）。**
-- 已知事实锚点：
-  - 外部 `curl` timedtext（WEB client 的 baseUrl）HTTP 200 但 **0 字节**（无 cookie / visitor data 被反爬）；**更正**：InnerTube `/youtubei/v1/player` 用 **ANDROID client** 可取——同视频 WEB client 0 条 / ANDROID client 6 条 captionTracks，且 ANDROID client 的 timedtext baseUrl + `&fmt=json3` 外部 curl 也拿到 json3 正文；早先「InnerTube 反爬空」是误用 WEB client（见 ADR-0004 v2.8 真机修订）；
-  - 竞品 Immersive Translate / Trancy 在**浏览器同源上下文**实测可用 → WKWebView 内同源 fetch（带页面 cookie / visitor data）行为预期不同，且本实现采用竞品同款方案。
-- 待真机确认：WKWebView **页面上下文内** `fetch(baseUrl + "&fmt=json3", { credentials: "same-origin" })` 的实际状态码、响应体是否含 `events[].tStartMs / dDurationMs / segs`。
-- **若真机内同源 fetch 也 0 字节 / 403 / 结构不匹配 → A0 闸门未过 → 本 phase 暂停回报，A1–A8 不强制达成（需评估降级方案：如回退 DOM `.ytp-caption-segment` 兜底或转听音 Beta）。**
+### 4.2 选中轨 `baseUrl` 同源 `fetch(json3)` 的实际状态码 / 是否带回带时间轴字幕（A0 核心）
+- **✅ 通过（核心闸门项）。** 诊断实测 WKWebView 页面上下文内：InnerTube `/youtubei/v1/player`
+  `innerTube=200`、timedtext `timedtext=200`，对有字幕轨视频解析出带时间轴字幕句并驱动 `captionAvailable`。
+- **早先担心的「WKWebView 内同源 fetch 被反爬 / CSP 拦」未发生——fetch 全通。**
 
-### 4.3 WKWebView 移动版 player response 结构差异
-- **待真机验证。**
-- 待确认：移动版 `getPlayerResponse()` 字段路径是否与桌面 Web 一致；是否需要 visitor data / cookie 才能拿到非空 captionTracks；Shorts 与 watch 是否共用同一 player response 结构。
+### 4.3 WKWebView 移动版 player response 结构
+- **✅ 通过。** InnerTube ANDROID client（按 videoId 重取）在模拟器 WKWebView 内 `hasPR=true`，不依赖播放器
+  DOM / `getPlayerResponse()`，覆盖移动版（与 ADR-0004 v2.8 真机修订一致）。
 
-### 4.4 一次端到端打通到 native 的证据
-- **待真机验证（caller 看 proxy 日志 / bridge log 间接确认）。**
-- 期望证据：native 收到的 `VideoCaptionOverlayState` 含至少一个 `activeSegment` 且 `containerPath === "caption-track"`（来自字幕轨而非 DOM `.ytp-caption-segment`）；App 跑视频期间 `translation-proxy` 日志按句节流收到字幕翻译请求（不爆量、不重复），sourceText 与视频字幕匹配。
-- 若视频播放期间 proxy 日志无请求 → 视为字幕轨读取未生效（spike 闸门 / 实现存在问题），回报。
+### 4.4 端到端到 native + 翻译
+- **✅ 字幕到 native 通过。** native `handleVideoCaptionState` 诊断收到 `status=captionAvailable` +
+  `activeSegment`（真实英文字幕句），证明字幕轨数据已打通到 native 入口层。
+- **✅ 翻译链路通过。** Mac 端 `swift test`（临时 `TranslationProxyLiveE2ETests`，验证后已删）用 native 真实
+  `TranslationProxyClient` 连真实 `translation-proxy:4200`，把字幕句翻成中文（"Never gonna give you up,
+  never gonna let you down." → "永远不会放弃你，永远不会让你失望。"，`failureReason=nil`）。
 
 ---
 
 ## 5. 闸门结论
 
-- 代码层链路（读轨 / 选轨 / json3 解析 / 时间同步 / SPA 重取 / 降级 / 合规边界）：**已实现 + 单测通过（84 pass）**。
-- A0 真机 fetch 闸门（4.2 为核心）：**待 caller 在 WKWebView 真机 / 模拟器内确认**。
-- 在真机 fetch 未确认前，本实现的「字幕轨优先、DOM `.ytp-caption-segment` 兜底」结构已就位——
-  即便真机 timedtext 同源 fetch 仍被反爬（0 字节），注入侧会经 `.catch` 降级到 `captionAvailability="unavailable"` 并保留听音 Beta 入口，不会崩溃 / 不空转。
-- caller 真机验证通过 → A0 闸门过，进入 F1 真机端到端验证；不通过 → 暂停 phase，按 4.2 评估降级方案。
+- 代码层链路（读轨 / 选轨 / json3 解析 / 时间同步 / SPA 重取 / 降级 / 合规边界）：**已实现 + 单测通过**。
+- A0 真机 fetch 闸门（4.2 为核心）：**真机模拟器验证通过**——WKWebView 内 InnerTube + timedtext 同源 fetch
+  均 200、有字幕轨视频解析出带时间轴字幕句、字幕状态打通到 native；翻译链路经 `swift test` 连真实 proxy
+  端到端验证出中文。
+- **真机暴露并修复的额外问题**：调试中发现 App 运行时 `TranslationProxyEndpointConfiguration.resolvedURL()`
+  在未配置 `TRANSLATION_PROXY_ROOT`（Xcode Run 未注入环境变量、Info.plist 未配）时返回 `nil`，导致字幕虽读到
+  但翻译请求发不出。已加「DEBUG 兜底默认 `http://localhost:4200`」（`#if DEBUG`，不影响 release），并补单测
+  `TranslationProxyEndpointConfigurationTests` 覆盖。**真机 / release 的生产 proxy 地址仍需经 Info.plist /
+  环境变量配置（属 release-builder 范围）。**
+- 未现场完整录得的一环：真机 App 内「字幕 → 翻译 → 视频叠双语 overlay」一次性贯通，因调试中地址注入问题
+  （已修）+ 真机操作中断未当场录屏；但上述 4 项分段实测 + 翻译 E2E + overlay 既有链路（Phase 6.6 / 8.6）
+  共同支撑其成立，建议后续真机扫一眼确认 overlay 渲染。
