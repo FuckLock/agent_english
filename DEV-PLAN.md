@@ -4,11 +4,11 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.8
+- 源 Spec：Product-Spec.md v2.9
 - 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入；v2.8 修订：视频字幕来源从渲染 DOM 改为视频自带字幕轨数据 / player response / timedtext，按播放进度同步）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦；v2.7 修订：Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions）
 - 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准；v2.6 YouTube 整站重定位为交互 / 注入修正，沿用 v2.5 视频页隐形态 / 召唤态视觉，未引入新视觉稿；v2.7 仅替换 translation-proxy 内部 provider 实现（服务端后端变更），用户无感、界面仍只显示 free translation，未引入新视觉稿
 - 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25；v2.7 修订：2026-05-26）
-- 覆盖 Spec 功能：v2.8 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地；v2.8 YouTube 视频字幕来源从渲染 DOM 改为视频自带字幕轨数据（player response / timedtext，按播放进度同步、覆盖 Shorts 与横屏、不依赖手动开 CC）由新增 Phase 8.9 落地（含第一步技术 spike 闸门）
+- 覆盖 Spec 功能：v2.8 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地；v2.8 YouTube 视频字幕来源从渲染 DOM 改为视频自带字幕轨数据（player response / timedtext，按播放进度同步、覆盖 Shorts 与横屏、不依赖手动开 CC）由新增 Phase 8.9 落地（含第一步技术 spike 闸门）；v2.9 听音翻译升级（读不到字幕轨 captionTracks=0 时自动切听音识别、整句完整识别后输出双语，对齐沉浸翻译类竞品「几乎任意视频可翻」）由新增 Phase 8.10（技术 spike 闸门 + 音频采集打通：验证 WKWebView 内能否采到正在播放视频的音频 + 后端真实 ASR 返回 + 打通一次「采音频→ASR→翻译→overlay 一句」，spike 不通过即暂停回报、不投入完整实现）与 Phase 8.11（实时整句体验 + captionTracks=0 自动切听音 + overlay 整句双语 + 额度/降级回归，本版仅附简要草案，待 8.10 spike 通过且 ADR-0004 听音边界经 architecture-builder 修订后再细化）落地
 
 **当前进度（2026-05-25，已迭代到 v2.6）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
@@ -30,7 +30,9 @@
 - 产品决策已调整到 v2.7（在 v2.6 基础上，仅服务端后端实现变更）：Free 文本 / 字幕翻译的 provider 从「第三方通用翻译（Google / 微软）」改为「产品方在服务端配置的便宜大模型（OpenAI 兼容 Chat Completions，如 DeepSeek V3 / Kimi / GLM / Qwen）」。动机：Google Cloud / Azure 翻译账号申请麻烦、需信用卡；大模型 API（DeepSeek 等）注册充值简单、成本低、翻译质量优于通用机器翻译。本次只改 `services/translation-proxy` **内部 provider 实现**——iOS `AgentEnglishCore/Providers` 按 entitlement 路由（Free→translation-proxy，Pro / Max→model-gateway）与 `services/model-gateway` **都不动**；翻译分层 / 独立部署 / 故障隔离 / key 只在服务端 / 不做 BYOK / 跨端复用等 ADR-0005 核心决策全部保留（见 ADR-0005「v2.7 修订」段）；用户无感，界面仍只显示 free translation。
 - Phase 8.7（YouTube 整站沉浸重构 + 修交互破坏）、Phase 8.8（translation-proxy Free 翻译 provider 改用便宜大模型）均已落地（见上方提交记录）。
 - 产品决策已调整到 v2.8（在 v2.7 基础上，真机验证后修正字幕来源）：v2.4–v2.7 的 YouTube 视频字幕来源是「读播放器渲染的 DOM（`.ytp-caption-segment`）」，真机暴露只在「横屏 watch + 用户手动开 CC」时可读、翻不了 Shorts（用户核心场景，竞品能翻）。v2.8 把字幕来源改为「读取视频自带的字幕轨数据（player response / timedtext，含自动生成字幕）」，按播放进度（`video.currentTime`）时间同步显示当前句，不依赖手动开 CC、覆盖 Shorts 与横屏；无字幕轨视频走听音 Beta 或提示（不做 OCR）。合规边界调整为「实时读字幕轨用于翻译显示、只取当前播放所需、不保存为文件、不离线缓存整轨、不再分发」（已写入 Spec v2.8 / ADR-0004 v2.8 修订段 / ARCHITECTURE v2.8）。
-- 下一步进入 Phase 8.9：YouTube 视频字幕轨读取 + 播放进度同步——**第一步技术 spike 验证 WKWebView 内能读到 `captionTracks` + timedtext fetch 成功**（依赖 YouTube 内部接口，移动版结构 / SPA 路由 / fetch 鉴权有失败风险，spike 通过再做时间同步 + 翻译 + overlay）；改动集中在 `packages/browser-agent`（`site-adapters/youtube.ts`、`runtime-source/youtube-injection.ts` 及必要的 overlay）+ 重新生成 `BrowserAgentRuntimeSource.generated.swift`，下游翻译（Free→translation-proxy）/ overlay 复用既有链路，不重做整站沉浸 / 隐形态 / 翻译分层。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
+- Phase 8.9 已完成：YouTube 视频字幕轨读取 + 播放进度同步落地——字幕来源从渲染 DOM 改为视频自带字幕轨数据（A0 真机闸门已通过、commit 160b91e）；Shorts 与横屏 watch 不依赖手动开 CC 均可出按播放进度滚动的双语字幕，无字幕轨视频降级到听音 Beta / 提示。
+- 产品决策已调整到 v2.9（在 v2.8 基础上，听音翻译升级为无字幕主路径）：v2.4–v2.8 的听音翻译是「字幕兜底的 Beta」，且 Phase 6.7 落的只是「契约 + 后端骨架 + UI 状态」而非可工作链路——`VideoAudioTranslateRequest` 不含音频载荷（只有 `audioSegmentId` / `audioDurationSeconds` / `captionText`）、默认 `asrProvider` 是 `UnavailableASRProvider`（recognize 直接抛 service-unavailable）、全仓零音频采集代码（无 AVAudioEngine / MTAudioProcessingTap / getUserMedia / MediaRecorder / AudioWorklet）；即「从 WKWebView 内正在播放的视频取到音频送 ASR」这一最硬环节从未实现、从未真机验证。v2.9 把听音从「字幕兜底 Beta」升级为「读不到字幕轨（captionTracks=0，常见于影视 / 音乐 / 版权剪辑）时自动切换的无字幕主路径」：识别一句完整话后整句输出原文 + 中文翻译（不逐词滚动），对齐沉浸翻译类竞品「几乎任意视频可翻」；听音额度不变（Free 每天 10 分钟、Pro / Max 更高额度），订阅 / 支付系统实现仍延后（non-goal）。
+- 下一步进入 Phase 8.10：听音翻译 spike 闸门 + 音频采集打通——**第一步技术 spike 验证 WKWebView 内能否采集到正在播放视频的音频**（探明 JS Web Audio 与 native MTAudioProcessingTap 两条路在 iOS 17+ 真机 + 跨源 YouTube 媒体下哪条可行、是否被静音 / DRM / 系统限制阻断、合规与权限边界；spike 通过判据 = 取到一段可识别音频 + 后端真实 ASR 返回文本 + 打通一次「采音频→ASR→翻译→overlay 显示一句」），spike 失败（采不到 / 被静音 / 合规不可行）→ 暂停 8.11、回报 caller 评估 iOS 备选（Mac 版扩展 / 服务端方案），不强行交付。spike 阶段不改 ADR、不做持续采集，只验「能否采到 + 打通一次」；音频采集层归属待 spike 探明后再定（不预设 JS 还是 native）。Phase 8.11（实时整句体验 + captionTracks=0 自动切听音 + overlay 整句双语 + 额度/降级回归）本版仅附简要草案：**若 8.10 确认要「持续采集音频流做实时整句」，必须先经 architecture-builder 修订 ADR-0004 听音边界（现 ADR-0004 用「短音频片段 / short snippet」措辞、Non-Goals 含「不做后台听音 / 不分离音视频 / 不做无限制听音识别」）再细化 8.11**。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
 
 ---
 
@@ -768,6 +770,93 @@
 - 交互（review 阻断）：不破坏 Phase 8.7 的 YouTube 整站原生交互（滑动 / 点击 / SPA 路由）；非视频页不注入字幕逻辑；时间同步的 `timeupdate` 监听已节流、当前句已去重，不卡顿。
 - 质量门槛：TS strict 无 `any`、改动单文件 ≤300 行、`BrowserAgentRuntimeSource.generated.swift` 无漂移（按生成流程重生成、不手改）、`packages/browser-agent` 测试（含新增 `youtube-caption-track.test.mjs`）通过；如扩展契约则 TS fixture 与 Swift decoder 字段等价测试通过。
 - 回归：Phase 6.6 / 6.7 视频模式与字幕 / 听音双路径、Phase 8.6 隐形态 / 召唤态、Phase 8.7 YouTube 整站沉浸与 SPA 友好注入、Phase 8.5 / 8.8 翻译分层与解耦、Phase 8 其他站点适配与通用文本网页翻译均不被破坏。
+
+---
+
+## Phase 8.10: 听音翻译 spike 闸门 + 音频采集打通
+
+> 依据 Product-Spec v2.9（YouTube 听音翻译升级为无字幕主路径：captionTracks=0 自动切听音、整句完整识别后输出双语）+ ADR-0004（听音翻译 Beta：短音频片段、后端 ASR / 音频分钟额度、Free 每天 10 分钟）+ ARCHITECTURE（Browser agent / Native core / Model gateway 层职责、YouTube audio snippets 隐私行、YouTube Developer Policies 合规行）。**关键事实**：Phase 6.7 落的听音是「契约 + 后端骨架 + UI 状态」而非可工作链路——`VideoAudioTranslateRequest` 不含音频载荷（只有 `audioSegmentId` / `audioDurationSeconds` / `captionText`）、默认 `asrProvider` 是 `UnavailableASRProvider`（`recognize` 直接抛 `service-unavailable`）、全仓零音频采集代码（无 `AVAudioEngine` / `MTAudioProcessingTap` / `getUserMedia` / `MediaRecorder` / `AudioWorklet`）；即「从 WKWebView 内正在播放的视频取到音频送 ASR」这一最硬环节从未实现、从未真机验证。**架构空白与张力**：① 「音频采集的层归属」在 ARCHITECTURE 通篇空白（Browser agent 职责只列字幕轨读取且明确「不下载媒体」、Native core 明确「不在后台静默听音」、Model gateway 只「处理短片段」不负责采集）；② 「采集机制允许边界」与现有边界有张力（browser-agent 禁调 ASR、native 禁后台静默听音、整体禁分离音视频）；③ ADR-0004 用「短音频片段 / short snippet」措辞、Non-Goals 含「不做后台听音 / 不分离音视频 / 不做无限制听音识别」，与「持续采集音频流做实时整句」有潜在合规冲突。**因此本 Phase 第一步必须做技术 spike 闸门**：在 iOS 17+ 真机 / 模拟器 WKWebView 的 YouTube 播放页验证「能否采集到正在播放视频的音频」并打通一次完整链路，spike 通过再投入 8.11 完整实现。**本 Phase 决策约束（caller 已定）**：(a) 音频采集层归属 = 先 spike 验证可行性再定层（不预设 JS Web Audio 还是 native 系统音频）；(b) spike 阶段不改 ADR、不做持续采集，只验「能否采到 + 打通一次」，按现有「短片段」措辞即可；(c) 后端 ASR 形态 = 非流式分段（客户端切出整句音频后单次 POST，后端接 OpenAI 兼容 Whisper 类 ASR），不做流式 WebSocket；(d) 本 Phase 只交付 spike 闸门 + 音频采集打通，实时整句体验留给 8.11。
+
+**交付内容**：
+- **第一步技术 spike（前置闸门，spike 不通过不投入 8.11 完整实现）**：在 iOS 17+ 真机 / 模拟器 WKWebView 的 YouTube watch + Shorts 播放页验证「能否采集到正在播放视频的音频」——分别探一次 ① JS Web Audio 路径（页面上下文内 `AudioContext` + `MediaElementSource` / `HTMLMediaElement.captureStream()` 取 `<video>` 媒体音频）与 ② native 路径（如 `MTAudioProcessingTap` 挂到 WKWebView 媒体播放 / `AVAudioEngine` 系统音频路由），探明在 WKWebView + 跨源 YouTube 媒体下哪条可行、是否被静音 / DRM / 系统播放策略阻断、合规与权限（麦克风权限是否被牵连、是否触发系统录音指示）边界；产出真机验证笔记（据实记录每条路径的成功 / 失败 / 报错 / 系统限制现象，不编造、不假设与桌面 Web 一致）。**spike 通过判据**：能取到一段可识别的音频 + 后端真实 ASR（OpenAI 兼容 Whisper 类）返回文本 + 打通一次「采音频→单次 POST 到 model-gateway ASR→翻译→overlay 显示一句」端到端链路。**spike 失败**（采不到 / 被静音 / DRM 阻断 / 合规不可行）→ 暂停 Phase 8.11，回报 caller 评估 iOS 备选（如 Mac 版扩展、服务端取流方案），不强行交付、不降级伪装打通。
+- spike 通过后给 `VideoAudioTranslateRequest` 增音频载荷字段（向后兼容扩展、双端等价）：在 `packages/contracts/src/video-audio-translation.ts` 为听音翻译请求新增承载整句音频片段的字段（如 base64 / 二进制引用的 `audioPayload` + 编码格式 `audioFormat` + 采样率 `sampleRateHz` 等元信息），保持原有 `audioSegmentId` / `audioDurationSeconds` / `captionText` 不变（旧字段可选、新字段以可选方式扩展），并保持 TS fixture 与 Swift decoder 字段等价；非流式分段语义（每整句一次请求，不引入 WebSocket / 流式 chunk 协议）。
+- spike 通过后接通后端真实 ASR（替换 `UnavailableASRProvider`）：在 `services/model-gateway` 新增 OpenAI 兼容 Whisper 类 ASR provider 实现，接收单次整句音频片段、调用 ASR 返回识别文本，错误归一到现有听音错误码、复用 Phase 6.7 已建的音频分钟额度（Free 每天 10 分钟）与 session entitlement 授权；ASR key / Base URL 只在后端，不进 iOS / browser-agent / App bundle。
+- spike 通过后实现「采音频→ASR→翻译→overlay 显示一句」最小打通（只验证一次完整链路，不做持续采集 / 不做 captionTracks=0 自动切换 / 不做逐句滚动体验——这些留给 8.11）：按 spike 探明的可行路径落最小可工作采集（句子边界检测 + 切出一段整句音频）→ 经 native `ModelServiceClient` 单次 POST 到 model-gateway ASR → 识别文本走听音翻译链路（Pro / Max 走 model-gateway；听音识别本身在 gateway）→ overlay 显示这一句的英文原文 + 中文翻译；过程必须用户可见、可停止，音频片段只用于当前识别请求、默认不持久化、不保存完整音频。
+- 真机验证记录归档：把 spike 两条路径的真机结论（可行路径 / 失败原因 / 系统与合规限制 / 选定的采集路径 / 是否触发系统录音指示）写入本 Phase 验收记录，作为 8.11 细化与「是否需先修订 ADR-0004」的判断输入。
+
+**关键文件**：
+- `[新增] scripts/audio-capture-spike/` — 音频采集 spike 探针与真机验证脚本 / 说明（JS Web Audio 路径探针 + native 路径探针的最小可跑验证 + 真机验证笔记落点；spike 性质、不属最终产品代码路径，结论驱动是否进入后续交付）
+- `[修改] packages/contracts/src/video-audio-translation.ts` — `VideoAudioTranslateRequest` / `VideoAudioSegment` 向后兼容扩展音频载荷字段（`audioPayload` / `audioFormat` / `sampleRateHz` 等，整句单次请求语义），保持原有字段不变、双端等价
+- `[修改] packages/contracts/tests/fixtures/video-audio-youtube-watch.json` — 更新听音 fixture 反映音频载荷字段，保证 TS fixture 与 Swift decoder 字段等价
+- `[修改] services/model-gateway/src/providers/asr-provider.ts` — 新增 OpenAI 兼容 Whisper 类 ASR provider 实现替换 `UnavailableASRProvider` 默认值，接整句音频片段、返回识别文本、错误归一、fallback 边界
+- `[修改] services/model-gateway/src/routes/video-audio-translate.ts` — 接收带音频载荷的整句单次请求，校验 session + 音频分钟额度后调真实 ASR（非流式分段，不引入 WebSocket）
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ModelServiceClient.swift` — 听音翻译请求改为携带整句音频载荷单次 POST，音频额度 / ASR 错误映射
+- `[修改] packages/browser-agent/src/site-adapters/youtube.ts` 或 `[修改] apps/ios` 音频采集落点（二选一，按 spike 探明的可行路径定层）— 落最小可工作的整句音频采集 + 句子边界切分，打通一次到 native（具体层归属由 spike 结论确定：JS Web Audio 路径则在 browser-agent；native 系统音频路径则在 apps/ios 音频采集模块）
+
+**依赖前置 Phase**：
+- 依赖 Phase 6.6（YouTube 视频模式识别基线、视频 overlay / 降级条 / 收藏当前句入口）
+- 依赖 Phase 6.7（听音翻译 Beta 契约 `VideoAudioSegment` / `VideoAudioTranslationState` / `AudioTranslationQuota`、后端听音路由骨架、音频分钟额度、Free 每天 10 分钟、隐私提示与听音状态——本 Phase 把其「契约 + 骨架 + UI 状态」补成可工作链路）
+- 依赖 Phase 8.9（字幕轨读取 + 播放进度同步已落地；captionTracks=0 的判定来源已具备，本 Phase 接其后做听音主路径打通，8.11 再做自动切换）
+- 依赖 ADR-0004（听音翻译 Beta：短音频片段、后端 ASR、音频分钟额度）、Product-Spec v2.9（听音升级为无字幕主路径）、ARCHITECTURE（听音层职责 + 隐私 / 合规边界）
+- 注：本 Phase 在现有「短片段」措辞与边界内做 spike + 打通一次，**不依赖 ADR 修订**；ADR-0004 听音边界的修订是 Phase 8.11「持续采集音频流做实时整句」的前置依赖，不是本 Phase 的前置。
+
+**架构约束映射**：
+- 层次边界（review 阻断）：ASR 调用、ASR key / Base URL、音频分钟额度授权**只在 `services/model-gateway`**；`browser-agent` 与 `apps/ios` **不得直连 ASR、不得持有 ASR key**；听音识别 + 翻译仍由 native `ModelServiceClient` 路由到 model-gateway。**音频采集层归属由 spike 探明后定**：若可行路径是 JS Web Audio，则采集落 `packages/browser-agent`（但仍不调 ASR、不下载 / 不分离完整媒体、只取当前播放整句片段送 native）；若可行路径是 native 系统音频，则采集落 `apps/ios` 音频采集模块（仍不在后台静默听音、用户可见可停止）。本 Phase 不预设、不在 spike 结论前把采集硬塞进某一层。
+- 目录职责：允许新增 `scripts/audio-capture-spike/`、扩展 `contracts` 听音契约与 fixture、在 `model-gateway` 落真实 ASR provider 与路由、在 `ModelServiceClient` 携带音频载荷、并按 spike 结论在 browser-agent **或** apps/ios 落最小采集；禁止在 `browser-agent` / `apps/ios` 调用 ASR 或写 ASR key，禁止保存完整音频，禁止下载 / 分离 YouTube 音视频。
+- ADR / 合规约束（review 阻断，ADR-0004 + ARCHITECTURE 隐私行）：本 Phase 在 ADR-0004 现有「短音频片段、用户可见启用、按分钟计量」边界内做 spike 与一次打通；音频片段只用于当前整句识别请求、默认不持久化、不保存完整音频、不下载 / 分离音视频、不后台静默听音；听音必须用户可见、可关闭、可停止。**本 Phase 不做持续采集音频流、不做实时整句的常态化采集**——一旦 8.11 要做「持续采集音频流做实时整句」，必须先经 architecture-builder 修订 ADR-0004 听音边界再实现（见 Phase 8.11 草案「前置依赖」）。
+- 后续范围：不做 captionTracks=0 的自动切听音（8.11）、不做逐句滚动 / 实时整句常态体验（8.11）、不做流式 WebSocket ASR（决策定为非流式分段）、不做无限制 / 后台听音、不做音视频下载 / 分离 / 转写、不扩展其他站点。
+
+**已知风险**：
+- WKWebView 内取播放视频音频是全产品最硬未验证环节：JS Web Audio（`captureStream` / `MediaElementSource`）与 native（`MTAudioProcessingTap`）两条路在 WKWebView + 跨源 YouTube 媒体下都可能被静音 / DRM / 系统播放策略阻断；spike 必须真机据实验证，任一路径可行即可，两条都不可行则 spike 失败、回报评估 iOS 备选，不强行交付。
+- 合规与权限风险：音频采集可能牵连系统麦克风权限 / 触发系统录音指示 / 触碰「不分离音视频」边界；spike 必须记录是否触发系统录音指示、是否属于「分离音视频」范畴，作为合规判断输入；若可行路径本质是「分离音视频」则属合规不可行，按 spike 失败处理。
+- ASR 成本 / 延迟 / 质量风险：整句单次 ASR 比字幕翻译成本高、延迟高，且受背景音乐 / 噪声 / 口音影响；Free 每天 10 分钟限额与音频分钟额度必须复用 Phase 6.7 已建机制，识别失败必须是正常产品状态、不伪装成功。
+- 契约扩展兼容风险：`VideoAudioTranslateRequest` 加音频载荷必须向后兼容（旧字段不变、新字段可选），TS fixture 与 Swift decoder 字段等价测试必须通过，避免破坏 Phase 6.7 已建听音契约。
+- ADR 边界风险：spike 只做「打通一次」尚在「短片段」边界内；但若实现中不自觉走向「持续采集」，会越过 ADR-0004 Non-Goals（不做无限制 / 后台听音），本 Phase 必须严守「只验一次打通」，持续采集留待 8.11 且先修订 ADR。
+
+**验收标准**：
+- 闸门（技术 spike，不通过则本 Phase 暂停、不进入后续验收）：iOS 17+ 真机 / 模拟器 WKWebView 内 YouTube watch + Shorts 播放页，**至少一条采集路径（JS Web Audio 或 native）能取到一段可识别音频**，经后端真实 ASR（OpenAI 兼容 Whisper 类）返回文本，并打通一次「采音频→单次 POST 到 model-gateway ASR→翻译→overlay 显示一句」端到端链路；两条路径的真机结论（可行 / 失败原因 / 静音 / DRM / 系统限制 / 是否触发录音指示 / 合规判断 / 选定路径）记录在案。spike 失败则暂停 8.11 并回报 caller 评估 iOS 备选，不强行交付。
+- 契约（spike 通过后）：`VideoAudioTranslateRequest` 向后兼容新增整句音频载荷字段（原 `audioSegmentId` / `audioDurationSeconds` / `captionText` 不变），TS fixture 与 Swift decoder 字段等价测试通过；为非流式分段语义（每整句一次请求），未引入 WebSocket / 流式协议。
+- 后端（spike 通过后）：默认 `asrProvider` 不再是 `UnavailableASRProvider`，OpenAI 兼容 Whisper 类 ASR provider 能接整句音频返回文本；听音翻译 API 仍校验 session + 音频分钟额度（Free 每天 10 分钟），修改请求体 `serviceTier` 不能越权；ASR key / Base URL 只在后端。
+- 端到端（人工验收项，spike 通过后）：在服务端配好 ASR key + 启动 model-gateway 后，App 内对一个 captionTracks=0 的 YouTube 视频，手动触发听音能看到 overlay 出现「英文原句 + 中文翻译」一句；过程用户可见、可停止，未保存完整音频。
+- 合规（review 阻断）：音频片段只用于当前识别请求、默认不持久化、不保存完整音频、不下载 / 分离音视频、不后台静默听音；听音用户可见、可关闭、可停止；本 Phase 未做持续采集音频流。
+- 质量门槛：TS strict 无 `any`、契约扩展 / fixture 等价测试通过、`model-gateway` ASR provider 单测通过；如采集落 browser-agent 则 `BrowserAgentRuntimeSource.generated.swift` 无漂移（按生成流程重生成、不手改）。
+- 回归：Phase 6.7 听音契约 / 额度 / 隐私提示、Phase 8.9 字幕轨读取 + 播放进度同步、Phase 8.6 隐形态 / 召唤态、Phase 8.7 YouTube 整站沉浸与 SPA 友好注入、Phase 8.5 / 8.8 翻译分层与解耦均不被破坏。
+
+---
+
+## Phase 8.11: 听音实时整句体验 + captionTracks=0 自动切听音（简要草案，待 8.10 spike 通过 + ADR 修订后细化）
+
+> **本 Phase 为简要草案，不进入开发，待 Phase 8.10 spike 通过后再按本草案细化为完整 Phase 定义。** 依据 Product-Spec v2.9（读不到字幕轨自动切听音、整句完整识别后输出双语、对齐沉浸翻译类竞品「几乎任意视频可翻」）。
+>
+> **前置依赖（硬约束，必须先满足才能细化 / 开发本 Phase）**：
+> 1. **Phase 8.10 spike 通过**：WKWebView 内已验证可采集播放视频音频且打通过一次「采音频→ASR→翻译→overlay 一句」；spike 失败则本 Phase 不成立，改走 caller 评估的 iOS 备选。
+> 2. **若确认要「持续采集音频流做实时整句」，必须先经 architecture-builder 修订 ADR-0004 听音边界再细化本 Phase**：现 ADR-0004 用「短音频片段 / short snippet」措辞、Non-Goals 含「不做后台听音 / 不分离音视频 / 不做无限制听音识别」，ARCHITECTURE 听音层职责与隐私行同为「短片段」语义；「持续采集音频流做实时整句」与该边界有潜在合规冲突，须由 architecture-builder 修订 ADR-0004 / ARCHITECTURE 听音边界（明确持续采集的允许范围、采集层归属、隐私与合规约束）后，本 Phase 才能细化为完整定义并开发。**未修订前不得直接开发持续采集。**
+
+**交付内容（草案方向，待细化）**：
+- captionTracks=0 自动切听音：接 Phase 8.9 的字幕轨判定，读不到字幕轨（captionTracks=0 / 解析 0 句）时**自动**切换到听音识别（无需用户手动开启），有字幕轨仍优先字幕；额度用完 / 失败回退字幕翻译或轻量提示。
+- 实时整句体验：按句子边界连续识别，识别一句完整话后整句输出原文 + 中文翻译（不逐词滚动），随播放进度更新当前句；采集 / 识别 / 翻译节流 + 缓存，保证 Shorts 快切与长视频流畅。
+- overlay 整句双语：听音源与字幕源共用同一套双语叠层体验，标记「听音 Beta」、计入每日分钟额度；overlay 仍避开播放器控件 / 广告 / 品牌区域，无法安全叠加时降级。
+- 额度 / 降级回归：Free 每天 10 分钟额度计量、额度用完提示、听音失败提示、用户可见可停止；与字幕主路径、页面文字翻译、选区解释的回归。
+
+**关键文件（草案，待 8.10 spike 探明采集层归属后确定）**：
+- 采集 / 实时整句驱动落点（browser-agent **或** apps/ios，按 8.10 spike 结论定层）
+- `packages/browser-agent/src/overlay/video-caption-overlay.ts` — 听音整句双语 overlay 与字幕源统一渲染、节流
+- `services/model-gateway` 听音路由 / ASR provider — 连续整句识别的额度计量与错误归一
+- `apps/ios` 视频页听音状态 / 停止 / 额度展示
+
+**依赖前置 Phase**：
+- 依赖 Phase 8.10（spike 通过 + 音频采集打通 + 真实 ASR + 音频载荷契约）
+- 依赖 Phase 8.9（captionTracks=0 判定来源）、Phase 6.7（额度 / 隐私 / 听音状态）
+- 依赖 ADR-0004 听音边界修订（若做持续采集，见上方「前置依赖」第 2 条）
+
+**架构约束映射（草案要点）**：
+- 层次边界：ASR 仍只在 model-gateway，browser-agent / apps/ios 不直连 ASR；采集层归属沿用 8.10 spike 结论。
+- ADR / 合规：持续采集必须在修订后的 ADR-0004 边界内；仍不后台静默听音、不保存完整音频、不下载 / 分离音视频、用户可见可停止。
+- 后续范围：不做流式 WebSocket（沿用非流式分段）、不做无限制听音、不扩展其他站点。
+
+**验收标准（草案，待细化）**：
+- captionTracks=0 视频自动切听音并出按句更新的整句双语字幕；有字幕轨仍优先字幕；额度用完 / 失败正确降级。
+- 合规与回归同 Phase 8.10，且持续采集在修订后的 ADR 边界内。
 
 ---
 
