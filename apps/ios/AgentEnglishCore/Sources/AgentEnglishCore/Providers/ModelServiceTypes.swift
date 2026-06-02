@@ -440,6 +440,9 @@ public struct ModelServiceVideoAudioTranslateRequest: Codable, Equatable, Sendab
     public let preferredModelID: String?
     public let audioSegmentID: String
     public let audioDurationSeconds: Double
+    /// 听音路径当前播放进度（秒，Phase 8.12）；后端据此 Range 拉片段并回填时间轴。
+    /// 仅传进度，前端不采集 / 上传任何音频数据载荷。前端进度编排由 Phase 8.13 接。
+    public let playbackPositionSeconds: Double?
     public let captionText: String?
     public let captionQuality: String?
     public let manualAudioSelection: Bool?
@@ -456,6 +459,7 @@ public struct ModelServiceVideoAudioTranslateRequest: Codable, Equatable, Sendab
         preferredModelID: String?,
         audioSegmentID: String,
         audioDurationSeconds: Double,
+        playbackPositionSeconds: Double? = nil,
         captionText: String?,
         captionQuality: String?,
         manualAudioSelection: Bool?,
@@ -471,6 +475,7 @@ public struct ModelServiceVideoAudioTranslateRequest: Codable, Equatable, Sendab
         self.preferredModelID = preferredModelID
         self.audioSegmentID = audioSegmentID
         self.audioDurationSeconds = audioDurationSeconds
+        self.playbackPositionSeconds = playbackPositionSeconds
         self.captionText = captionText
         self.captionQuality = captionQuality
         self.manualAudioSelection = manualAudioSelection
@@ -488,6 +493,7 @@ public struct ModelServiceVideoAudioTranslateRequest: Codable, Equatable, Sendab
         case preferredModelID = "preferredModelId"
         case audioSegmentID = "audioSegmentId"
         case audioDurationSeconds
+        case playbackPositionSeconds
         case captionText
         case captionQuality
         case manualAudioSelection

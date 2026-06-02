@@ -90,6 +90,11 @@ export interface VideoAudioTranslateRequest {
   pageId: string;
   url: string;
   title: string;
+  /**
+   * 听音路径的关键输入（Phase 8.12）：无字幕轨视频走后端听音时，后端按 videoId
+   * 取 YouTube 音频流（InnerTube ANDROID client → adaptiveFormats）。可选性保留以兼容
+   * 字幕主路径请求，但听音路径必须携带，否则后端无法取流（归一为听音不可用）。
+   */
   videoId?: string;
   sourceLanguage: string;
   targetLanguage: string;
@@ -97,6 +102,11 @@ export interface VideoAudioTranslateRequest {
   preferredModelId?: string;
   audioSegmentId: string;
   audioDurationSeconds: number;
+  /**
+   * 听音路径的当前播放进度（秒，Phase 8.12）：后端据此按 Range 拉取音频流当前片段、
+   * 回填识别句的时间轴。app 只传进度，不在前端采集 / 上传任何音频数据载荷。
+   */
+  playbackPositionSeconds?: number;
   captionText?: string;
   captionQuality?: "available" | "low" | "unavailable";
   manualAudioSelection?: boolean;

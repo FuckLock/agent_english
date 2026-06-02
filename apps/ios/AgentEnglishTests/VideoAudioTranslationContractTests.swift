@@ -19,6 +19,44 @@ final class VideoAudioTranslationContractTests: XCTestCase {
         XCTAssertEqual(payload.quota?.resetAt, "2026-05-25T00:00:00.000Z")
     }
 
+    func testVideoAudioTranslateRequestEncodesPlaybackPositionSeconds() throws {
+        // Phase 8.12：请求 DTO 新增 playbackPositionSeconds，断言 encode → JSON 含 key、decode 往返一致，
+        // 守护 TS number ↔ Swift Double 双端等价不漂移。
+        let request = ModelServiceVideoAudioTranslateRequest(
+            pageID: "page-youtube-shorts-1",
+            url: "https://www.youtube.com/shorts/2QtsWjF3e78",
+            title: "Suits clip",
+            videoID: "2QtsWjF3e78",
+            sourceLanguage: "English",
+            targetLanguage: "简体中文",
+            serviceTier: .free,
+            preferredModelID: "free-translate",
+            audioSegmentID: "vaud-1",
+            audioDurationSeconds: 49,
+            playbackPositionSeconds: 12,
+            captionText: nil,
+            captionQuality: "unavailable",
+            manualAudioSelection: true,
+            privacyDisclosureAccepted: true
+        )
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        XCTAssertEqual(json["playbackPositionSeconds"] as? Double, 12)
+        XCTAssertNil(json["audioPayload"], "request must not carry frontend audio payload")
+        XCTAssertNil(json["audioData"], "request must not carry frontend audio payload")
+
+        let decoded = try JSONDecoder().decode(
+            ModelServiceVideoAudioTranslateRequest.self,
+            from: encoded
+        )
+        XCTAssertEqual(decoded.playbackPositionSeconds, 12)
+        XCTAssertEqual(decoded.videoID, "2QtsWjF3e78")
+        XCTAssertEqual(decoded, request)
+    }
+
     private func videoAudioFixtureURL() throws -> URL {
         let fileManager = FileManager.default
         var directory = URL(fileURLWithPath: fileManager.currentDirectoryPath)

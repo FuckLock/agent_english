@@ -8,8 +8,9 @@ import type {
 import { createModelCatalog } from "../catalog/model-catalog";
 import type { ServiceEntitlement } from "../entitlements/entitlement-service";
 import {
+  ASRProviderError,
   mapASRFallbackError,
-  UnavailableASRProvider,
+  WhisperASRProvider,
   type ASRProvider,
 } from "../providers/asr-provider";
 import {
@@ -20,15 +21,40 @@ import {
   createAudioMinuteQuota,
   evaluateAudioMinuteQuota,
 } from "../quota/audio-minute-quota";
+import {
+  resolveYouTubeAudioStream,
+  type ResolvedAudioStream,
+  type YouTubeAudioStreamDependencies,
+} from "../providers/youtube-audio-stream";
+import {
+  fetchAndTranscodeSegment,
+  type AudioSegmentFetcherDependencies,
+  type FetchedAudioSegment,
+} from "../providers/audio-segment-fetcher";
 
 export interface VideoAudioRouteResponse {
   statusCode: number;
   body: VideoAudioTranslateResponse | { error: ModelServiceError };
 }
 
+/** 取流注入点（默认走真实 InnerTube 取流，测试可 stub）。 */
+export type ResolveAudioStreamFn = (
+  videoId: string,
+  dependencies?: YouTubeAudioStreamDependencies,
+) => Promise<ResolvedAudioStream>;
+
+/** 拉片段 + 转码注入点（默认走真实 Range + ffmpeg，测试可 stub）。 */
+export type FetchAudioSegmentFn = (
+  source: ResolvedAudioStream,
+  playbackPositionSeconds: number,
+  dependencies?: AudioSegmentFetcherDependencies,
+) => Promise<FetchedAudioSegment>;
+
 export interface VideoAudioRouteDependencies extends ProviderRouterDependencies {
   entitlement?: ServiceEntitlement;
   asrProvider?: ASRProvider;
+  resolveAudioStream?: ResolveAudioStreamFn;
+  fetchAudioSegment?: FetchAudioSegmentFn;
 }
 
 export async function handleVideoAudioTranslateRoute(
@@ -90,10 +116,32 @@ export async function handleVideoAudioTranslateRoute(
     );
   }
 
-  const asrProvider = dependencies.asrProvider ?? new UnavailableASRProvider();
+  // Phase 8.12：ASR 输入改为后端自取音频流——
+  // 取流（F1）→ 按播放进度 Range 拉片段 + ffmpeg 转 16kHz wav（F2）→ Whisper 识别英文（F3）。
+  const resolveAudioStream =
+    dependencies.resolveAudioStream ?? resolveYouTubeAudioStream;
+  const fetchAudioSegment =
+    dependencies.fetchAudioSegment ?? fetchAndTranscodeSegment;
+  const asrProvider = dependencies.asrProvider ?? new WhisperASRProvider();
+
   let transcript;
   try {
-    transcript = await asrProvider.recognize(effectiveRequest);
+    if (!effectiveRequest.videoId) {
+      throw new ASRProviderError(
+        "service-unavailable",
+        "Listening translation requires a videoId to fetch the audio stream.",
+      );
+    }
+
+    const stream = await resolveAudioStream(effectiveRequest.videoId);
+    const segment = await fetchAudioSegment(
+      stream,
+      effectiveRequest.playbackPositionSeconds ?? 0,
+    );
+    transcript = await asrProvider.recognize(effectiveRequest, {
+      wav: segment.wav,
+      segmentStartSeconds: segment.segmentStartSeconds,
+    });
   } catch (error) {
     const mapped = mapASRFallbackError(error);
     return failureResponse(

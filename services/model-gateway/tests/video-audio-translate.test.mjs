@@ -93,10 +93,13 @@ test("returns 429 when free audio quota is exhausted", async () => {
 
 test("ignores request serviceTier when entitlement is lower", async () => {
   const response = await handleVideoAudioTranslateRoute(
-    { ...baseRequest, serviceTier: "max" },
+    { ...baseRequest, serviceTier: "max", playbackPositionSeconds: 12 },
     0,
     {
       entitlement,
+      // Phase 8.12：取流 / 拉片段 stub，避免连真实 YouTube（不在 CI 连网）。
+      resolveAudioStream: stubResolveAudioStream,
+      fetchAudioSegment: stubFetchAudioSegment,
       asrProvider: new MockASRProvider("Ranking the best ice moments."),
       env: mockEnv,
       transport: new MockTransport({
@@ -119,6 +122,8 @@ test("ignores request serviceTier when entitlement is lower", async () => {
 test("returns provider-safe audio fallback error", async () => {
   const response = await handleVideoAudioTranslateRoute(baseRequest, 0, {
     entitlement,
+    resolveAudioStream: stubResolveAudioStream,
+    fetchAudioSegment: stubFetchAudioSegment,
     asrProvider: {
       async recognize() {
         throw new Error("upstream failed");
@@ -130,6 +135,28 @@ test("returns provider-safe audio fallback error", async () => {
   assert.equal(response.body.error.code, "provider-fallback-failed");
   assert.equal(response.body.error.message.includes("route"), false);
 });
+
+async function stubResolveAudioStream() {
+  return {
+    videoId: "LmFME_-3icE",
+    itag: 139,
+    url: "https://stub.example/audio?expire=9999999999",
+    mimeType: 'audio/mp4; codecs="mp4a.40.5"',
+    expireUnixSeconds: 9999999999,
+    contentLengthBytes: 302957,
+    approxDurationSeconds: 49,
+    bitrate: 49954,
+  };
+}
+
+async function stubFetchAudioSegment(_source, playbackPositionSeconds) {
+  return {
+    wav: Buffer.from("stub-wav-bytes"),
+    range: { start: 0, end: 65535 },
+    segmentStartSeconds: playbackPositionSeconds ?? 0,
+    segmentDurationSeconds: 30,
+  };
+}
 
 class MockASRProvider {
   constructor(transcript) {
