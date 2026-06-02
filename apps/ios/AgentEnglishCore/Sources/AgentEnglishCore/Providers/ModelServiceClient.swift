@@ -14,7 +14,14 @@ public enum ModelServiceEndpointConfiguration {
         {
             return url
         }
+        #if DEBUG
+        // 开发兜底：未配置 MODEL_SERVICE_ROOT 时默认连本地 model-gateway（仅 DEBUG 生效，不影响 release）。
+        // 端口 4100 须与 services/model-gateway 默认端口（.env 的 MODEL_GATEWAY_PORT）一致。
+        // 与 TranslationProxyClient 的 DEBUG localhost:4200 兜底同款（听音 / Pro·Max 走 model-gateway）。
+        return URL(string: "http://localhost:4100")
+        #else
         return nil
+        #endif
     }
 
     private static func validURL(from rawURL: String) -> URL? {
