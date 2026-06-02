@@ -30,6 +30,10 @@ struct WebViewContainer: UIViewRepresentable {
         )
         configuration.userContentController = userContentController
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        // 修复：video 内联播放（不进 iOS 原生全屏）。否则点 Shorts / 视频即被 iOS 接管为全屏播放器——
+        // ① 全屏播放器盖在网页层之上 → 双语字幕 overlay 看不到；② 破坏 Shorts 上下滑动刷视频
+        //（违反 ADR-0004「不破坏 YouTube 原生交互」）。竞品（沉浸翻译）同款：Shorts 竖屏内联播放、可滑、字幕叠加可见。
+        configuration.allowsInlineMediaPlayback = true
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
