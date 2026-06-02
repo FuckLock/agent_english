@@ -2,6 +2,7 @@ import { RUNTIME_BOOTSTRAP_SOURCE } from "./runtime-source/bootstrap";
 import { RUNTIME_SCANNER_SOURCE } from "./runtime-source/scanner";
 import { RUNTIME_UI_BRIDGE_SOURCE } from "./runtime-source/ui-bridge";
 import { RUNTIME_YOUTUBE_CAPTION_TRACK_SOURCE } from "./runtime-source/youtube-caption-track-source";
+import { RUNTIME_YOUTUBE_AUDIO_SOURCE } from "./runtime-source/youtube-audio-source";
 import { RUNTIME_YOUTUBE_INJECTION_SOURCE } from "./runtime-source/youtube-injection";
 import { RUNTIME_YOUTUBE_OVERLAY_SOURCE } from "./runtime-source/youtube-overlay";
 
@@ -18,6 +19,7 @@ export const BROWSER_AGENT_RUNTIME_SOURCE = [
   RUNTIME_SCANNER_SOURCE,
   RUNTIME_YOUTUBE_OVERLAY_SOURCE,
   RUNTIME_YOUTUBE_CAPTION_TRACK_SOURCE,
+  RUNTIME_YOUTUBE_AUDIO_SOURCE,
   RUNTIME_YOUTUBE_INJECTION_SOURCE,
   RUNTIME_UI_BRIDGE_SOURCE,
 ].join("\n");

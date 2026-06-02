@@ -270,6 +270,13 @@ export const RUNTIME_YOUTUBE_CAPTION_TRACK_SOURCE = String.raw`  const CAPTION_T
         return;
       }
       lastVideoTimeUpdateAt = nowMs;
+      // Phase 8.13 / A3：无字幕轨自动切听音时，timeupdate 按播放进度驱动听音段上报
+      // （reportVideoAudioProgress 内按段桶去重 + privacy 门控、仅前台播放触发）；
+      // 有字幕轨仍走字幕时间同步（Phase 8.9 不变）。
+      if (videoCaptionTrackUnavailable) {
+        reportVideoAudioProgress(false);
+        return;
+      }
       syncActiveCaptionLine(typeof video.currentTime === "number" ? video.currentTime : 0, false);
     });
     return true;

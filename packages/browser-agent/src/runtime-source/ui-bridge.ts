@@ -223,6 +223,13 @@ export const RUNTIME_UI_BRIDGE_SOURCE = String.raw`  // YouTube 整站识别 / �
     postVideoAudioState,
     applySelectionExplanationFailure,
     setDisplayMode,
+    // Phase 8.13 / A1：native 隐私确认后置位听音许可 flag，让「无字幕轨自动切听音」生效
+    //（youtube-audio-source 的 audioPrivacyAccepted 读此 flag）；并立即重判当前视频——
+    // 确认前停在 privacy-required，确认后 syncVideoCaptionState 触发自动进 recognizing + 按进度上报。
+    acknowledgeAudioPrivacy: () => {
+      window.__agentEnglishAudioPrivacyAccepted = true;
+      syncVideoCaptionState(true);
+    },
   };
 
   // Phase 8.7 / A6：选词 / 翻译触发用的全局指针 / 触摸 / 键盘监听仅在非 YouTube

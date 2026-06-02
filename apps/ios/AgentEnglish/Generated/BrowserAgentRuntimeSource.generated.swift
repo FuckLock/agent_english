@@ -799,9 +799,136 @@ enum BrowserAgentRuntimeSource {
         return;
       }
       lastVideoTimeUpdateAt = nowMs;
+      // Phase 8.13 / A3：无字幕轨自动切听音时，timeupdate 按播放进度驱动听音段上报
+      // （reportVideoAudioProgress 内按段桶去重 + privacy 门控、仅前台播放触发）；
+      // 有字幕轨仍走字幕时间同步（Phase 8.9 不变）。
+      if (videoCaptionTrackUnavailable) {
+        reportVideoAudioProgress(false);
+        return;
+      }
       syncActiveCaptionLine(typeof video.currentTime === "number" ? video.currentTime : 0, false);
     });
     return true;
+  };
+
+  // A3：听音段时长（秒）——按播放进度把当前句 / 段分桶，同段内 timeupdate 复用同一 audioSegmentId
+  // （去重为 1 次后端请求），跨段推进换桶触发下一段；与后端 Phase 8.12 单段识别粒度对齐。
+  const VIDEO_AUDIO_SEGMENT_SECONDS = 6;
+  const audioPrivacyAccepted = () => Boolean(window.__agentEnglishAudioPrivacyAccepted);
+  const buildYouTubeVideoAudioState = (overrides = {}) => {
+    const detection = detectYouTubePage();
+    if (!detection.isVideoPage || !detection.pageKind) {
+      return null;
+    }
+    const updatedAt = new Date().toISOString();
+    const captionText = normalizeText(overrides.captionText || readActiveYouTubeCaptionText());
+    const captionQuality = overrides.captionQuality || (captionText ? "available" : "unavailable");
+    const captionAvailable = captionQuality === "available" || captionQuality === "low";
+    // A1 自动切：无字幕轨（videoCaptionTrackUnavailable）/ 低质量字幕 / 无字幕文本 → 听音 source；
+    // 有字幕轨且非手动选择 → 字幕 source（Phase 8.9 字幕优先不被破坏）。
+    const source = overrides.source || (
+      overrides.manualAudioSelection
+        || captionQuality === "low"
+        || (!captionText && videoCaptionTrackUnavailable)
+        || (!captionText && captionQuality === "unavailable")
+        ? "audio"
+        : "caption"
+    );
+    // A1 自动切：听音 source 下隐私已接受即自动进入识别态（recognizing，开始进度上报），
+    // 不再恒为 privacy-required；隐私未接受时先 privacy-required（确认后自动转 recognizing）。
+    const autoStatus = source === "audio"
+      ? (audioPrivacyAccepted() ? "recognizing" : "privacy-required")
+      : "caption-primary";
+    const status = overrides.status || autoStatus;
+    const audioSegmentId = overrides.audioSegmentId || hashSeed("vaud", pageId + ":audio:" + updatedAt.slice(0, 19));
+    return {
+      pageId,
+      siteKind: "youtube",
+      pageKind: detection.pageKind,
+      url: window.location.href,
+      title: document.title || "",
+      videoId: detection.videoId,
+      captionAvailability: captionAvailable ? "available" : "unavailable",
+      source,
+      overlayMode: overrides.overlayMode || (source === "audio" ? "inline-overlay" : "hidden"),
+      status,
+      capabilities: source === "audio"
+        ? [
+            captionAvailable ? "captions-available" : "captions-unavailable",
+            "audio-translation-beta",
+            "video-audio-translation",
+            "selection-fallback",
+          ]
+        : ["captions-available", "video-caption-overlay", "audio-translation-beta", "selection-fallback"],
+      activeSegment: source === "audio"
+        ? {
+            pageId,
+            audioSegmentId,
+            videoId: detection.videoId,
+            source: "audio",
+            sourceText: overrides.sourceText || "",
+            translatedText: overrides.translatedText,
+            sourceLanguage: overrides.sourceLanguage || "English",
+            targetLanguage: overrides.targetLanguage || "简体中文",
+            startTimeSeconds: typeof overrides.startTimeSeconds === "number" ? overrides.startTimeSeconds : undefined,
+            endTimeSeconds: typeof overrides.endTimeSeconds === "number" ? overrides.endTimeSeconds : undefined,
+            capturedAt: updatedAt,
+          }
+        : undefined,
+      failureReason: overrides.failureReason || (source === "caption" ? "caption-primary" : undefined),
+      message: overrides.message || (source === "audio"
+        ? (status === "recognizing" ? "正在听音识别 · Beta" : "听音翻译 Beta 会在你确认后由后端按播放进度拉取音频流识别。")
+        : "字幕可用，优先使用字幕翻译。"),
+      updatedAt,
+    };
+  };
+  const postVideoAudioState = (state, force = false) => {
+    if (!state) {
+      return false;
+    }
+    const signature = [
+      state.pageKind,
+      state.videoId || "",
+      state.source,
+      state.status,
+      state.activeSegment?.audioSegmentId || "",
+      state.activeSegment?.sourceText || "",
+      state.activeSegment?.translatedText || "",
+      state.failureReason || "",
+    ].join(":");
+    if (!force && signature === lastVideoAudioSignature) {
+      return false;
+    }
+    lastVideoAudioSignature = signature;
+    // 识别态 / 已识别出双语句即渲染听音 overlay（与字幕共用 applyVideoCaptionOverlayState）；
+    // privacy-required / caption-primary 不渲染（等隐私确认 / 字幕主路径）。
+    if (state.source === "audio" && state.status !== "privacy-required" && state.status !== "caption-primary") {
+      applyVideoCaptionOverlayState(state);
+    }
+    postBridgeEvent("video.audio.state.changed", state, {
+      requestId: "video-audio-state-" + (state.activeSegment?.audioSegmentId || sessionId),
+      pageId,
+    });
+    if (state.quota) {
+      postBridgeEvent("video.audio.quota.changed", state.quota, {
+        requestId: "video-audio-quota-" + sessionId,
+        pageId,
+      });
+    }
+    return true;
+  };
+  const requestVideoAudioTranslation = (config = {}) => {
+    const state = buildYouTubeVideoAudioState({
+      source: "audio",
+      status: config.status,
+      sourceLanguage: config.sourceLanguage,
+      targetLanguage: config.targetLanguage,
+      manualAudioSelection: true,
+      captionQuality: config.captionQuality,
+      captionText: config.captionText,
+      message: config.message,
+    });
+    return postVideoAudioState(state, true);
   };
 
   const readActiveYouTubeCaptionText = () => {
@@ -889,105 +1016,34 @@ enum BrowserAgentRuntimeSource {
     });
     return true;
   };
-  const buildYouTubeVideoAudioState = (overrides = {}) => {
+  // Phase 8.13 / A2 / A3：按播放进度周期上报听音 videoId + 当前进度（无音频载荷）触发后端听音。
+  // 节流（复用 CAPTION_TIMEUPDATE_THROTTLE_MS 量级，由 timeupdate 监听门控）+ 当前段去重
+  // （lastVideoAudioSignature 经 postVideoAudioState 比对）+ 单段失败不阻断（postVideoAudioState
+  // 不抛错、不停后续）。仅在无字幕轨自动切听音 + 隐私已接受时上报；非视频页 / 有字幕轨不触发。
+  const reportVideoAudioProgress = (force = false) => {
+    if (!detectYouTubePage().isVideoPage || !videoCaptionTrackUnavailable) {
+      return false;
+    }
+    if (!audioPrivacyAccepted()) {
+      // 隐私未接受：发一次 privacy-required 听音 state（复用 6.7 弹窗入口），不上报进度。
+      return postVideoAudioState(buildYouTubeVideoAudioState({ source: "audio" }), force);
+    }
+    const video = document.querySelector("video");
+    const currentTime = video && typeof video.currentTime === "number" ? video.currentTime : 0;
+    // 听音段签名按播放进度分桶（每段时长 CAPTION_TIMEUPDATE_THROTTLE_MS 无关，用 audioSegmentId
+    // 绑定段桶）：同段内多次 timeupdate → 同一 audioSegmentId → postVideoAudioState 去重为 1 次；
+    // 跨段推进 → 新桶 → 新 audioSegmentId → 触发下一段请求 1 次。
     const detection = detectYouTubePage();
-    if (!detection.isVideoPage || !detection.pageKind) {
-      return null;
-    }
-    const updatedAt = new Date().toISOString();
-    const captionText = normalizeText(overrides.captionText || readActiveYouTubeCaptionText());
-    const captionQuality = overrides.captionQuality || (captionText ? "available" : "unavailable");
-    const captionAvailable = captionQuality === "available" || captionQuality === "low";
-    const source = overrides.source || (
-      overrides.manualAudioSelection || captionQuality === "low" || !captionText
-        ? "audio"
-        : "caption"
-    );
-    const audioSegmentId = overrides.audioSegmentId || hashSeed("vaud", pageId + ":audio:" + updatedAt.slice(0, 19));
-    return {
-      pageId,
-      siteKind: "youtube",
-      pageKind: detection.pageKind,
-      url: window.location.href,
-      title: document.title || "",
-      videoId: detection.videoId,
-      captionAvailability: captionAvailable ? "available" : "unavailable",
-      source,
-      overlayMode: overrides.overlayMode || (source === "audio" ? "inline-overlay" : "hidden"),
-      status: overrides.status || (source === "audio" ? "privacy-required" : "caption-primary"),
-      capabilities: source === "audio"
-        ? [
-            captionAvailable ? "captions-available" : "captions-unavailable",
-            "audio-translation-beta",
-            "video-audio-translation",
-            "selection-fallback",
-          ]
-        : ["captions-available", "video-caption-overlay", "audio-translation-beta", "selection-fallback"],
-      activeSegment: source === "audio"
-        ? {
-            pageId,
-            audioSegmentId,
-            videoId: detection.videoId,
-            source: "audio",
-            sourceText: overrides.sourceText || "",
-            translatedText: overrides.translatedText,
-            sourceLanguage: overrides.sourceLanguage || "English",
-            targetLanguage: overrides.targetLanguage || "简体中文",
-            capturedAt: updatedAt,
-          }
-        : undefined,
-      failureReason: overrides.failureReason || (source === "caption" ? "caption-primary" : undefined),
-      message: overrides.message || (source === "audio"
-        ? "听音翻译 Beta 会在你确认后识别当前视频音频。"
-        : "字幕可用，优先使用字幕翻译。"),
-      updatedAt,
-    };
-  };
-  const postVideoAudioState = (state, force = false) => {
-    if (!state) {
-      return false;
-    }
-    const signature = [
-      state.pageKind,
-      state.videoId || "",
-      state.source,
-      state.status,
-      state.activeSegment?.audioSegmentId || "",
-      state.activeSegment?.sourceText || "",
-      state.activeSegment?.translatedText || "",
-      state.failureReason || "",
-    ].join(":");
-    if (!force && signature === lastVideoAudioSignature) {
-      return false;
-    }
-    lastVideoAudioSignature = signature;
-    if (state.source === "audio" && state.status !== "privacy-required" && state.status !== "caption-primary") {
-      applyVideoCaptionOverlayState(state);
-    }
-    postBridgeEvent("video.audio.state.changed", state, {
-      requestId: "video-audio-state-" + (state.activeSegment?.audioSegmentId || sessionId),
-      pageId,
-    });
-    if (state.quota) {
-      postBridgeEvent("video.audio.quota.changed", state.quota, {
-        requestId: "video-audio-quota-" + sessionId,
-        pageId,
-      });
-    }
-    return true;
-  };
-  const requestVideoAudioTranslation = (config = {}) => {
+    const segmentBucket = Math.floor(currentTime / VIDEO_AUDIO_SEGMENT_SECONDS);
+    const audioSegmentId = hashSeed("vaud", (detection.videoId || pageId) + ":audio:" + segmentBucket);
     const state = buildYouTubeVideoAudioState({
       source: "audio",
-      status: config.status || "privacy-required",
-      sourceLanguage: config.sourceLanguage,
-      targetLanguage: config.targetLanguage,
-      manualAudioSelection: true,
-      captionQuality: config.captionQuality,
-      captionText: config.captionText,
-      message: config.message,
+      status: "recognizing",
+      audioSegmentId,
+      startTimeSeconds: segmentBucket * VIDEO_AUDIO_SEGMENT_SECONDS,
+      endTimeSeconds: (segmentBucket + 1) * VIDEO_AUDIO_SEGMENT_SECONDS,
     });
-    return postVideoAudioState(state, true);
+    return postVideoAudioState(state, force);
   };
   const syncVideoCaptionState = (force = false) => {
     // A5 / A7.2：非视频页（含 YouTube 整站非视频页与非 YouTube 页面）不产字幕状态、
@@ -1007,10 +1063,12 @@ enum BrowserAgentRuntimeSource {
         const loadedTime = loadedVideo && typeof loadedVideo.currentTime === "number" ? loadedVideo.currentTime : 0;
         syncActiveCaptionLine(loadedTime, true);
       } else if (videoCaptionTrackUnavailable) {
-        // A6：无字幕轨则降级（caption-unavailable）+ 听音 Beta 入口仍可被 native 调起。
+        // A1 / A6：无字幕轨（captionTracks=0 / 解析 0 句）→ 字幕降级（caption-unavailable）+
+        // **自动**切听音——隐私已接受时进识别态并按播放进度上报（reportVideoAudioProgress），
+        // 隐私未接受时发 privacy-required（复用 6.7 弹窗，确认后自动进入），不再仅等手动开。
         const fallbackState = buildYouTubeVideoCaptionState({ sourceText: "", failureReason: "caption-unavailable" });
         postVideoCaptionState(fallbackState, true);
-        postVideoAudioState(buildYouTubeVideoAudioState(), true);
+        reportVideoAudioProgress(true);
       }
     });
     // 立即按当前已有字幕序列同步一次当前句（首取尚未就绪时回退 DOM 兜底，等 fetch 回调补发）。
@@ -1021,7 +1079,8 @@ enum BrowserAgentRuntimeSource {
       : buildYouTubeVideoCaptionState();
     const postedCaption = postVideoCaptionState(state, force);
     if (state && state.captionAvailability === "unavailable" && videoCaptionTrackUnavailable) {
-      postVideoAudioState(buildYouTubeVideoAudioState(), force);
+      // A1：已确认无字幕轨 → 自动切听音进度上报（隐私已接受）/ privacy-required（未接受）。
+      reportVideoAudioProgress(force);
     }
     return postedCaption;
   };
@@ -1063,6 +1122,7 @@ enum BrowserAgentRuntimeSource {
     buildYouTubeVideoAudioState,
     postVideoAudioState,
     requestVideoAudioTranslation,
+    reportVideoAudioProgress,
     syncVideoCaptionState,
     installYouTubeRouteListeners,
     // Phase 8.9：视频自带字幕轨数据读取 / 解析 / 时间同步（注入式单测入口；不出网）。
@@ -1305,6 +1365,13 @@ enum BrowserAgentRuntimeSource {
     postVideoAudioState,
     applySelectionExplanationFailure,
     setDisplayMode,
+    // Phase 8.13 / A1：native 隐私确认后置位听音许可 flag，让「无字幕轨自动切听音」生效
+    //（youtube-audio-source 的 audioPrivacyAccepted 读此 flag）；并立即重判当前视频——
+    // 确认前停在 privacy-required，确认后 syncVideoCaptionState 触发自动进 recognizing + 按进度上报。
+    acknowledgeAudioPrivacy: () => {
+      window.__agentEnglishAudioPrivacyAccepted = true;
+      syncVideoCaptionState(true);
+    },
   };
 
   // Phase 8.7 / A6：选词 / 翻译触发用的全局指针 / 触摸 / 键盘监听仅在非 YouTube

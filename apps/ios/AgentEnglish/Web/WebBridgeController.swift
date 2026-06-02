@@ -42,6 +42,8 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     weak var webView: WKWebView?
     var videoCaptionTranslationKeys = Set<String>()
     var videoAudioDispatchCount = 0
+    // Phase 8.13：无字幕轨自动切听音——按 videoId + 段桶 audioSegmentId 去重，避免同段重复 POST 后端 / 耗额度。
+    var videoAudioDispatchedSegments = Set<String>()
 
     init(
         providerClient: TranslationProviderClient = TranslationProviderClient(),

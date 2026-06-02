@@ -7,6 +7,25 @@ extension WebBridgeController {
     func handleVideoAudioState(_ state: VideoAudioTranslationState) {
         videoAudioState = state
         displayMode = .original
+
+        // Phase 8.13 / A2 / A3：browser-agent 无字幕轨自动切听音后，按播放进度段桶上报 recognizing 听音
+        // state（带 videoId + 段起点 startTimeSeconds，无音频载荷）；native 收到即按 videoId + 播放进度
+        // POST model-gateway 做识别 + 翻译（后端自取音频流、前端不采集），按 videoId + audioSegmentId 段桶
+        // 去重避免同段重复请求 / 耗额度；已识别出译文的段不重复触发。
+        guard
+            state.source == .audio,
+            state.status == .recognizing,
+            let segment = state.activeSegment,
+            (segment.translatedText?.isEmpty ?? true)
+        else {
+            return
+        }
+        let segmentKey = "\(state.videoId ?? state.pageId):\(segment.audioSegmentId)"
+        guard !videoAudioDispatchedSegments.contains(segmentKey) else {
+            return
+        }
+        videoAudioDispatchedSegments.insert(segmentKey)
+        dispatchVideoAudioTranslationRequest()
     }
 
     func handleVideoAudioQuota(_ quota: AudioTranslationQuota) {
@@ -25,7 +44,7 @@ extension WebBridgeController {
         videoAudioState = (videoAudioState ?? makeLightVideoAudioState()).with(
             status: .privacyRequired,
             failureReason: .privacyDisclosureRequired,
-            message: "开启听音翻译前，请确认会识别当前视频音频。"
+            message: "开启听音翻译前请确认：将由后端按播放进度拉取该视频音频流做识别翻译，不在本机采集、不保存完整音频。"
         )
         displayMode = .original
         evaluateBridgeCommand(named: "requestVideoAudioTranslation", argument: "{}")
@@ -33,6 +52,9 @@ extension WebBridgeController {
 
     func acknowledgeVideoAudioPrivacyAndStart() {
         videoAudioPrivacyAcknowledged = true
+        // Phase 8.13：置位 browser-agent 听音许可 flag，让「无字幕轨自动切听音」生效
+        //（隐私确认前停 privacy-required，确认后自动进 recognizing + 按播放进度上报 → native 自动 POST）。
+        evaluateBridgeCommand(named: "acknowledgeAudioPrivacy", argument: "")
         startVideoAudioTranslationIfAllowed()
     }
 
@@ -142,6 +164,9 @@ extension WebBridgeController {
             preferredModelID: preferences.preferredModelID,
             audioSegmentID: audioSegmentID,
             audioDurationSeconds: 45,
+            // Phase 8.13：听音改为后端按 videoId + 播放进度自取音频流识别——传当前段起点播放进度
+            //（来自 browser-agent 段桶 startTimeSeconds），不携带任何前端音频载荷。
+            playbackPositionSeconds: state.activeSegment?.startTimeSeconds,
             captionText: videoCaptionState?.activeSegment?.sourceText,
             captionQuality: videoCaptionState?.captionAvailability == .available ? "available" : "unavailable",
             manualAudioSelection: true,
