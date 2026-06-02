@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, amended by Product-Spec v2.4；v2.5 修订：视频页交互重构为隐形态 / 召唤态（见下方 v2.5 修订段，配套 ADR-0005 翻译分层）；v2.6 修订：YouTube 整站重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互 + 不做页面文字翻译，见下方 v2.6 修订段）
+Accepted, amended by Product-Spec v2.4；v2.5 修订：视频页交互重构为隐形态 / 召唤态（见下方 v2.5 修订段，配套 ADR-0005 翻译分层）；v2.6 修订：YouTube 整站重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互 + 不做页面文字翻译，见下方 v2.6 修订段）；v2.8 修订：字幕来源改为视频自带字幕轨数据 + InnerTube ANDROID client（见下方 v2.8 修订段）；**v2.11 修订：听音翻译改为后端拉音频流 + 自部署 Whisper ASR（推翻 v2.10「iOS 不可行」误判，见下方 v2.11 修订段）**
 
 ## Date
 
@@ -82,6 +82,33 @@ curl 自测对比（同一视频）：
 - InnerTube 请求与 timedtext 一样在 YouTube 页面上下文**同源 fetch**（带 cookie / visitor data），不经 native、不外部抓取；合规边界与 v2.8 相同（只实时读取当前视频字幕轨、不保存 / 不缓存整轨 / 不分离媒体）。
 - 落地：`browser-agent` 注入运行时 `fetchPlayerResponseViaInnerTube` + `site-adapters/youtube-caption-track.ts#buildInnerTubePlayerRequest`；纯逻辑层单测 E9 覆盖（InnerTube 优先 / 兜底回退 / Shorts videoId）。
 
+### v2.11 修订（听音翻译：前端采集 → 后端拉音频流 + 自部署 Whisper ASR）
+
+Product-Spec v2.11。听音翻译此前设想「前端采集播放中音频短片段 → 传后端 ASR」，但真机 spike 证明 iOS WKWebView `captureStream()` 采不到 YouTube 跨源播放音频（音频轨数=0，WebKit 防盗录禁用跨源媒体音频采集，平台天花板）。曾据此误判「iOS 听音不可行」（Spec v2.10，**已推翻**）——错在只试了「前端采集」这一条路。
+
+自测定位到可行路径并**端到端验证**：
+- InnerTube `/youtubei/v1/player`（ANDROID client）的 `streamingData.adaptiveFormats` **直接提供纯音频流**（itag=139 ~49kbps / itag=140 ~130kbps），**明文 URL、无需解签名、任何视频都有**（含无 YouTube 字幕轨的 Shorts，实测 `2QtsWjF3e78` Suits 剪辑）。
+- 实测：下载该音频流（302KB）→ ffmpeg 转 16kHz wav → 自部署 Whisper（base.en）离线识别出**完整准确英文台词**（含屏幕台词 "sleep with your sister"）。音频流可取 + ASR 可识别 + 翻译可行，全链路通。
+
+决策（推翻 v2.10「不可行」）：
+- **听音改为后端方案**：app 传 videoId + 当前播放进度 → `model-gateway` 按 videoId 取 InnerTube 音频流 URL → 按进度 Range 拉取音频流片段 → ffmpeg 转码 → **自部署 Whisper ASR**（仅产英文文本）→ 走现有大模型分层翻译 → 返回带时间轴的双语句子。**不在前端采集音频**（绕开 `captureStream` 死路）。
+- **ASR 选型：自部署 Whisper**（whisper.cpp / faster-whisper，开源离线、零 API 成本、适配 Free 每天 10 分钟额度）。替换 `services/model-gateway/src/providers/asr-provider.ts` 的 `UnavailableASRProvider`。
+- **识别与翻译解耦、翻译统一走大模型分层**：Whisper 只「英文语音→英文文字」、不翻译；翻译「英文→中文」走现有 translation-proxy（Free）/ model-gateway（Pro·Max），**按订阅权限路由、用户在权限内可选模型**（`model-catalog` options + `preferredModelId`，`video-audio-translate.ts` route 已接入 preferredModelId）。
+- **混合策略**：有字幕轨读字幕翻译（v2.8，省 ASR 成本、更准），无字幕轨走音频流 ASR；合起来任何视频可翻（追平竞品）。
+
+合规边界变化（**实质，知情采用**）：
+- **放宽 v2.4 / v2.8 的「不下载 / 分离音视频」边界**：允许 `model-gateway` 后端按播放进度**实时拉取音频流片段**做识别（与竞品 Immersive Translate 同类机制），仅取当前识别所需、**不持久化整轨、不缓存、不再分发、不离线整片转写**。
+- 仍守住：用户可见 / 可关闭 / 可停止、按分钟计量、不保存 / 不再分发完整音频、不后台静默听音（仅前台当前播放）、Free 每天 10 分钟。
+- YouTube ToS / App Store 审核长期合规风险由产品方知情采用（与字幕轨方案 v2.8 同等立场、与沉浸翻译类竞品同等做法）。
+
+落地组件：
+- `model-gateway`：新增音频流获取（InnerTube `streamingData` → audio URL）+ 按进度 Range 拉取 + ffmpeg 转码 + 自部署 Whisper ASR provider；`video-audio-translate.ts` route 改造（输入 videoId + 进度，不再期待前端音频数据）；ASR 与翻译路由解耦。
+- `packages/contracts`：`VideoAudioTranslateRequest` 改为携带 videoId + 播放进度（替代音频数据载荷），结果带时间轴。
+- `browser-agent` / iOS：无字幕轨时触发听音（传 videoId + 进度），复用现有 video caption overlay 按进度显示双语。
+- 由 DEV-PLAN 听音 phase（原 Phase 8.10 / 8.11 重定义为音频流方案）落地。
+
+风险：音频流 URL 有时效（`expire` ~6h）+ 绑定请求方（后端自取自下、同 IP 规避）；后端拉流可能受 YouTube 云 IP 反爬（开发阶段验证）；自部署 Whisper 的实时性 / 算力（分段处理 + 模型档位权衡，开发阶段定）；ToS 合规风险（知情采用）。
+
 ## Consequences
 
 - 普通文本网页和 YouTube 视频页拥有不同交互模型，避免把阅读器控件套到视频页。
@@ -104,8 +131,8 @@ curl 自测对比（同一视频）：
 
 - 不做 YouTube 替代客户端。
 - 不下载视频、音频；不把字幕保存为文件、不离线缓存整轨、不再分发或搬运（v2.8：允许在播放当前视频时实时读取其自带字幕轨数据用于翻译显示，详见 v2.8 修订段）。
-- 不去广告、不后台播放、不分离音视频。
-- 不做无限制听音识别、后台听音识别、下载音视频后转写或保存完整音频。
+- 不去广告、不后台播放；不离线下载完整视频 / 整片音频（**v2.11 放宽**：允许后端按播放进度实时拉取音频流片段做听音识别，用完即弃、不持久化整轨、不缓存、不再分发，见 v2.11 修订段）。
+- 不做无限制听音识别、后台静默听音识别（仅前台当前播放）、离线整片转写或保存 / 再分发完整音频（**v2.11**：听音改为后端拉音频流实时片段 + 自部署 Whisper 识别）。
 - 不在 YouTube 视频页展示阅读型底部分段控件，也不在视频页底部常驻任何 App 工具条 / 状态栏（v2.5 强化：改隐形态 + 召唤态）。
 - 不在 YouTube 任何页面（首页 / 列表 / 搜索 / Shorts / 视频页）套阅读显示模式控件或常驻浏览工具条；不把 YouTube 当普通文本网页处理（v2.6）。
 - YouTube 注入不得破坏原生交互（滑动、点击、SPA 路由）；本版不做 YouTube 页面文字翻译（v2.6）。

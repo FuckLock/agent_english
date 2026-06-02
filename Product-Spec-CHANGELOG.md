@@ -1,5 +1,28 @@
 # 变更记录
 
+## [v2.11] - 2026-06-01
+
+### 修改（推翻 v2.10）
+
+- 🟢 听音翻译方案确立、**推翻 v2.10「iOS 不可行」误判**：找到并端到端验证了可行路径——后端按 videoId 取 YouTube 音频流（InnerTube `streamingData` 纯音频 `adaptiveFormats`，明文 URL、任何视频都有、含无字幕 Shorts）→ 自部署 Whisper 离线识别英文 → 大模型分层翻译 → 双语叠层。真实无字幕 Shorts（Suits 剪辑 `2QtsWjF3e78`）实测全链路通：取到音频流 + Whisper 准确识别完整台词（含 "sleep with your sister"）+ 可翻译。
+- v2.10 误判根因：只试了前端 `captureStream` 采播放中音频（`atks=0` 不可行），未发现后端拉音频流可行。本版绕开前端采集。
+
+### 决策
+
+- 听音最终形态 = **混合**：有字幕轨读字幕翻译（Phase 8.9 已落地），无字幕轨走音频流 ASR，合起来**任何视频可翻**（追平竞品 Immersive Translate）。
+- ASR 选型：**自部署 Whisper**（开源离线、零 API 成本、适配 Free 10 分钟额度）；识别只产英文文本、不做翻译。
+- 翻译环节：**统一走现有大模型分层**（translation-proxy / model-gateway），**按订阅权限路由、用户在权限内可选模型**（`model-catalog` options + `preferredModelId` 现成支持，听音 route 已接入）。
+
+### 合规边界变化（实质）
+
+- **放宽原「不下载音视频」边界**：允许后端实时拉取音频流片段做识别（与竞品同类机制），仅取当前所需、不持久化整轨、不缓存、不再分发、不离线整片。存在 YouTube ToS 风险（竞品同担），不碰版权存储 / 再分发。
+
+### 位置
+
+- [状态] / [核心功能] YouTube 视频沉浸翻译 / [YouTube 边界] 听音 / [MVP 范围] 功能优先级 + non-goals
+
+---
+
 ## [v2.10] - 2026-06-01
 
 ### 修改
