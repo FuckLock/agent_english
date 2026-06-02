@@ -125,8 +125,9 @@ export const RUNTIME_YOUTUBE_OVERLAY_SOURCE = String.raw`  const detectYouTubePa
       surface.className = videoCaptionFallbackClassName;
       surface.style.left = "12px";
       surface.style.right = "12px";
-      surface.style.bottom = "12%";
-      surface.style.top = "";
+      // 降级字幕条也放顶部（与 inline-overlay 一致，对齐竞品）。
+      surface.style.top = "8%";
+      surface.style.bottom = "";
       surface.style.transform = "";
       surface.style.maxWidth = "";
       surface.style.padding = "9px 12px";
@@ -138,8 +139,9 @@ export const RUNTIME_YOUTUBE_OVERLAY_SOURCE = String.raw`  const detectYouTubePa
     surface.className = videoCaptionOverlayClassName;
     surface.style.left = "50%";
     surface.style.right = "";
-    surface.style.top = "";
-    surface.style.bottom = "12%";
+    // 双语字幕放视频顶部（对齐竞品沉浸翻译）；避开底部频道信息 / 描述 / 进度条。
+    surface.style.top = "8%";
+    surface.style.bottom = "";
     surface.style.transform = "translateX(-50%)";
     surface.style.maxWidth = "82%";
     surface.style.padding = "6px 10px";
