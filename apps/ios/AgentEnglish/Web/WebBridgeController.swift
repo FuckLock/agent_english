@@ -44,6 +44,10 @@ final class WebBridgeController: NSObject, ObservableObject, WKScriptMessageHand
     var videoAudioDispatchCount = 0
     // Phase 8.13：无字幕轨自动切听音——按 videoId + 段桶 audioSegmentId 去重，避免同段重复 POST 后端 / 耗额度。
     var videoAudioDispatchedSegments = Set<String>()
+    // 字幕翻译预取缓存（修翻译跟不上）：视频字幕轨加载后一次性批量翻全轨 → 缓存 "videoId\n原文" → 译文；
+    // 播到当前句命中缓存直接显示双语，不再逐句串行等 DeepSeek（卡「等待字幕翻译」）。未命中回退单句翻。
+    var videoCaptionTranslationCache: [String: String] = [:]
+    var videoCaptionPrefetchedVideoId: String?
 
     init(
         providerClient: TranslationProviderClient = TranslationProviderClient(),

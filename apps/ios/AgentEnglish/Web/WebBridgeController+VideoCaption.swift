@@ -22,6 +22,8 @@ extension WebBridgeController {
             videoAudioState = nil
             videoAudioPrivacyAcknowledged = false
             videoCaptionTranslationKeys.removeAll()
+            videoCaptionTranslationCache.removeAll()
+            videoCaptionPrefetchedVideoId = nil
             isSummonMenuPresented = false
             return
         }
@@ -42,7 +44,32 @@ extension WebBridgeController {
             return
         }
 
-        let translationKey = "\(state.videoId ?? state.pageId):\(segment.sourceText)"
+        let videoKey = state.videoId ?? state.pageId
+
+        // 字幕轨首次出现 → 异步批量预翻整轨填缓存（后续句直接命中、不逐句串行等 DeepSeek）。
+        if videoCaptionPrefetchedVideoId != videoKey {
+            videoCaptionPrefetchedVideoId = videoKey
+            // 切到新视频：清旧译文缓存（键含 videoId、只留当前视频，避免跨视频内存累积）。
+            videoCaptionTranslationCache.removeAll()
+            prefetchVideoCaptionTranslations(videoKey: videoKey, state: state)
+        }
+
+        // 命中预取缓存 → 直接显示双语，不卡「等待字幕翻译」。
+        let cacheKey = "\(videoKey)\n\(segment.sourceText)"
+        if let cached = videoCaptionTranslationCache[cacheKey], !cached.isEmpty {
+            let cachedSegment = segment.with(translatedText: cached)
+            let cachedState = state.with(
+                status: .translated,
+                activeSegment: cachedSegment,
+                failureReason: nil,
+                message: nil
+            )
+            videoCaptionState = cachedState
+            applyVideoCaptionOverlayState(cachedState)
+            return
+        }
+
+        let translationKey = "\(videoKey):\(segment.sourceText)"
         guard !videoCaptionTranslationKeys.contains(translationKey) else {
             return
         }
@@ -77,6 +104,7 @@ extension WebBridgeController {
                     ?? result.segmentResults.first
 
                 if let translatedText = segmentResult?.translatedText, !translatedText.isEmpty {
+                    self.videoCaptionTranslationCache[cacheKey] = translatedText
                     let translatedSegment = segment.with(translatedText: translatedText)
                     let translatedState = state.with(
                         status: .translated,
@@ -130,6 +158,127 @@ extension WebBridgeController {
         } catch {
             pushSummary("video.caption.favorite.failed · \(error.localizedDescription)")
         }
+    }
+
+    // 批量预翻：字幕轨加载后取整轨全部句（getVideoCaptionLines 已暴露），一次性批量翻 → 填缓存。
+    // 修「翻译跟不上」：之前逐句串行等 DeepSeek（1-2 秒/句）跟不上字幕滚动、卡「等待字幕翻译」；
+    // 预取后播到当前句直接命中缓存显示双语。失败 / 未命中仍回退单句翻（不破坏 Phase 8.9 字幕翻译）。
+    private func prefetchVideoCaptionTranslations(
+        videoKey: String,
+        state: VideoCaptionOverlayState
+    ) {
+        guard let webView else {
+            return
+        }
+        let script = "JSON.stringify((window.__agentEnglishYouTubeInjection && window.__agentEnglishYouTubeInjection.getVideoCaptionLines ? window.__agentEnglishYouTubeInjection.getVideoCaptionLines() : []).map(function (line) { return line.sourceText; }))"
+        webView.evaluateJavaScript(script) { [weak self] result, _ in
+            guard
+                let self,
+                let json = result as? String,
+                let data = json.data(using: .utf8),
+                let texts = try? JSONDecoder().decode([String].self, from: data)
+            else {
+                return
+            }
+            let uniqueTexts = Array(
+                Set(texts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+            )
+            guard !uniqueTexts.isEmpty else {
+                return
+            }
+
+            Task { [weak self] in
+                guard let self else {
+                    return
+                }
+                let preferences = await self.currentTranslationPreferences()
+                let (request, idToText) = await MainActor.run {
+                    self.batchVideoCaptionRequest(
+                        texts: uniqueTexts,
+                        state: state,
+                        preferences: preferences
+                    )
+                }
+                let result = await self.providerClient.translate(request, preferences: preferences)
+
+                await MainActor.run {
+                    for segmentResult in result.segmentResults {
+                        guard
+                            let sourceText = idToText[segmentResult.segmentId],
+                            let translated = segmentResult.translatedText,
+                            !translated.isEmpty
+                        else {
+                            continue
+                        }
+                        self.videoCaptionTranslationCache["\(videoKey)\n\(sourceText)"] = translated
+                    }
+                    // 预取完成：若当前句已在缓存且尚未显示译文 → 立即刷新双语（不等下一次 timeupdate）。
+                    guard
+                        let current = self.videoCaptionState,
+                        let activeSegment = current.activeSegment,
+                        activeSegment.translatedText?.isEmpty != false,
+                        let cached = self.videoCaptionTranslationCache["\(videoKey)\n\(activeSegment.sourceText)"],
+                        !cached.isEmpty
+                    else {
+                        return
+                    }
+                    let refreshedSegment = activeSegment.with(translatedText: cached)
+                    let refreshedState = current.with(
+                        status: .translated,
+                        activeSegment: refreshedSegment,
+                        failureReason: nil,
+                        message: nil
+                    )
+                    self.videoCaptionState = refreshedState
+                    self.applyVideoCaptionOverlayState(refreshedState)
+                }
+            }
+        }
+    }
+
+    private func batchVideoCaptionRequest(
+        texts: [String],
+        state: VideoCaptionOverlayState,
+        preferences: TranslationPreferencesSnapshot
+    ) -> (TranslationRequest, [String: String]) {
+        let sourceLanguage = state.activeSegment?.sourceLanguage ?? "English"
+        let pageContext = PageContext(
+            pageId: state.pageId,
+            url: state.url,
+            title: state.title,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: preferences.targetLanguage,
+            displayMode: .bilingual,
+            capabilities: state.capabilities,
+            siteKind: "youtube"
+        )
+        var idToText: [String: String] = [:]
+        var segments: [PageTextSegment] = []
+        for (index, text) in texts.enumerated() {
+            let segmentId = "capbatch-\(index)"
+            idToText[segmentId] = text
+            segments.append(
+                PageTextSegment(
+                    pageId: state.pageId,
+                    segmentId: segmentId,
+                    sourceText: text,
+                    containerPath: "video-caption-overlay",
+                    sourceLanguage: sourceLanguage,
+                    isVisible: true,
+                    capabilities: state.capabilities
+                )
+            )
+        }
+        let request = TranslationRequest(
+            pageId: state.pageId,
+            pageContext: pageContext,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: preferences.targetLanguage,
+            displayMode: .bilingual,
+            capabilities: state.capabilities,
+            segments: segments
+        )
+        return (request, idToText)
     }
 
     func translationRequest(
