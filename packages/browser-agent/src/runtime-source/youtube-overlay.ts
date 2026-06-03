@@ -159,6 +159,13 @@ export const RUNTIME_YOUTUBE_OVERLAY_SOURCE = String.raw`  const detectYouTubePa
       removeVideoCaptionSurfaces();
       return true;
     }
+    // 无字幕轨「当前视频没有检测到可用字幕」提示不显示（影响体感、用户只关心能不能翻译）：
+    // 该场景走听音翻译，overlay 由听音 state（recognizing → 双语）接管；字幕降级提示静默清除。
+    // 只过滤 caption 路径的 caption-unavailable；听音失败 / 额度等 audio failureReason 不受影响、仍提示。
+    if (state.failureReason === "caption-unavailable") {
+      removeVideoCaptionSurfaces();
+      return true;
+    }
     const inactiveId = state.overlayMode === "fallback-bar"
       ? videoCaptionOverlayId
       : videoCaptionFallbackId;
