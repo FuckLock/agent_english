@@ -128,7 +128,10 @@ export const RUNTIME_YOUTUBE_INJECTION_SOURCE = String.raw`  const readActiveYou
       if (hasLines) {
         const loadedVideo = document.querySelector("video");
         const loadedTime = loadedVideo && typeof loadedVideo.currentTime === "number" ? loadedVideo.currentTime : 0;
-        syncActiveCaptionLine(loadedTime, true);
+        // 用 syncVideoCaptionState 的 force（boot / SPA 切视频=true 首取补发；1.2s 周期同步=false 去重）。
+        // 修字幕闪烁：原 hardcode true 让每次 1.2s 周期同步都强制重渲染当前句「英文+等待」，
+        // 与 native 缓存命中渲染的双语交替 → 暂停时字幕来回闪。改 force 后内容不变即去重、不重渲染。
+        syncActiveCaptionLine(loadedTime, force);
       } else if (videoCaptionTrackUnavailable) {
         // A1 / A6：无字幕轨（captionTracks=0 / 解析 0 句）→ 字幕降级（caption-unavailable）+
         // **自动**切听音——隐私已接受时进识别态并按播放进度上报（reportVideoAudioProgress），
