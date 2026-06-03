@@ -176,9 +176,10 @@ agent_english/
 ## Migration / Cleanup Notes
 
 - 旧 `src/` 删除是符合产品重定义方向的；后续不应恢复旧游戏 API、页面、组件或数据库迁移。
-- 当前 `package.json` 仍指向 Next、React、Drizzle 和旧数据库脚本；开发初始化时应改为 workspace 工具脚本，或者明确把旧依赖移除。
-- 当前根目录存在 `.next/`、`data/agent-english.sqlite*` 和 Drizzle 配置，均属于旧 Web/游戏方向或构建残留；后续清理前不得把这些残留当作新 iOS 产品数据源。
-- `public/assets/prologue/` 是旧游戏视觉资产，不能被新产品首页、复习页或设置页引用。
-- `data/` 是否保留取决于是否有非旧游戏资料；如果只保存旧游戏数据，应在清理 Phase 删除或迁移到文档归档。
-- `design_export/` 只作为设计参照，不进入 App bundle，除非后续明确挑选品牌资产。
+- **[已清理 2026-06]** 根级 Next.js / React / Drizzle 残骸已移除：`next.config.mjs`、`postcss.config.mjs`、`drizzle.config.ts`、根 `tsconfig.json`、`next-env.d.ts`，以及根 `package.json` 中的 web 依赖（next/react/react-dom/lucide-react/tailwind/drizzle/better-sqlite3/zod 及对应 @types）。根 `package.json` 现仅保留 workspace 脚本 + TS 工具（typescript/tsx/@types/node）。
+- **[已清理 2026-06]** `.next/`（构建缓存）、`data/agent-english.sqlite*`（旧 Web 数据库）已删，`data/` 空目录一并移除。新 iOS 产品数据源为原生 SwiftData，不依赖此处。
+- **[已清理 2026-06]** `public/assets/prologue/`（旧游戏视觉资产）及空 `public/` 目录已删。
+- `design_export/` 保留（owner 决定先留），只作为设计参照，不进入 App bundle，除非后续明确挑选品牌资产。
+- 根 `Package.swift`（SwiftPM 清单，targets 指向 `apps/ios/*`）与 `.build/`（Swift 构建产物，gitignored）为 iOS 构建依赖，**非残骸，保留**。
+- 当前根级真实结构：`apps/`（前端，现 iOS）+ `services/`（公用后端）+ `packages/`（共享 contracts / browser-agent）+ `docs/` + `scripts/` + 文档与配置。
 - 新 iOS 工程创建后，`DEV-PLAN.md` 的 affected files 应以 `apps/ios`、`packages/browser-agent`、`packages/contracts` 为主，不应再指向旧 `src/app`。
