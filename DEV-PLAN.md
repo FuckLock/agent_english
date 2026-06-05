@@ -4,11 +4,11 @@
 > 新 session 启动时应首先阅读此文件，了解项目状态后再继续开发。
 
 **基于信息**：
-- 源 Spec：Product-Spec.md v2.11
-- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入；v2.8 修订：视频字幕来源从渲染 DOM 改为视频自带字幕轨数据 / player response / timedtext，按播放进度同步；**v2.11 修订：听音翻译改为后端按 videoId 拉 YouTube 音频流 / InnerTube streamingData adaptiveFormats + 按进度 Range 拉片段 + ffmpeg 转码 + 自部署 Whisper 识别英文 + 大模型分层翻译，推翻 v2.10「iOS 前端采集不可行」误判，合规边界放宽为「实时拉音频流片段、用完即弃、不持久化整轨 / 不缓存 / 不再分发」**）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦；v2.7 修订：Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions）
+- 源 Spec：Product-Spec.md v2.12
+- 源架构：ARCHITECTURE.md / PROJECT-STRUCTURE.md / docs/adr/ADR-0001-architecture-strategy.md / docs/adr/ADR-0002-backend-managed-model-service.md / docs/adr/ADR-0003-auth-session-entitlement.md / docs/adr/ADR-0004-youtube-video-immersive-translation.md（v2.5 修订：隐形态 / 召唤态；v2.6 修订：YouTube 整站重定位 + SPA 友好注入；v2.8 修订：视频字幕来源从渲染 DOM 改为视频自带字幕轨数据 / player response / timedtext，按播放进度同步；**v2.11 修订：听音翻译改为后端按 videoId 拉 YouTube 音频流 / InnerTube streamingData adaptiveFormats + 按进度 Range 拉片段 + ffmpeg 转码 + 自部署 Whisper 识别英文 + 大模型分层翻译，推翻 v2.10「iOS 前端采集不可行」误判，合规边界放宽为「实时拉音频流片段、用完即弃、不持久化整轨 / 不缓存 / 不再分发」**）/ docs/adr/ADR-0005-tiered-translation-proxy.md（翻译分层 + Free 轻量翻译代理解耦；v2.7 修订：Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型 / OpenAI 兼容 Chat Completions）/ **docs/adr/ADR-0006-model-catalog-permission-decoupling.md（v2.12：模型系统 × 权限系统解耦，唯一接口 = 一个档位值；线A 模型清单 × minTier、vendor 凭证与真实模型名解耦、provider-router 废 per-model switch、env 去单一模型名槽、能力按档位解锁 D2、权限↔目录解耦、配额维持按档位总量 D3；线B 账号级持久档位 / 多端一致本版只占位不实现，触发 = 真订阅 / 计费或第二个判权限后端）由新增 Phase 8.14（后端解耦：registry + 校验 + provider-router/env + 权限↔目录）+ Phase 8.15（契约干净切 tier→minTier + 能力门控迁档位 + iOS 同步适配）落地**
 - 源设计：Design-Brief.md v2.5 + design_export/clean_pencil/ + v2.2 账号 / 登录 / 模型服务错误状态 PNG（`5mGHS.png`、`bCKWH.png`、`uTNzx.png` 等）；v2.3 YouTube 视频沉浸翻译设计稿已补；v2.4 听音翻译 Beta 状态稿已补（`iajll.png`、`f154K.png`、`NtBkp.png`、`3YlLm.png`、`iI4Cp.png`）；v2.5 YouTube 隐形态稿已出（`design_export/tTNH1.png`），召唤把手 / 胶囊菜单可视稿因 Pencil absolute 浮层渲染限制未出，规范以 Design-Brief v2.5「召唤入口」「状态变体」文字块为准；v2.6 YouTube 整站重定位为交互 / 注入修正，沿用 v2.5 视频页隐形态 / 召唤态视觉，未引入新视觉稿；v2.7 仅替换 translation-proxy 内部 provider 实现（服务端后端变更），用户无感、界面仍只显示 free translation，未引入新视觉稿
-- 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25；v2.7 修订：2026-05-26）
-- 覆盖 Spec 功能：v2.8 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地；v2.8 YouTube 视频字幕来源从渲染 DOM 改为视频自带字幕轨数据（player response / timedtext，按播放进度同步、覆盖 Shorts 与横屏、不依赖手动开 CC）由新增 Phase 8.9 落地（含第一步技术 spike 闸门）；v2.9 听音翻译升级（读不到字幕轨 captionTracks=0 时自动切听音识别、整句完整识别后输出双语，对齐沉浸翻译类竞品「几乎任意视频可翻」）曾由 Phase 8.10（前端采集音频 spike）+ Phase 8.11（实时整句草案）承接，**Phase 8.10 spike 真机失败（`captureStream` atks=0，iOS WKWebView 采不到 YouTube 跨源播放音频）、Phase 8.11 随之取消**；v2.10 据此误判「iOS 听音整体不可行」（**已被 v2.11 推翻**）；v2.11 听音翻译方案确立——改走「后端按 videoId 拉 YouTube 音频流（InnerTube `streamingData` 纯音频 `adaptiveFormats`，明文 URL、任何视频都有、含无字幕 Shorts）→ 按播放进度 Range 拉片段 → ffmpeg 转 16kHz wav → 自部署 Whisper 离线识别英文（仅 ASR、不翻译）→ 走现有大模型分层翻译（Free→translation-proxy / Pro·Max→model-gateway，按权限 / `preferredModelId`）→ 带时间轴双语回 overlay」，已用真实无字幕 Shorts `2QtsWjF3e78` 端到端验证可行；最终形态为**混合**——有字幕轨读字幕翻译（Phase 8.9 已落地、不动），无字幕轨走音频流 ASR。**原 Phase 8.10 / 8.11（前端采集死路）保留作历史，听音翻译重定义为下方新增 Phase 8.12（后端音频流 + Whisper ASR，端到端独立可验证）+ Phase 8.13（前端集成：captionTracks=0 自动切 + 整句双语 overlay + 额度 / 降级回归）落地**
+- 生成日期：2026-05-19（v2.5 修订：2026-05-25；v2.6 修订：2026-05-25；v2.7 修订：2026-05-26；v2.12 模型系统 × 权限系统解耦修订：2026-06-05）
+- 覆盖 Spec 功能：v2.8 核心范围已映射到 Phase 1-9；账号会话与权益由 Phase 6.5 覆盖；YouTube 视频沉浸翻译体验修正由 Phase 6.6 起步；字幕翻译 + 听音翻译 Beta 由 Phase 6.6 / 6.7 分别打底，Phase 8 完整站点适配收口；v2.5 翻译分层（Free 文本翻译解耦大模型后端）由 Phase 8.5 落地；v2.5 YouTube 隐形态 / 召唤态交互重构由 Phase 8.6 落地；v2.6 YouTube 整站重定位（整站原生体验 + App 整站隐形 + SPA 友好轻注入 + 仅视频页叠字幕 + 移除 YouTube 页面文字翻译）由 Phase 8.7 落地；v2.7 Free 文本 / 字幕翻译 provider 改用便宜大模型（OpenAI 兼容 Chat Completions，translation-proxy 内部 provider 实现替换，iOS Providers 与 model-gateway 不变）由新增 Phase 8.8 落地；v2.8 YouTube 视频字幕来源从渲染 DOM 改为视频自带字幕轨数据（player response / timedtext，按播放进度同步、覆盖 Shorts 与横屏、不依赖手动开 CC）由新增 Phase 8.9 落地（含第一步技术 spike 闸门）；v2.9 听音翻译升级（读不到字幕轨 captionTracks=0 时自动切听音识别、整句完整识别后输出双语，对齐沉浸翻译类竞品「几乎任意视频可翻」）曾由 Phase 8.10（前端采集音频 spike）+ Phase 8.11（实时整句草案）承接，**Phase 8.10 spike 真机失败（`captureStream` atks=0，iOS WKWebView 采不到 YouTube 跨源播放音频）、Phase 8.11 随之取消**；v2.10 据此误判「iOS 听音整体不可行」（**已被 v2.11 推翻**）；v2.11 听音翻译方案确立——改走「后端按 videoId 拉 YouTube 音频流（InnerTube `streamingData` 纯音频 `adaptiveFormats`，明文 URL、任何视频都有、含无字幕 Shorts）→ 按播放进度 Range 拉片段 → ffmpeg 转 16kHz wav → 自部署 Whisper 离线识别英文（仅 ASR、不翻译）→ 走现有大模型分层翻译（Free→translation-proxy / Pro·Max→model-gateway，按权限 / `preferredModelId`）→ 带时间轴双语回 overlay」，已用真实无字幕 Shorts `2QtsWjF3e78` 端到端验证可行；最终形态为**混合**——有字幕轨读字幕翻译（Phase 8.9 已落地、不动），无字幕轨走音频流 ASR。**原 Phase 8.10 / 8.11（前端采集死路）保留作历史，听音翻译重定义为下方新增 Phase 8.12（后端音频流 + Whisper ASR，端到端独立可验证）+ Phase 8.13（前端集成：captionTracks=0 自动切 + 整句双语 overlay + 额度 / 降级回归）落地**；v2.12 模型系统 × 权限系统解耦（线A：模型清单 × minTier、vendor 凭证与真实模型名解耦、provider-router 废 per-model switch + env 去单一模型名槽、能力按档位解锁 D2、权限↔目录解耦、配额维持按档位总量 D3；线B 账号级持久档位 / 多端一致只占位、本版不实现）由新增 Phase 8.14（model-gateway 后端解耦：模型清单 registry + 启动校验 + provider-router/env 解耦 + 权限↔目录解耦，全在后端内部、独立可验证）+ Phase 8.15（契约干净切 `ModelOption.tier→minTier` + 能力门控迁档位到 `EntitlementSnapshot.capabilities` + iOS 同步适配 Swift decoder / 写死兜底目录 / SettingsView / 旧 model id 迁移，TS + Swift 原子完成）落地；插入既有 Phase 8.13 之后、Phase 9 之前
 
 **当前进度（2026-05-25，已迭代到 v2.6）**：
 - Phase 1 已完成：workspace、contracts 和 browser-agent 最小包可构建 / 测试。
@@ -33,7 +33,9 @@
 - Phase 8.9 已完成：YouTube 视频字幕轨读取 + 播放进度同步落地——字幕来源从渲染 DOM 改为视频自带字幕轨数据（A0 真机闸门已通过、commit 160b91e）；Shorts 与横屏 watch 不依赖手动开 CC 均可出按播放进度滚动的双语字幕，无字幕轨视频降级到听音 Beta / 提示。
 - 产品决策曾调整到 v2.9（听音升级为无字幕主路径）→ Phase 8.10（前端采集音频 spike）真机失败（`captureStream` 真机 `atks=0`，iOS WKWebView 取不到 YouTube 跨源播放音频，属 WebKit 规范级防盗录限制、平台天花板）→ Phase 8.11 取消 → v2.10 误判「iOS 听音整体不可行」。**这一整条「前端采集」路线已被 v2.11 推翻**：错在只试了前端采集，未发现后端拉音频流可行。
 - 产品决策已调整到 v2.11（在 v2.9 基础上，听音翻译方案确立、推翻 v2.10 误判）：听音改为**后端方案**——app 检测当前视频无字幕轨（captionTracks=0）→ 传 `videoId` + 当前播放进度给 `model-gateway`（**不在前端采集音频**，绕开 `captureStream` 死路）→ 后端按 videoId 取 InnerTube `/youtubei/v1/player`（ANDROID client）的 `streamingData.adaptiveFormats` 纯音频流 URL（itag=139 ~49kbps，明文、无需解签名、任何视频都有、含无字幕 Shorts）→ 按播放进度 Range 拉取音频流片段 → ffmpeg 转 16kHz wav → **自部署 Whisper**（whisper.cpp / faster-whisper，开源离线、零 API 成本）识别英文带时间轴（仅 ASR、不翻译）→ 把英文交给现有翻译路由（识别与翻译解耦、`video-audio-translate.ts` 已接 `preferredModelId`）→ 返回带时间轴双语句子 → 前端复用现有 video caption overlay 按播放进度显示双语。已用真实无字幕 Shorts `2QtsWjF3e78` 端到端验证（音频流 302KB + Whisper base.en 准确识别完整台词 + 可翻译，全链路通）。混合策略：有字幕轨读字幕翻译（Phase 8.9 已落地、不动），无字幕轨才走音频流 ASR。合规边界放宽（实质变化、知情采用）：后端实时拉音频流片段、用完即弃、不持久化整轨 / 不缓存 / 不再分发 / 不离线整片，存在 YouTube ToS 风险（竞品 Immersive Translate 同担），由产品方知情采用（见 ADR-0004 v2.11 修订段）。听音额度不变（Free 每天 10 分钟），订阅 / 支付系统仍延后（non-goal）。
-- 下一步进入 Phase 8.12：听音后端音频流方案（端到端独立可验证）——在 `services/model-gateway` 新增 InnerTube `streamingData` 音频流获取 + 按进度 Range 拉片段 + ffmpeg 转码 + 自部署 Whisper ASR provider（替换 `UnavailableASRProvider`），`video-audio-translate.ts` route 改造为「输入 videoId + 播放进度、后端自取音频、ASR 与翻译解耦」，`VideoAudioTranslateRequest` 契约改为携带 videoId + 播放进度（替代前端音频载荷期待）；本 Phase 后端能脱离 iOS 独立验证「videoId + 进度 → 双语句子」全链路（含已知风险点：音频流 URL 时效 `expire`~6h + 绑定请求方 IP[后端自取自下规避]、YouTube 云 IP 反爬、Whisper 实时性 / 算力 / 模型档位，均在本 Phase 验证或闸门）。随后 Phase 8.13：前端集成——captionTracks=0 时自动切听音（接 Phase 8.9 字幕轨判定，无前端采集、只传 videoId + 进度）、整句双语 overlay（复用 Phase 8.9 caption overlay + 时间同步）、额度 / 降级 / 隐私回归。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
+- 下一步进入 Phase 8.12：听音后端音频流方案（端到端独立可验证）——在 `services/model-gateway` 新增 InnerTube `streamingData` 音频流获取 + 按进度 Range 拉片段 + ffmpeg 转码 + 自部署 Whisper ASR provider（替换 `UnavailableASRProvider`），`video-audio-translate.ts` route 改造为「输入 videoId + 播放进度、后端自取音频、ASR 与翻译解耦」，`VideoAudioTranslateRequest` 契约改为携带 videoId + 播放进度（替代前端音频载荷期待）；本 Phase 后端能脱离 iOS 独立验证「videoId + 进度 → 双语句子」全链路（含已知风险点：音频流 URL 时效 `expire`~6h + 绑定请求方 IP[后端自取自下规避]、YouTube 云 IP 反爬、Whisper 实时性 / 算力 / 模型档位，均在本 Phase 验证或闸门）。随后 Phase 8.13：前端集成——captionTracks=0 时自动切听音（接 Phase 8.9 字幕轨判定，无前端采集、只传 videoId + 进度）、整句双语 overlay（复用 Phase 8.9 caption overlay + 时间同步）、额度 / 降级 / 隐私回归。
+- 产品决策已调整到 v2.12（在 v2.11 基础上，模型系统 × 权限系统解耦重设计，ADR-0006）：把「模型」和「权限」拆成两个互不掺和的系统，唯一接口 = 一个档位值——线A 模型系统（**本版实现**）一份模型清单 × 每条标 `minTier`，给档位返回 `minTier ≤ 当前档`的所有模型、高档累加可选低档便宜模型（D1）；后端内部清单含 `{ id, vendor, realModelName, minTier, isDefaultForTier, fallbackVendors? }`（唯一真相源、绝不下发），客户端脱敏投影只含 `{ id, displayName, summary, minTier, availability, requiredTier, quota }`；vendor 凭证与真实模型名解耦、一 vendor 挂 N 模型（provider-router 废 `providersForModel` per-model switch、env 去 `*_MODEL` 槽）；解释 / 学习卡等门控能力按**档位**解锁、与选哪个模型无关（D2，门控迁到 `EntitlementSnapshot.capabilities`）；权限 ↔ 模型目录解耦（`entitlement-service` 不再 import 目录构建器）；配额维持按档位总量、未持久化是明确接受的已知缺口（D3）；启动期校验模型清单（id 唯一 / minTier 合法 / vendor 凭证存在否则不进目录 / 每档一个默认 / fallback 已配置）；契约 `ModelOption.tier→minTier` 干净切（TestFlight / 无公开客户端，iOS + 后端同步重建，不双轨 / 不加字段 / 不灰度）。**线B 权限系统（账号级持久档位 / 多端一致 / 后端唯一真相源 / 账号级配额持久化）本版只定义边界 + 升级触发条件、不实现**（账号实体与持久层皆不存在），触发 = 真订阅 / 计费或第二个判权限后端，落地时新增 ADR。translation-proxy 边界不变（ADR-0005/0006，Free 文本翻译物理路径仍走 proxy）。
+- 下一步进入 Phase 8.14：模型系统线A 后端解耦（全在 `services/model-gateway` 内部、不碰契约 / 不碰 iOS、可独立编译 + 跑后端测试验证）——新建 `catalog/model-registry.ts` 真实模型清单 + 启动期校验、`provider-router.ts` 废 `providersForModel` switch（同步 `:87` / `:155` 调用）改读模型自带 vendor + fallbackVendors、`env.ts` 去 `*_MODEL` 槽改 `{ apiKey, baseURL, timeoutMs }`、`entitlement-service.ts` 去 `import createModelCatalog`（`:9/:33/:37/:38`）只产档位 + 档位能力集 + 配额输入、旧 / 未知 `preferredModelId` 在 `translate:34` / `explain:34` / `video-audio-translate:298` 回退该档默认。随后 Phase 8.15：契约干净切 `ModelOption.tier→minTier`（`model-service.ts:40`）+ 听音契约适配 + 后端投影输出 `minTier` + iOS 同步（`ModelServiceTypes.swift:62/67` 镜像 + `:144-175` 写死兜底 `sampleCatalog` + `SettingsView.swift:16/563` 默认与过滤 + 持久化默认 `Store:18/156`、`SampleLearningData:30` + 旧 model id 迁移 + 后端 2 测试 / iOS 6 测试回归），TS + Swift 一次切干净、不留编译不过的中间态。最后 Phase 9：导出、错误 / 空状态补齐、回归加固和旧入口收口。
 
 ---
 
@@ -984,6 +986,123 @@
 - 交互（review 阻断）：不破坏 Phase 8.7 YouTube 整站原生交互（滑动 / 点击 / SPA 路由）；进度上报已节流、当前句已去重，不卡顿；非视频页不触发听音。
 - 质量门槛：TS strict 无 `any`、改动单文件 ≤300 行、`BrowserAgentRuntimeSource.generated.swift` 无漂移（按生成流程重生成、不手改）、`packages/browser-agent` 测试通过；如扩展契约则 TS fixture 与 Swift decoder 字段等价测试通过。
 - 回归：Phase 8.9 字幕轨读取 + 播放进度同步、Phase 6.7 听音契约 / 额度 / 隐私、Phase 8.6 隐形态 / 召唤态、Phase 8.7 整站沉浸与 SPA 注入、Phase 8.5 / 8.8 翻译分层与解耦、Phase 8 其他站点适配与通用文本网页翻译均不被破坏；Phase 8.12 后端听音链路仍可独立验证。
+
+---
+
+## Phase 8.14: 模型系统线A 后端解耦 — 模型清单 registry + 校验 + provider-router/env 解耦 + 权限↔目录解耦
+
+> 依据 **ADR-0006 线A（本版实现）**（主依据：决策 1 模型清单两层数据结构、决策 2 配置真相源 + 启动期校验、决策 3 provider-router 改造 + env 解耦、决策 6 权限↔模型目录解耦、决策 7 配额边界已知缺口、决策 8 权限模块形态）+ Product-Spec v2.12「AI 服务与模型等级 → 模型系统与权限系统」段 + ARCHITECTURE / PROJECT-STRUCTURE v2.12（`catalog/` 改为模型清单 registry、`providers/` provider-router 改造、`entitlements/` 与目录解耦、`env.ts` vendor 凭证与模型名解耦）。**本 Phase 把线A 重构全部收在 `services/model-gateway` 后端内部完成——不碰 `packages/contracts` 契约形状、不碰 iOS，可独立编译 + 跑后端测试验证**；契约层 `ModelOption.tier→minTier` 的破坏性干净切 + iOS 同步适配统一放 Phase 8.15 原子完成。
+>
+> **改造现状脏点（已实测，本 Phase 收敛）**：① `catalog/model-catalog.ts` 的 `BASE_OPTIONS` 三条写死 `free-translate`/`pro-context`/`max-mentor`（model=tier 1:1、`capabilities` 既当字段又当门控、`createModelCatalog` 用 `option.tier`）；② `providers/provider-router.ts:250` `providersForModel` switch（被 `:87` + `:155` 两处调用，写死 model id → provider 链）；③ `env.ts` 每 vendor 硬带 `*_MODEL` 槽（`OPENAI_MODEL`/`DEEPSEEK_MODEL`/`ANTHROPIC_MODEL`）且 `if(!apiKey||!model||!baseURL)`（`:68`）把模型名当必填；④ `entitlements/entitlement-service.ts:9` `import createModelCatalog`、`:33` 调用、`:37/38` 把 `catalog` 塞进 entitlement snapshot（权限与目录耦死）。
+> **本 Phase 不做（留 Phase 8.15）**：不改 `packages/contracts` 的 `ModelOption` 字段（`tier→minTier` 干净切是契约破坏性变更，必须与 iOS 同步原子完成，单独后端改会留下契约/Swift 不一致的中间态）；不改 iOS；不动 `services/translation-proxy`（ADR-0005/0006 Free 文本翻译物理路径不变）。
+
+**交付内容**：
+- 后端内部模型清单 registry（决策 1 + 决策 2）：新建 `catalog/model-registry.ts`，把写死的 3 条 `BASE_OPTIONS` 替换为基于真实模型的清单条目 `{ id, vendor, realModelName, minTier, isDefaultForTier, fallbackVendors? }`（编译期 TypeScript 常量，加模型 = 加一条配置 + 重部署，admin UI 缓做）；`vendor`/`realModelName`/`fallbackVendors` 属 ADR-0002 真实模型名 / 内部路由，**只存后端、绝不下发**；一个 vendor 凭证可被多条模型引用（解一 vendor 只能填一个模型名）。
+- 启动期配置校验（决策 2，启动硬错误）：在 model-gateway 启动路径加 registry 校验——id 唯一 / `minTier ∈ {free,pro,max}` / 每条模型的 vendor 在 env 已配置凭证否则不进目录（无孤儿模型）/ 每个档位恰有一个 `isDefaultForTier` / `fallbackVendors` 引用的 vendor 均已配置；校验失败 = 启动期硬错误，不静默放行半残目录。
+- provider-router 改造 + env vendor/模型名解耦（决策 3）：废 `providersForModel` switch（`provider-router.ts:250`），路由改为读所选模型条目自带的 `vendor` + `realModelName`（+ `fallbackVendors` 链）；同步改 `:87` + `:155` 两处调用点；`env.ts` 每 vendor 配置改为 `{ apiKey, baseURL, timeoutMs }`、**去掉单一 `*_MODEL` 槽**（`OPENAI_MODEL`/`DEEPSEEK_MODEL`/`ANTHROPIC_MODEL` 移除）、`:68` 的「模型名当必填」校验改为只校验凭证；真实模型名来自 registry 条目；同步更新 `.env` / `.env.example`。
+- 权限 ↔ 模型目录解耦（决策 6 + 决策 8）：`entitlement-service.ts` 不再 `import createModelCatalog`、不再在 `createEntitlementSnapshot` 内构建目录（移除 `:9/:33/:37/:38` 的目录耦合）；权限模块只产出「账号 → 档位 + 该档位能力集（解释 / 学习卡门控，即 Q4 决策的 tier→capabilities）+ 配额输入」；entitlement 端点可在 route 层组合「档位 → 目录投影」二者，但 `entitlements/` 模块代码不得 import 目录构建器。能力门控集（D2）作为档位层产物，是 Phase 8.15 契约投影 `availability` / `requiredTier` 与能力门控判定的上游来源。
+- 配额边界维持现状（决策 7，已知缺口不在本 Phase 修）：维持按档位总量（文本 Free 20 / Pro 200 / Max 800；听音 Free 10 分钟/天）；配额每请求从 0 重算、未持久化是**线A 明确接受的已知缺口**，本 Phase **不引入**配额持久化 / 多端共享 / 并发自增 / 听音分钟持久化（属线B）。
+- 旧 model id 后端兜底语义保持（决策 5 读取侧，后端落点）：`routes/translate.ts:34` / `routes/explain.ts:34` 的 `preferredModelId ?? "free-translate"`、`routes/video-audio-translate.ts:298` 按 `preferredModelId` 在 catalog 找——本 Phase 因新 id 由真实模型产生，需把「未知 / 旧 id → 回退该档默认模型（`isDefaultForTier`）」的读取逻辑落到后端这三处兜底点，确保旧 `preferredModelId` 不致命；服务端对 `preferredModelId` 重新校验（所选模型 `minTier ≤ 账号档位`，永不信任客户端自报档位）。
+
+**关键文件**：
+- `[新增] services/model-gateway/src/catalog/model-registry.ts` — 后端内部完整模型清单 `{ id, vendor, realModelName, minTier, isDefaultForTier, fallbackVendors? }`（编译期常量、唯一真相源、绝不下发）+ 清单校验函数
+- `[修改] services/model-gateway/src/catalog/model-catalog.ts` — 移除写死 `BASE_OPTIONS`（free-translate/pro-context/max-mentor 的 model=tier 1:1）；`createModelCatalog` 改为从 registry 按档位累加生成（本 Phase 仍输出现有 `ModelOption` 形状，`tier→minTier` 投影改名留 Phase 8.15）；门控能力不再从这里产出（迁档位）
+- `[修改] services/model-gateway/src/providers/provider-router.ts` — 废 `providersForModel` switch（`:250`），改读模型条目自带 `vendor` + `realModelName` + `fallbackVendors`；同步 `:87` / `:155` 两处调用
+- `[修改] services/model-gateway/src/env.ts` — vendor 配置改 `{ apiKey, baseURL, timeoutMs }`，去 `*_MODEL` 槽（`OPENAI_MODEL`/`DEEPSEEK_MODEL`/`ANTHROPIC_MODEL`），`:68` 校验改为只校验凭证
+- `[修改] services/model-gateway/src/entitlements/entitlement-service.ts` — 移除 `import createModelCatalog`（`:9`）与目录构建（`:33/:37/:38`）；只产出档位 + 档位能力集 + 配额输入
+- `[修改] services/model-gateway/src/index.ts` — 启动期挂 registry 校验（失败硬错误）；entitlement ↔ 目录在 route 组装层组合而非耦进权限模块
+- `[修改] services/model-gateway/src/routes/translate.ts` / `[修改] services/model-gateway/src/routes/explain.ts` / `[修改] services/model-gateway/src/routes/video-audio-translate.ts` — 旧 / 未知 `preferredModelId` → 回退该档默认（`isDefaultForTier`）的后端落点（`translate:34` / `explain:34` / `video-audio-translate:298`）；`preferredModelId` 服务端 minTier 重校验
+- `[修改] services/model-gateway/.env` / `[修改] services/model-gateway/.env.example` — 去 `*_MODEL` 槽，vendor 只留 `apiKey` / `baseURL` / `timeoutMs`
+- `[修改] services/model-gateway/tests/provider-router.test.mjs` / `[修改] services/model-gateway/tests/model-gateway.test.mjs` / `[修改] services/model-gateway/tests/auth-session.test.mjs` — 适配 registry 驱动目录 + provider-router 读模型自带 vendor + entitlement 不再带 catalog 构建（旧 id 引用按新 registry / 回退语义更新；本 Phase 不改契约字段名）
+
+**依赖前置 Phase**：
+- 依赖 Phase 6（`services/model-gateway` 模型目录 / provider-router / entitlement / env 基线）、Phase 6.5（auth/session/entitlement 模块）、Phase 8.12（`video-audio-translate.ts` 听音翻译 route 已接 `preferredModelId`，本 Phase 改其旧 id 回退落点不得破坏 Phase 8.12/8.13 听音链路）
+- 依赖 ADR-0006 线A 决策 1/2/3/6/7/8、Product-Spec v2.12 模型系统段、ARCHITECTURE / PROJECT-STRUCTURE v2.12 `catalog/` registry + `providers/` 改造 + `entitlements/` 解耦
+
+**架构约束映射**：
+- 密钥边界（review 阻断，ADR-0002 / ADR-0006 Constraints）：`vendor` / `realModelName` / `fallbackVendors` 永不进 `packages/contracts` 或客户端，只在 `model-gateway` 内部；本 Phase 新增的 registry 是后端唯一真相源，绝不下发；下发投影（留 Phase 8.15 改名）只含 `{ id, displayName, summary, (min)tier, availability, requiredTier, quota }`。
+- 目录职责（PROJECT-STRUCTURE v2.12）：`catalog/` = 内部模型清单 registry + 启动期校验 + 脱敏投影生成；`providers/` = provider-router 读模型自带 vendor + 真实模型名 + 备用链（废 per-model switch）；`entitlements/` = 账号 → 档位 + 档位能力 + 配额输入，**禁 import 目录构建器**；`quota/` = 维持按档位总量、本版不引入账号级持久化 / 多端共享 / 并发自增。
+- ADR-0006 启动期校验（review 阻断）：id 唯一 / `minTier ∈ {free,pro,max}` / 每 vendor 凭证存在否则不进目录（无孤儿）/ 每档恰一个 `isDefaultForTier` / `fallbackVendors` 引用的 vendor 已配置；失败 = 启动硬错误。
+- ADR-0003 授权事实源（review 阻断）：服务端对 `preferredModelId` 重新校验（`minTier ≤ 账号档位`），永不信任客户端自报 `serviceTier`。
+- 后续范围（non-goals，不得当缺失功能）：本 Phase **不改契约 `ModelOption` 字段形状**（`tier→minTier` 干净切留 Phase 8.15）、**不碰 iOS**、**不引入配额持久化 / 多端一致**（线B，触发 = 真订阅 / 计费或第二个判权限后端）、**不动 translation-proxy**（ADR-0005/0006 Free 文本翻译物理路径不变）、admin UI / 运行时存储缓做（A1）。
+
+**已知风险**：
+- 跨请求验证盲区：本 Phase 后端契约形状不变（仍输出现有 `ModelOption`），下游 iOS / 契约测试不动，能完整跑后端测试 + 启动校验独立验证；但「registry 真实模型 id 替换旧语义 id」对客户端可见 id 的影响要等 Phase 8.15 契约切 + iOS 适配才端到端闭合，本 Phase 须保证旧 id 回退语义在后端三处兜底点已就位，避免 Phase 8.15 之前后端单独部署时旧 `preferredModelId` 致命。
+- registry 校验严苛度：启动期校验过严（如某 vendor 凭证缺失即整目录拒启）需与「该模型不进目录、其余正常」的「无孤儿但不全拒」语义对齐（ADR-0006 决策 2：vendor 凭证缺失 → 该模型标记不可用 / 不进目录，而非整服务拒启），避免误判。
+- provider-router 调用点遗漏：`providersForModel` 被 `:87` / `:155` 两处调用，废 switch 时两处都要切到「读模型自带 vendor + fallbackVendors」，漏改一处会回归旧 1:1 路由。
+- 配额缺口误读：维持按档位总量、未持久化是 ADR-0006 明确接受的已知缺口，本 Phase 不得「顺手」引入持久化（属线B），也不得在 criteria 宣称多端配额一致。
+
+**验收标准**：
+- 核心（后端独立可验证）：`services/model-gateway` 能编译 + 启动；registry 驱动目录，加一条模型 = 加一条配置即生效（不动路由逻辑）；同一 vendor 凭证可被多条模型条目引用；高档用户的目录按档位累加包含低档便宜模型（D1）。
+- 启动校验（review 阻断）：id 重复 / `minTier` 非法 / 某档缺 `isDefaultForTier` / `fallbackVendors` 引用未配置 vendor → 启动期硬错误；某 vendor 凭证缺失 → 该模型不进目录、其余正常（无孤儿、不整服务拒启）。
+- provider-router（review 阻断）：`providersForModel` switch 已废，路由读所选模型自带 `vendor` + `realModelName` + `fallbackVendors`；`:87` / `:155` 两处调用均已切换；`env.ts` 无 `*_MODEL` 槽、vendor 只需凭证。
+- 权限解耦（review 阻断）：`entitlements/` 不再 import / 构建模型目录；`createEntitlementSnapshot` 只产档位 + 档位能力集 + 配额输入；目录在 route 组装层组合。
+- 旧 id 兜底：`translate:34` / `explain:34` / `video-audio-translate:298` 对未知 / 旧 `preferredModelId` 回退该档默认模型；`preferredModelId` 服务端 minTier 重校验生效。
+- 密钥边界（review 阻断）：`vendor` / `realModelName` / `fallbackVendors` 不出现在任何下发投影 / 契约 / 客户端面向产物；registry 仅后端引用。
+- 配额边界：维持按档位总量；未引入配额持久化 / 多端共享 / 并发自增 / 听音分钟持久化；criteria 不声明多端配额一致。
+- 质量门槛：TS strict 无 `any`；改动单文件 ≤300 行；`services/model-gateway` 后端测试通过（`provider-router` / `model-gateway` / `auth-session` 及听音相关测试不被破坏，旧 id 引用已按 registry / 回退语义更新）。
+- 回归：Phase 6 模型目录 / 服务等级、Phase 6.5 auth/session/entitlement、Phase 8.12 后端听音「videoId + 进度 → 双语」链路、translation-proxy（Phase 8.5/8.8 Free 文本翻译路径）均不被破坏；**本 Phase 不改契约字段名，故 iOS 端与契约测试本 Phase 不需改（统一在 Phase 8.15）**。
+
+---
+
+## Phase 8.15: 契约干净切 `tier→minTier` + 能力门控迁档位 + iOS 同步适配（TS + Swift 原子完成）
+
+> 依据 **ADR-0006 线A 决策 4（能力按档位解锁 D2）+ 决策 5（契约干净切）+ 决策 6（能力门控迁档位）**+ ADR-0006 交付上下文（TestFlight / 无公开客户端，iOS 与后端同步重建 → 契约干净切、不加字段 / 不双轨 / 不灰度）+ Product-Spec v2.12 模型系统段 + ARCHITECTURE / PROJECT-STRUCTURE v2.12（`packages/contracts` `ModelOption` 脱敏投影 `minTier` + `availability` / `requiredTier`，门控能力迁档位）。**本 Phase 把 `ModelOption.tier → minTier` 的破坏性契约重命名 + 后端投影适配 + Swift decoder + 写死兜底目录 + SettingsView 在同一 Phase 原子完成，不留中间编译不过的态**（Q2 同 Phase 一次切干净）；接 Phase 8.14 已就位的后端 registry / 解耦能力。
+>
+> **干净切依据（ADR-0006）**：无公开客户端 → 采用干净重命名（`tier → minTier`），不保留旧字段、不做双轨、不加版本兼容、不灰度；iOS + 后端同步重建。能力门控（解释 / 学习卡）从 `ModelOption` 移除，迁到档位层（Q4：`EntitlementSnapshot` 上的 tier→capabilities，Phase 8.14 已让权限模块产出该能力集）；`ModelOption` 只保留描述性能力（translation / audio / asr），门控判定一律读 `EntitlementSnapshot.capabilities`。
+> **跨 TS / Swift 一次切干净的原子边界**：契约 `ModelOption.tier→minTier` 重命名（`packages/contracts/src/model-service.ts:40`）+ 听音契约对 `ModelOption` 的依赖（`video-audio-translation.ts`）+ 后端投影输出 `minTier` + Swift `ModelServiceModelOption` 镜像（`ModelServiceTypes.swift:62/67` `tier`/`requiredTier` → `minTier`）+ Swift 写死兜底 `sampleCatalog`（`:144-175` 三条 `free-translate`/`pro-context`/`max-mentor` + `tier:.free/.pro/.max` + `:175` fallback by tier）+ SettingsView（`:16` 默认 `preferredModelID="free-translate"`、`:563` 按 `$0.tier` 过滤、`:589`/`:601` `requiredTier` 升级引导）+ 持久化默认（`TranslationProviderSettingsStore.swift:18/156`、`SampleLearningData.swift:30` 的 `"free-translate"`）+ 旧 id 客户端迁移——**全部同一 Phase 原子提交**。
+
+**交付内容**：
+- 契约干净重命名 `tier → minTier`（决策 5）：`packages/contracts/src/model-service.ts` 的 `ModelOption.tier`（`:40`）干净改名为 `minTier`（不保留旧 `tier` 字段、不双轨）；同步 `ModelCatalog` / `requiredTier`（`:45/:69`）/ 投影所有引用点；听音契约 `video-audio-translation.ts`（`import ModelOption` + `:119 model: ModelOption`）随之适配；更新 contracts JSON fixtures。
+- 能力门控迁档位（决策 4 + 决策 6，D2）：`ModelOption` 移除访问门控能力，只留描述性能力（translation / audio / asr）；解释 / 学习卡门控判定改读 `EntitlementSnapshot.capabilities`（Phase 8.14 权限模块已产出档位能力集）；高档用户选便宜低档模型时，解释 / 学习卡照常可用（与所选模型无关）。
+- 后端投影输出 `minTier`：`catalog/model-catalog.ts`（Phase 8.14 已改 registry 驱动）的脱敏投影字段由 `tier` 改输出 `minTier`，`availability` / `requiredTier` 按账号档位与模型 `minTier` 计算（`minTier ≤ 账号档位` → 可用，否则 `requiredTier` = 模型 `minTier`）；下发投影仍只含 `{ id, displayName, summary, minTier, availability, requiredTier, quota }`，不含 vendor / realModelName / fallbackVendors。
+- Swift decoder / 镜像同步切（决策 5）：`apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ModelServiceTypes.swift` 的 `ModelServiceModelOption` 镜像 `tier`（`:62`）→ `minTier`、`requiredTier`（`:67`）保留语义；写死兜底 `sampleCatalog`（`:144-175`）三条由真实模型新 id 替换、`tier:.free/.pro/.max` → `minTier:`、`:175` fallback 改按 `minTier`；Swift DTO 字段与 contracts 等价（decoder tests 覆盖）。
+- SettingsView + 持久化适配 + 旧 id 迁移（决策 5 读取侧）：`SettingsView.swift` 默认 `preferredModelID`（`:16`）改为真实默认模型 id（或从 catalog `defaultModelID` 取，`:407` 已有该路径）、按档位过滤展示由 `$0.tier`（`:563`）改 `$0.minTier`、升级引导 `requiredTier`（`:467/:589/:601`）沿用；持久化默认 `TranslationProviderSettingsStore.swift`（`:18/:156`）、`SampleLearningData.swift`（`:30`）的 `"free-translate"` 改为新默认 id；客户端持久化的旧 `preferredModelId`（`free-translate`/`pro-context`/`max-mentor`）按「未知 id → 回退该档默认模型」读取（接 Phase 8.14 后端兜底，客户端侧亦容错），收藏卡 / 本地引用同此回退，无需灰度。
+- 双端契约等价 + 生成源校验：`packages/contracts` 新增 / 改 TS fixture 与 Swift decoder 字段等价测试通过；若涉及 `runtime-source/` 不直接相关（本 Phase 不改注入逻辑），无需重生成 `BrowserAgentRuntimeSource.generated.swift`（如无改动则不动）。
+
+**关键文件**：
+- `[修改] packages/contracts/src/model-service.ts` — `ModelOption.tier`（`:40`）干净改名 `minTier`（不双轨）；同步 `ModelCatalog` / `requiredTier` / 投影引用；`ModelOption` 移除访问门控能力、只留描述性能力
+- `[修改] packages/contracts/src/video-audio-translation.ts` — 听音契约对 `ModelOption` 依赖（`import` + `:119 model: ModelOption`）随 `minTier` 改名适配
+- `[修改] packages/contracts/tests/video-audio.test.mjs` / `[修改] packages/contracts/tests/translation.test.mjs` / `[修改] packages/contracts/tests/video-caption.test.mjs` / `[修改] packages/contracts/tests/fixtures/*.json`（含 `auth-session-dev-login.json` / `video-audio-youtube-watch.json` 等引用旧 id / `tier` 的 fixture）— 切 `minTier` + 真实新默认 id + 能力门控迁档位后更新
+- `[修改] services/model-gateway/src/catalog/model-catalog.ts` — 脱敏投影字段 `tier → minTier` 输出，`availability` / `requiredTier` 按账号档位 vs 模型 `minTier` 计算（registry 数据源已由 Phase 8.14 就位）
+- `[修改] services/model-gateway/src/entitlements/entitlement-service.ts` — 门控能力集（解释 / 学习卡）作为档位层 `capabilities` 由 `EntitlementSnapshot` 承载（Phase 8.14 已解耦，本 Phase 确认契约形状对齐 D2）
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/ModelServiceTypes.swift` — `ModelServiceModelOption.tier`（`:62`）→ `minTier`；写死 `sampleCatalog`（`:144-175`）改真实新 id + `minTier` + `:175` fallback by `minTier`；门控能力迁档位（解释 / 学习卡门控读 entitlement 能力集）
+- `[修改] apps/ios/AgentEnglish/Screens/SettingsView.swift` — 默认 `preferredModelID`（`:16`）改新默认 id（或取 `defaultModelID`）、按档位过滤 `$0.tier`（`:563`）→ `$0.minTier`、升级引导 `requiredTier`（`:467/:589/:601`）沿用
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/TranslationProviderSettingsStore.swift` — 默认 `preferredModelID`（`:18/:156`）改新默认 id；客户端旧 `preferredModelId` → 回退该档默认（容错）
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/SampleLearningData.swift` — 样例默认 `preferredModelID`（`:30 "free-translate"`）改新默认 id
+- `[修改] apps/ios/AgentEnglishTests/ModelServiceClientTests.swift` / `[修改] apps/ios/AgentEnglishTests/TranslationTieringTests.swift` / `[修改] apps/ios/AgentEnglishTests/TranslationProviderClientTests.swift` / `[修改] apps/ios/AgentEnglishTests/TranslationProviderSettingsStoreTests.swift` / `[修改] apps/ios/AgentEnglishTests/VideoAudioTranslationContractTests.swift` / `[修改] apps/ios/AgentEnglishTests/OpenAICompatibleProviderTransportTests.swift` — Swift 端引用旧 id / `tier` 的测试切 `minTier` + 真实新默认 id + decoder 字段等价
+
+**依赖前置 Phase**：
+- 依赖 Phase 8.14（后端模型清单 registry + provider-router/env 解耦 + 权限↔目录解耦 + 档位能力集已就位；本 Phase 仅切契约字段名 + 投影 + iOS，不再动后端路由 / 校验骨架）
+- 依赖 Phase 6（契约 `ModelOption` / `ModelCatalog` / iOS `ModelServiceClient` / SettingsView 基线）、Phase 6.5（`EntitlementSnapshot` 契约 + iOS Account DTO）、Phase 8.5（iOS Providers 分层路由，`preferredModelId` 实质作用于 model-gateway 调用）
+- 依赖 ADR-0006 线A 决策 4/5/6 + 交付上下文（干净切前提）、Product-Spec v2.12、ARCHITECTURE / PROJECT-STRUCTURE v2.12 契约脱敏投影 `minTier`
+
+**架构约束映射**：
+- 干净切边界（review 阻断，ADR-0006 决策 5）：`tier → minTier` 采干净重命名，**不保留旧字段、不双轨、不加版本兼容、不灰度**；TS 契约 + 后端投影 + Swift decoder + 写死兜底目录 + SettingsView + 持久化默认在**同一 Phase 原子完成**，提交后不得有契约 / Swift 不一致或编译不过的中间态。
+- 密钥边界（review 阻断，ADR-0002 / ADR-0006）：下发投影仍只含 `{ id, displayName, summary, minTier, availability, requiredTier, quota }`，**不含 vendor / realModelName / fallbackVendors**；本 Phase 改字段名不得把任何内部路由细节带进契约 / 客户端。
+- 能力门控迁档位（review 阻断，D2 / 决策 4 / 决策 6）：解释 / 学习卡门控判定读 `EntitlementSnapshot.capabilities`（档位层），不读 `ModelOption`；`ModelOption` 只保留描述性能力；高档选便宜低档模型时门控能力照常。
+- 双端等价（PROJECT-STRUCTURE Naming Rules）：跨端 payload 以 `packages/contracts` 为事实源，Swift DTO 字段名不得为本地方便改写；`minTier` 改名后 decoder tests 覆盖 TS fixture ↔ Swift DTO 字段等价。
+- 旧 id 迁移（决策 5 读取侧）：客户端 / 收藏卡 / 日志的旧 `preferredModelId`（`free-translate`/`pro-context`/`max-mentor`）按「未知 id → 回退该档默认模型」处理（前后端双侧容错），无公开用户 → 无需灰度。
+- 后续范围（non-goals）：本 Phase **不引入配额持久化 / 多端一致**（线B）、**不动 translation-proxy 物理路径**（ADR-0005/0006 Free 文本翻译仍走 proxy，目录中 free-minTier 条目只是展示标签）、不做 admin UI（A1 缓做）。
+
+**已知风险**：
+- 原子切遗漏致编译不过：`tier → minTier` 横跨 TS 契约 + 后端投影 + Swift 镜像 + 写死 `sampleCatalog` + SettingsView 过滤 + 持久化默认 + 8 个测试（后端 fixture 2 + iOS 6），任一处漏改即编译 / 测试不过；必须一次切干净（Q2），按上方原子边界逐点核对。
+- 写死兜底目录与真实 id 漂移：Swift `sampleCatalog`（`:144-175`）是离线 / 兜底展示目录，其条目 id 干净切后必须与后端 registry 真实新 id 语义一致（至少 `minTier` 与默认档对齐），否则兜底态与在线态目录不一致。
+- 旧 id 回退覆盖面：客户端持久化的旧 `preferredModelId` 除 SettingsView / Store 外，收藏卡 / 历史 / 日志若另存了 model id，也需走「未知 id → 回退该档默认」；遗漏会导致旧引用读不到模型。
+- 能力门控迁移回归：解释 / 学习卡门控从「读 `ModelOption.capabilities`」改「读 `EntitlementSnapshot.capabilities`」，若有遗留按 `ModelOption` 判门控的调用点未迁，会出现高档选低档模型时解释 / 学习卡被误禁。
+- translation-proxy 误改：Free 文本翻译物理路径走 proxy 不变；目录中 free-minTier 条目是展示标签，本 Phase 不得把 proxy 也按 registry 驱动（超出线A，ADR-0005/0006 冲突）。
+
+**验收标准**：
+- 核心（端到端原子）：契约 `ModelOption.tier` 已干净改名 `minTier`（无残留 `tier` 字段、无双轨）；后端投影输出 `minTier` + `availability` / `requiredTier`；iOS `ModelServiceModelOption` / `sampleCatalog` / SettingsView / 持久化默认全部同步切；TS + Swift 一次编译通过、无中间不一致态。
+- 能力门控（review 阻断，D2）：解释 / 学习卡门控读 `EntitlementSnapshot.capabilities`（档位层）；高档用户选便宜低档模型，解释 / 学习卡照常可用；`ModelOption` 不再承载访问门控能力。
+- 密钥边界（review 阻断）：下发投影只含脱敏字段（`minTier` 等），不含 vendor / realModelName / fallbackVendors。
+- 旧 id 迁移：客户端旧 `preferredModelId`（`free-translate`/`pro-context`/`max-mentor`）→ 回退该档默认模型（前后端双侧），SettingsView 选择 / 收藏卡 / 持久化默认不致命。
+- 双端等价（review 阻断）：`packages/contracts` TS fixture 与 Swift decoder 字段等价测试通过（`minTier` 改名后覆盖映射）。
+- 干净切（review 阻断）：无旧 `tier` 字段残留、无双轨、无灰度分支；改字段未引入版本兼容代码。
+- 质量门槛：TS strict 无 `any`；Swift 编译通过；改动单文件 ≤300 行；后端 `provider-router` / `model-gateway` / `video-audio` 等测试 + 契约 `video-audio` / `translation` / `video-caption` 测试 + iOS `ModelServiceClient` / `TranslationTiering` / `TranslationProviderClient` / `TranslationProviderSettingsStore` / `VideoAudioTranslationContract` / `OpenAICompatibleProviderTransport` 测试全部通过。
+- 回归：Phase 8.14 后端 registry / 解耦 / 校验、Phase 6 模型目录与服务等级、Phase 6.5 entitlement、Phase 8.5/8.8 翻译分层（Free 文本翻译走 proxy 不变）、Phase 8.12/8.13 听音「videoId + 进度 → 双语」链路（听音契约随 `minTier` 改名后仍等价）均不被破坏。
+
+> **线B（账号级持久档位 / 多端一致 / 账号级配额持久化）本版不做**：ADR-0006 范围裁定线A 落地、线B 仅定义边界 + 升级触发条件。账号实体、持久层当前皆不存在；线B 触发条件 = 满足任一「① 出现第二个要判权限的后端；② 接真订阅 / 计费」，落地时新增 ADR（或并入订阅 ADR），不在本计划拆实现 phase。配额持久化 / 多端共享 / 并发原子自增 / 听音分钟持久化均属线B；Phase 8.14 / 8.15 任何 criteria 不得声明多端配额一致。
 
 ---
 

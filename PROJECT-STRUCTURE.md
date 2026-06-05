@@ -80,6 +80,8 @@ agent_english/
       ADR-0002-backend-managed-model-service.md
       ADR-0003-auth-session-entitlement.md
       ADR-0004-youtube-video-immersive-translation.md
+      ADR-0005-tiered-translation-proxy.md
+      ADR-0006-model-catalog-permission-decoupling.md
     research/
   design_export/
     clean_pencil/
@@ -124,11 +126,11 @@ agent_english/
 | `services/model-gateway/` | create in model service refactor phase; auth expands in Phase 6.5; audio expands in Phase 6.7 | 后端模型服务：游客 session、登录 session、dev/staging 测试账号、entitlement、模型目录、Free / Pro / Max 等级、Provider / ASR 密钥读取、Provider / ASR adapter、文本额度、音频分钟额度、用量、fallback、翻译 / 解释 / 听音翻译 API。 | App UI、WKWebView DOM 规则、收藏 / 复习本地学习数据、完整浏览历史存储、完整音频持久化、旧游戏 API、向客户端暴露 Provider / ASR 密钥、接受客户端自报服务等级。 |
 | `services/model-gateway/src/auth/` | create in DEV-PLAN Phase 6.5 | Apple / Google identity token 验证边界、dev/staging password login、生产环境 auth feature gate。 | 在生产启用测试账号、信任客户端 user id、把测试密码写入源码。 |
 | `services/model-gateway/src/sessions/` | create in DEV-PLAN Phase 6.5 | 游客 session 创建 / 恢复、登录 session 签发 / 撤销、session token 校验和过期策略。 | 存完整浏览历史、暴露 token 到日志、把 session 逻辑写进 routes 临时代码。 |
-| `services/model-gateway/src/entitlements/` | create in DEV-PLAN Phase 6.5 | Free / Pro / Max 权益判定、测试账号等级映射、模型目录授权过滤、quota 输入。 | 信任客户端 `serviceTier`、处理 StoreKit 交易；订阅支付需后续 ADR。 |
-| `services/model-gateway/src/catalog/` | create in model service refactor phase | 模型目录、模型显示名、等级、能力、上下线状态和 fallback 策略。 | Provider 密钥明文硬编码、用户学习数据。 |
+| `services/model-gateway/src/entitlements/` | create in DEV-PLAN Phase 6.5；v2.12 与目录解耦（ADR-0006） | 账号 → 档位、档位能力（解释 / 学习卡门控）、quota 输入；只产出档位值交给模型系统出目录。 | 信任客户端 `serviceTier`、import 模型目录构建器（不得把目录耦回权限）、处理 StoreKit 交易；账号级持久档位 / 多端一致（线B）属后续 ADR、本版不做。 |
+| `services/model-gateway/src/catalog/` | model service refactor phase；v2.12 改为模型清单 registry（ADR-0006） | 后端内部模型清单（id / vendor / 真实模型名 / minTier / 每档默认 / 备用 vendor）+ 启动期校验 + 生成给客户端的脱敏 `ModelOption` 投影（按档位累加，含 availability / requiredTier，不含 vendor / 真实模型名）。 | Provider 密钥明文硬编码、把 vendor / 真实模型名 / 内部路由放进下发投影、用户学习数据、读取账号 / 登录。 |
 | `services/model-gateway/src/routes/` | create in model service refactor phase; auth routes expand in Phase 6.5; audio route expands in Phase 6.7 | `/v1/sessions/guest`、`/v1/auth/dev-login`、`/v1/auth/logout`、`/v1/model-catalog`、`/v1/translate`、`/v1/explain`、`/v1/video-audio-translate` 等服务 API。 | 网页 DOM 选择器、SwiftUI 状态、无 session 授权的模型调用、完整音频上传存储接口。 |
-| `services/model-gateway/src/providers/` | create in model service refactor phase | 后端内部 Provider / ASR adapter、请求归一、重试、错误映射。 | 暴露 API Key 给客户端、保存完整浏览历史或完整音频。 |
-| `services/model-gateway/src/quota/` | create in model service refactor phase | Free / Pro / Max 文本额度、音频分钟额度、速率限制、用量统计和滥用保护；Free 听音翻译每天 10 分钟。 | 支付 UI、App Store 订阅流程。 |
+| `services/model-gateway/src/providers/` | model service refactor phase；v2.12 provider-router 改造（ADR-0006） | 后端内部 Provider / ASR adapter、请求归一、重试、错误映射；provider-router 读所选模型自带 vendor + 真实模型名 + 备用 vendor 链（废除 per-model switch）。 | 暴露 API Key / vendor / 真实模型名给客户端、写死模型→provider 的 switch、保存完整浏览历史或完整音频。 |
+| `services/model-gateway/src/quota/` | model service refactor phase；v2.12 配额持久化属线B（ADR-0006） | Free / Pro / Max 文本额度、音频分钟额度、速率限制、用量统计、滥用保护；Free 听音每天 10 分钟。本版维持按档位总量计算（用量未持久化，已知缺口）。 | 支付 UI、App Store 订阅流程；在线A 引入账号级配额持久化 / 多端共享 / 并发自增（属线B / 后续 phase）。 |
 | `services/translation-proxy/` | create in translation tiering phase | 独立轻量翻译转发服务：Free 文本翻译路由到第三方通用翻译（Google / 微软）、按 session 限额、分块、缓存、错误归一、通用翻译 Provider fallback；独立于 model-gateway 部署，gateway 故障不影响 Free 文本翻译；iOS / Web 跨端共用。 | 大模型 / ASR 调用、entitlement 等级判定、完整浏览历史、向客户端暴露翻译 key、页面渲染或本地学习数据持久化。 |
 | `docs/adr/` | current | 架构决策记录。 | 产品需求正文、设计稿源文件、运行时代码。 |
 | `docs/research/` | create when research artifacts exist | 官方政策、平台能力、竞品分析和调研记录。 | 未核实的库版本、临时代码片段。 |
@@ -148,6 +150,8 @@ agent_english/
 | `docs/adr/ADR-0002-backend-managed-model-service.md` | yes | 后台托管模型目录、Provider / ASR 密钥和 Free / Pro / Max 路由决策需要留痕。 |
 | `docs/adr/ADR-0003-auth-session-entitlement.md` | yes | 游客会话、可选登录、测试账号和后端 entitlement 决策需要留痕。 |
 | `docs/adr/ADR-0004-youtube-video-immersive-translation.md` | yes | YouTube 视频页与文本型网页使用不同交互模型，需要记录字幕叠层、听音翻译 Beta、降级和合规边界。 |
+| `docs/adr/ADR-0005-tiered-translation-proxy.md` | yes | 翻译分层与独立 Free 翻译代理（故障隔离）决策需要留痕。 |
+| `docs/adr/ADR-0006-model-catalog-permission-decoupling.md` | yes | 模型清单 × minTier、vendor 解耦、权限↔目录解耦、能力按档位、线B 占位决策需要留痕。 |
 | `packages/contracts/` | no | 由 DEV-PLAN Phase 1 创建，作为 bridge、数据模型和错误码事实源；模型服务 refactor 时扩展模型目录、服务等级和额度 contract。 |
 | `packages/browser-agent/` | no | 由 DEV-PLAN Phase 1 创建最小 bootstrap 包，后续 Phase 4-8 扩展 DOM、overlay 和站点适配。 |
 | `apps/ios/` | no | 由 DEV-PLAN Phase 2-3 创建，避免架构阶段混入实现；创建时按 Phase 分别落 SwiftUI shell、SwiftData / Keychain、WKWebView 和 bridge 边界。 |

@@ -8,7 +8,7 @@
 
 | Type | Source | How It Was Used |
 |---|---|---|
-| Requirements | `Product-Spec.md` v2.11 | 作为产品范围、MVP 功能、非目标、技术方向和隐私边界的事实源；v2.2 明确取消用户自定义 Provider / BYOK，改为后台模型目录、游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端权益判定；v2.3 将 YouTube watch / Shorts 从普通网页阅读模式中拆出为视频沉浸翻译模式；v2.4 将视频翻译升级为字幕翻译优先 + 听音翻译 Beta 兜底，Free 每天 10 分钟听音额度；v2.5 把翻译能力分层——Free 文本翻译走独立轻量翻译代理转发第三方通用翻译（Google / 微软），Pro / Max 文本翻译、解释、听音走大模型 gateway + ASR——并把 Free 文本翻译从大模型后端解耦，澄清“不做 BYOK”仅指禁止用户自配大模型、不限制产品自身集成的通用翻译服务，新增 Web 为后续平台；v2.6 把 YouTube 从普通可翻译网页重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互），本版不做 YouTube 页面文字翻译；v2.7 把 Free 翻译 provider 从第三方通用翻译（Google / 微软）改为产品方服务端配置的便宜大模型（OpenAI 兼容，如 DeepSeek V3），仍走独立 translation-proxy、与付费 gateway 解耦、key 只在服务端、用户无感；v2.8 把 YouTube 视频字幕来源从「读渲染 DOM / 可见字幕」改为「读取视频自带字幕轨数据（player response / timedtext，含自动生成字幕、无需手动开 CC、覆盖 Shorts）」按播放进度显示，合规边界调整为「实时读字幕轨用于翻译、不保存为文件、不再分发」；v2.11 听音翻译方案确立（推翻 v2.10「iOS 不可行」误判）——无字幕轨视频走「model-gateway 后端按 videoId 取 YouTube 音频流（InnerTube `streamingData`）+ 按进度拉片段 + 自部署 Whisper 识别英文 + 大模型分层翻译（按权限 / 用户选模型）」，合规边界放宽为「实时拉音频流片段识别、不持久化整轨 / 不再分发」（ToS 风险知情采用，见 ADR-0004 v2.11）。 |
+| Requirements | `Product-Spec.md` v2.11 | 作为产品范围、MVP 功能、非目标、技术方向和隐私边界的事实源；v2.2 明确取消用户自定义 Provider / BYOK，改为后台模型目录、游客 Free 会话、可选登录、dev/staging Pro / Max 测试账号和后端权益判定；v2.3 将 YouTube watch / Shorts 从普通网页阅读模式中拆出为视频沉浸翻译模式；v2.4 将视频翻译升级为字幕翻译优先 + 听音翻译 Beta 兜底，Free 每天 10 分钟听音额度；v2.5 把翻译能力分层——Free 文本翻译走独立轻量翻译代理转发第三方通用翻译（Google / 微软），Pro / Max 文本翻译、解释、听音走大模型 gateway + ASR——并把 Free 文本翻译从大模型后端解耦，澄清“不做 BYOK”仅指禁止用户自配大模型、不限制产品自身集成的通用翻译服务，新增 Web 为后续平台；v2.6 把 YouTube 从普通可翻译网页重定位为专门适配的视频站点（整站原生 + SPA 友好注入 + 绝不破坏交互），本版不做 YouTube 页面文字翻译；v2.7 把 Free 翻译 provider 从第三方通用翻译（Google / 微软）改为产品方服务端配置的便宜大模型（OpenAI 兼容，如 DeepSeek V3），仍走独立 translation-proxy、与付费 gateway 解耦、key 只在服务端、用户无感；v2.8 把 YouTube 视频字幕来源从「读渲染 DOM / 可见字幕」改为「读取视频自带字幕轨数据（player response / timedtext，含自动生成字幕、无需手动开 CC、覆盖 Shorts）」按播放进度显示，合规边界调整为「实时读字幕轨用于翻译、不保存为文件、不再分发」；v2.11 听音翻译方案确立（推翻 v2.10「iOS 不可行」误判）——无字幕轨视频走「model-gateway 后端按 videoId 取 YouTube 音频流（InnerTube `streamingData`）+ 按进度拉片段 + 自部署 Whisper 识别英文 + 大模型分层翻译（按权限 / 用户选模型）」，合规边界放宽为「实时拉音频流片段识别、不持久化整轨 / 不再分发」（ToS 风险知情采用，见 ADR-0004 v2.11）；v2.12 模型系统与权限系统解耦重设计：model-gateway 模型目录从“模型=档位”1:1 改为“一份模型清单 × 每模型 minTier、高档累加”，vendor 凭证与真实模型名解耦（一个 vendor 挂多个模型），能力按档位解锁，权限与目录解耦；账号级持久档位 / 多端一致（线B）只定义、本版不实现（见 ADR-0006）。 |
 | Design | `Design-Brief.md`、`design_export/clean_pencil/`、`design_export/5mGHS.png` / `bCKWH.png` / `uTNzx.png` 等 v2.2 状态稿、`design_export/IeNMB.png` 等 v2.3 YouTube 状态稿、`design_export/iajll.png` 等 v2.4 听音状态稿 | 作为 iPhone 首页、网页浏览页、翻译层、点词抽屉、收藏、复习、设置的信息架构和视觉约束；v2.2 补充账号状态、登录入口、测试账号和模型服务错误态；v2.3 已补充 YouTube 视频沉浸翻译设计稿，并禁止视频页展示阅读模式分段控件；v2.4 已补充听音翻译 Beta、识别中、额度用完、Shorts 无字幕听音和设置页听音额度状态。 |
 | Existing code | 当前仓库根目录、`package.json`、已删除的旧 `src/` 游戏代码状态 | 判断当前处于重大重定义后新项目状态；旧 Next 游戏实现不再作为产品入口。 |
 | Constraints | 用户明确说明：首版苹果手机端，后续 Android、macOS、Windows；2026-05-20 复核的 Apple App Review Guidelines、Apple SwiftData / WebKit 文档；2026-05-22 补充 Apple 登录服务规则与 Google Sign-In 后端校验约束；2026-05-24 复核 YouTube API Services Developer Policies 与 Required Minimum Functionality | 用于确定平台矩阵、审核风险、持久化边界、WebView 注入边界、账号登录边界和 YouTube 视频沉浸翻译的保守合规边界。 |
@@ -113,7 +113,7 @@
 | `SelectionContext` | 表示用户点词、短语或选句时的原文、前后文、页面来源和 DOM 位置。 |
 | `SavedItem` | 表示收藏的词、短语或句子，包含来源 URL、页面标题、上下文、翻译、解释和创建时间。 |
 | `ReviewCard` | 表示主动回忆卡片，包含问题面、答案面、来源、复习状态和反馈。 |
-| `ModelCatalog` | 表示后台下发的 Free / Pro / Max 等级、可用模型显示名、能力、状态、额度和 fallback 信息；不包含 Provider 密钥、Base URL 或内部路由细节。 |
+| `ModelCatalog` / `ModelOption` | 表示后台下发的可用模型**脱敏投影**：每条含 id、显示名、`minTier`（最低可用档，取代旧 `tier`）、可用状态、所需档位、额度；按档位累加返回（高档可见低档便宜模型）。**不含 vendor / 真实模型名 / fallback 等内部路由细节**（ADR-0006，沿用 ADR-0002 密钥边界）。解释 / 学习卡等能力门控按**档位**、不按所选模型（ADR-0006 D2）。 |
 | `BridgeEvent` | 表示 native 与 injected script 之间的消息 envelope，用于统一错误处理和版本兼容。 |
 | `SiteCapability` | 表示站点适配能力，例如普通文本、评论区、搜索结果、可访问字幕、动态内容刷新。 |
 | `PrivacyDisclosure` | 表示向用户展示的模型服务数据发送范围、后端转发说明、缓存策略、清理入口和 website data 清理提示。 |
@@ -166,6 +166,9 @@
 | Dev auth leakage risk | Pro / Max 测试账号若进入生产，会直接绕过真实权益系统 | 测试账号和密码登录接口必须由 `ENABLE_DEV_AUTH` 和部署环境双重限制；生产构建隐藏 UI 并拒绝接口。 |
 | Login compliance risk | iOS 公开版本若只提供 Google 登录，可能触发审核和隐私预期风险 | 登录设计优先 Sign in with Apple；Google 只能并列提供；账号删除入口随正式账号创建一并实现。 |
 | Model service privacy risk | 页面文本可能包含用户敏感内容，发送到自有后端并转发给第三方 Provider 有隐私压力 | 发送前必须有设置页说明；用户可关闭缓存和清理数据；后端不能保存完整浏览历史。 |
+| Model catalog contract breaking change | `ModelOption.tier → minTier` + 能力语义迁档位是破坏性契约变更，旧客户端会解析失败 | 处于 TestFlight / 无公开客户端，iOS 与后端同步重建、干净切；旧 model id 引用按“未知 → 回退该档默认模型”处理（ADR-0006）。 |
+| Model registry misconfiguration | 一条脏模型配置（重复 id / 非法 minTier / vendor 无凭证 / 缺默认）可能让目录对所有人崩 | 模型清单启动期校验：id 唯一、minTier 合法、vendor 凭证存在、每档恰一个默认、无孤儿模型；校验失败为启动硬错误（ADR-0006）。 |
+| Quota not persisted (known gap) | 配额每请求从 0 重算、未持久化；多端 / 重登配额不准、可被绕过 | 线A 明确接受为已知缺口、本版不修；账号级配额持久化 + 并发原子自增 + 听音分钟持久化属线B / 后续 phase（ADR-0006）。 |
 | Future environment differences | 多平台 UI、存储和权限差异会增加维护成本 | 未来平台只承诺复用 contracts 和 browser-agent；平台壳与本地存储按平台重写。 |
 
 ## Development Planning Input
@@ -184,6 +187,8 @@
 - 收藏、复习、历史、隐私清理是 App Store 最低原生价值边界；开发计划不能把它们推迟到不可验证的后续阶段。
 - Android、macOS、Windows 目录不在首版实现中创建完整工程；只在文档和 contracts 中保留接入边界。
 - 旧游戏资源、旧 `src/` API、旧数据库迁移、旧 Next 页面属于清理对象；不得作为新产品功能复用。
+- **（v2.12 / ADR-0006 线A 模型系统）** `DEV-PLAN.md` 必须新增线A phase：① model-gateway 后端模型清单 registry（`{id, vendor, 真实模型名, minTier, 每档默认, 备用 vendor}`）+ 启动期校验；② provider-router 废 `providersForModel` switch 改读模型自带 vendor / 真实模型名 / 备用链，`env.ts` vendor 凭证与模型名解耦；③ `packages/contracts` `ModelOption.tier → minTier` 干净切 + 能力门控迁到档位；④ `entitlements/` 与模型目录解耦（权限只给档位）；⑤ iOS `SettingsView` 适配脱敏投影 + 旧 model id 迁移。真实模型名 / vendor / fallback 不得进 contracts 或客户端。
+- **（v2.12 / ADR-0006 线B 权限系统）** 账号级持久档位 / 多端一致 / 账号级配额持久化是**独立后续 phase、本版不实现**，触发条件 = 接真订阅 / 计费或出现第二个判权限后端；`DEV-PLAN.md` 只占位、不展开。配额未持久化为线A 已知缺口，线A criteria 不得声明多端配额一致。
 
 ## References
 
@@ -198,3 +203,4 @@
 - ADR-0003 Auth Session And Entitlement Foundation: docs/adr/ADR-0003-auth-session-entitlement.md
 - ADR-0004 YouTube Video Immersive Translation Mode: docs/adr/ADR-0004-youtube-video-immersive-translation.md
 - ADR-0005 Tiered Translation And Free Translation Proxy: docs/adr/ADR-0005-tiered-translation-proxy.md
+- ADR-0006 Model Catalog And Permission Decoupling (Model List × minTier): docs/adr/ADR-0006-model-catalog-permission-decoupling.md
