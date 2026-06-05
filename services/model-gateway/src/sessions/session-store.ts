@@ -6,6 +6,7 @@ import type {
   ServiceTier,
 } from "@agent-english/contracts";
 
+import { createModelCatalog } from "../catalog/model-catalog";
 import { createEntitlementSnapshot } from "../entitlements/entitlement-service";
 
 export interface SessionRecord {
@@ -54,11 +55,14 @@ export class SessionStore {
   }
 
   private toAuthSession(record: SessionRecord): AuthSession {
+    // 组装层职责：在此构建脱敏目录投影，再交给权限模块组合进 snapshot
+    // （entitlements/ 自身不构建目录——ADR-0006 解耦边界）。
+    const catalog = createModelCatalog(record.account.serviceTier);
     return {
       sessionToken: record.sessionToken,
       expiresAt: record.expiresAt,
       account: record.account,
-      entitlement: createEntitlementSnapshot(record.account),
+      entitlement: createEntitlementSnapshot(record.account, catalog),
     };
   }
 }

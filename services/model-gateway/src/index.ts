@@ -9,7 +9,11 @@ import type {
 } from "@agent-english/contracts";
 
 import { handleDevLogin } from "./auth/dev-auth";
-import { loadGatewayEnv, type GatewayEnv } from "./env";
+import {
+  MODEL_REGISTRY,
+  validateModelRegistry,
+} from "./catalog/model-registry";
+import { loadGatewayEnv, type GatewayEnv, type ProviderID } from "./env";
 import {
   applySessionEntitlement,
   extractSessionToken,
@@ -137,7 +141,23 @@ export function createModelGatewayServer(
 
 export function startModelGatewayServer(): void {
   const env = loadGatewayEnv();
+  // 启动期 registry 硬校验（ADR-0006 决策 2）：非法配置（id 重复 / minTier 非法 /
+  // 每档非恰一默认 / fallbackVendors 引用未配 vendor）→ throw 拒启；
+  // 缺凭证 → 该模型不进目录、其余正常（registry 校验内部已区分两类语义）。
+  validateModelRegistry(MODEL_REGISTRY, {
+    configuredVendors: configuredVendorSet(env),
+  });
   createModelGatewayServer({ env }).listen(env.port);
+}
+
+function configuredVendorSet(env: GatewayEnv): Set<ProviderID> {
+  const vendors = new Set<ProviderID>();
+  for (const providerID of Object.keys(env.providers) as ProviderID[]) {
+    if (env.providers[providerID]) {
+      vendors.add(providerID);
+    }
+  }
+  return vendors;
 }
 
 if (require.main === module) {

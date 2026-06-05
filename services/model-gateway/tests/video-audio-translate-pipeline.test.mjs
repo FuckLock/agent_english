@@ -35,7 +35,7 @@ const baseRequest = {
   sourceLanguage: "English",
   targetLanguage: "简体中文",
   serviceTier: "free",
-  preferredModelId: "free-translate",
+  preferredModelId: "deepseek-chat",
   audioSegmentId: "vaud-1",
   audioDurationSeconds: 49,
   playbackPositionSeconds: 12,
@@ -43,27 +43,25 @@ const baseRequest = {
   privacyDisclosureAccepted: true,
 };
 
+// env vendor 配置只含凭证（ADR-0006：已去 *_MODEL 槽）。
 const mockEnv = {
   port: 4100,
   providers: {
     deepseek: {
       providerID: "deepseek",
       apiKey: "mock-token",
-      model: "mock-translate",
       baseURL: "https://model.example/v1",
       timeoutMs: 15000,
     },
     openai: {
       providerID: "openai",
       apiKey: "mock-token",
-      model: "mock-pro",
       baseURL: "https://model.example/v1",
       timeoutMs: 15000,
     },
     anthropic: {
       providerID: "anthropic",
       apiKey: "mock-token",
-      model: "mock-max",
       baseURL: "https://model.example/v1",
       timeoutMs: 15000,
     },
@@ -204,7 +202,7 @@ test("(J1) without translation transport there is no chinese (asr is english-onl
   assert.equal(response.body.segment.translatedText, undefined);
 });
 
-// J2：相同英文下传不同 preferredModelId → 响应 model 字段随之变化（透传翻译路由）。
+// J2：相同英文下传不同 preferredModelId（合法已知 id）→ 响应 model 字段随之透传变化。
 test("(J2) preferredModelId is passed through to translation routing", async () => {
   const stream = makeStreamStub();
   const segment = makeSegmentStub();
@@ -213,14 +211,16 @@ test("(J2) preferredModelId is passed through to translation routing", async () 
     { segmentId: "vaud-1", translatedText: "译文" },
   ]);
 
+  // free 账号 + 合法 free 档模型 id（deepseek-chat）→ 透传不变。
   const free = await handleVideoAudioTranslateRoute(
-    { ...baseRequest, preferredModelId: "free-translate" },
+    { ...baseRequest, preferredModelId: "deepseek-chat" },
     0,
     deps({ stream: makeStreamStub(), segment: makeSegmentStub(), whisper: makeWhisperStub({}), transport: new MockTransport([{ segmentId: "vaud-1", translatedText: "译文" }]) }),
   );
 
+  // pro 账号 + 合法 pro 档模型 id（openai-gpt-4o）→ 透传不变。
   const pro = await handleVideoAudioTranslateRoute(
-    { ...baseRequest, preferredModelId: "pro-context" },
+    { ...baseRequest, preferredModelId: "openai-gpt-4o" },
     0,
     deps({
       stream,
@@ -233,8 +233,8 @@ test("(J2) preferredModelId is passed through to translation routing", async () 
 
   assert.equal(free.statusCode, 200);
   assert.equal(pro.statusCode, 200);
-  assert.equal(free.body.model.id, "free-translate");
-  assert.equal(pro.body.model.id, "pro-context");
+  assert.equal(free.body.model.id, "deepseek-chat");
+  assert.equal(pro.body.model.id, "openai-gpt-4o");
   assert.notEqual(free.body.model.id, pro.body.model.id);
 });
 

@@ -25,20 +25,20 @@ const baseRequest = {
   sourceLanguage: "English",
   targetLanguage: "简体中文",
   serviceTier: "free",
-  preferredModelId: "free-translate",
+  preferredModelId: "deepseek-chat",
   audioSegmentId: "vaud-1",
   audioDurationSeconds: 42,
   captionQuality: "unavailable",
   privacyDisclosureAccepted: true,
 };
 
+// env vendor 配置只含凭证（ADR-0006：已去 *_MODEL 槽）。
 const mockEnv = {
   port: 4100,
   providers: {
     deepseek: {
       providerID: "deepseek",
       apiKey: "mock-token",
-      model: "mock-translate",
       baseURL: "https://model.example/v1",
       timeoutMs: 15000,
     },

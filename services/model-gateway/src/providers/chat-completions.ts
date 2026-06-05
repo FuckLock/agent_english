@@ -12,6 +12,8 @@ export interface ChatCompletionMessage {
 
 export interface ChatCompletionsTransportRequest {
   provider: ProviderRuntimeConfig;
+  /** 真实模型名（来自后端 registry 条目）；env vendor 配置已去 *_MODEL 槽。 */
+  model: string;
   messages: ChatCompletionMessage[];
   temperature: number;
 }
@@ -41,8 +43,8 @@ export class FetchChatCompletionsTransport
   async complete(
     request: ChatCompletionsTransportRequest,
   ): Promise<string> {
-    const { provider, messages, temperature } = request;
-    if (!provider.apiKey || !provider.baseURL || !provider.model) {
+    const { provider, model, messages, temperature } = request;
+    if (!provider.apiKey || !provider.baseURL || !model) {
       throw new ChatCompletionsTransportError(
         "not-configured",
         "Provider config is incomplete.",
@@ -62,7 +64,7 @@ export class FetchChatCompletionsTransport
             Authorization: `Bearer ${provider.apiKey}`,
           },
           body: JSON.stringify({
-            model: provider.model,
+            model,
             temperature,
             messages,
           }),

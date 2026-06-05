@@ -2,10 +2,14 @@ import type { ServiceTier } from "@agent-english/contracts";
 
 export type ProviderID = "openai" | "deepseek" | "anthropic";
 
+/**
+ * Vendor 凭证配置（ADR-0006 决策 1）——只含凭证，**不含模型名**。
+ * 真实模型名（realModelName）随 registry 条目走，由 provider-router 在请求时透传，
+ * 不再由 env 的 *_MODEL 槽决定（解「一 vendor 只能填一个模型名」约束）。
+ */
 export interface ProviderRuntimeConfig {
   providerID: ProviderID;
   apiKey: string;
-  model: string;
   baseURL: string;
   timeoutMs: number;
 }
@@ -30,21 +34,18 @@ export function loadGatewayEnv(
       openai: createProviderConfig(
         "openai",
         env.OPENAI_API_KEY,
-        env.OPENAI_MODEL,
         env.OPENAI_BASE_URL,
         env.OPENAI_TIMEOUT_MS,
       ),
       deepseek: createProviderConfig(
         "deepseek",
         env.DEEPSEEK_API_KEY,
-        env.DEEPSEEK_MODEL,
         env.DEEPSEEK_BASE_URL,
         env.DEEPSEEK_TIMEOUT_MS,
       ),
       anthropic: createProviderConfig(
         "anthropic",
         env.ANTHROPIC_SECRET_KEY,
-        env.ANTHROPIC_MODEL,
         env.ANTHROPIC_BASE_URL,
         env.ANTHROPIC_TIMEOUT_MS,
       ),
@@ -61,18 +62,17 @@ export function loadGatewayEnv(
 function createProviderConfig(
   providerID: ProviderID,
   apiKey: string | undefined,
-  model: string | undefined,
   baseURL: string | undefined,
   timeoutValue: string | undefined,
 ): ProviderRuntimeConfig | undefined {
-  if (!apiKey || !model || !baseURL) {
+  // 只校验凭证（apiKey + baseURL）；模型名不再是 vendor 配置的一部分。
+  if (!apiKey || !baseURL) {
     return undefined;
   }
 
   return {
     providerID,
     apiKey,
-    model,
     baseURL,
     timeoutMs: Number(timeoutValue ?? "15000"),
   };

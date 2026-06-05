@@ -18,8 +18,8 @@ import {
   parseTranslateResponse,
   type ChatCompletionsTransport,
 } from "./chat-completions";
-import { createModelCatalog } from "../catalog/model-catalog";
-import { consumeQuota, isTierAvailable } from "../quota/service-tier";
+import { resolveModelRouting } from "./model-routing";
+import { consumeQuota } from "../quota/service-tier";
 
 export interface ProviderRouterDependencies {
   env?: GatewayEnv;
@@ -59,19 +59,21 @@ export async function routeTranslation(
     return failure("content-too-long", "Content is too long to translate.");
   }
 
-  const catalog = createModelCatalog(request.serviceTier);
-  const selectedModel =
-    catalog.options.find((option) => option.id === request.preferredModelId)
-    ?? catalog.options.find((option) => option.id === catalog.defaultModelId)
-    ?? catalog.options[0];
+  const router = createProviderRouter(dependencies);
+  const routing = resolveModelRouting(
+    request.serviceTier,
+    request.preferredModelId,
+    router.env,
+  );
 
-  if (!isTierAvailable(request.serviceTier, selectedModel.tier)) {
+  if (!routing.ok) {
     return failure(
       "tier-unavailable",
       "Current tier cannot use this model.",
-      selectedModel.tier,
+      routing.requiredTier,
     );
   }
+  const selectedModel = routing.option;
 
   const quota = consumeQuota(
     request.serviceTier,
@@ -82,13 +84,13 @@ export async function routeTranslation(
     return failure("quota-exceeded", "Quota has been exhausted for this tier.");
   }
 
-  const router = createProviderRouter(dependencies);
   const routed = await routeProvider(
-    providersForModel(selectedModel.id),
+    routing.providers,
     router,
     async (providerID) => {
       const content = await router.transport.complete({
         provider: router.provider(providerID),
+        model: routing.realModelName,
         messages: buildTranslateMessages(request),
         temperature: 0.2,
       });
@@ -131,32 +133,34 @@ export async function routeExplanation(
     return failure("content-too-long", "Content is too long to explain.");
   }
 
-  const catalog = createModelCatalog(request.serviceTier);
-  const selectedModel =
-    catalog.options.find((option) => option.id === request.preferredModelId)
-    ?? catalog.options.find((option) => option.id === catalog.defaultModelId)
-    ?? catalog.options[0];
+  const router = createProviderRouter(dependencies);
+  const routing = resolveModelRouting(
+    request.serviceTier,
+    request.preferredModelId,
+    router.env,
+  );
 
-  if (!isTierAvailable(request.serviceTier, selectedModel.tier)) {
+  if (!routing.ok) {
     return failure(
       "tier-unavailable",
       "Current tier cannot use this model.",
-      selectedModel.tier,
+      routing.requiredTier,
     );
   }
+  const selectedModel = routing.option;
 
   const quota = consumeQuota(request.serviceTier, usedQuota, 1);
   if (quota.used > quota.limit) {
     return failure("quota-exceeded", "Quota has been exhausted for this tier.");
   }
 
-  const router = createProviderRouter(dependencies);
   const routed = await routeProvider(
-    providersForModel(selectedModel.id),
+    routing.providers,
     router,
     async (providerID) => {
       const content = await router.transport.complete({
         provider: router.provider(providerID),
+        model: routing.realModelName,
         messages: buildExplainMessages(request),
         temperature: 0.2,
       });
@@ -245,18 +249,6 @@ async function routeProvider<TSuccess>(
       : "service-unavailable",
     "Model service is unavailable right now.",
   );
-}
-
-function providersForModel(modelID: string): ProviderID[] {
-  switch (modelID) {
-    case "max-mentor":
-      return ["anthropic", "openai"];
-    case "pro-context":
-      return ["openai", "deepseek"];
-    case "free-translate":
-    default:
-      return ["deepseek", "openai"];
-  }
 }
 
 function normalizeProviderFailure(error: unknown): ModelServiceErrorCode {

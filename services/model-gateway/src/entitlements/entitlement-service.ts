@@ -3,10 +3,11 @@ import type { IncomingHttpHeaders } from "node:http";
 import type {
   AccountStatus,
   EntitlementSnapshot,
+  ModelCatalog,
   ModelServiceError,
+  ServiceTier,
 } from "@agent-english/contracts";
 
-import { createModelCatalog } from "../catalog/model-catalog";
 import type { GatewayEnv } from "../env";
 import {
   defaultSessionStore,
@@ -27,10 +28,42 @@ export interface ServiceEntitlementFailure {
 
 export const SUPPORTED_ENTITLEMENT_TIERS = ["free", "pro", "max"] as const;
 
+/**
+ * 档位能力集（ADR-0006 决策 1：能力门控随**档位**走，与选哪个模型无关）。
+ *
+ * 这是权限模块的产出——解释 / 学习卡门控来源是 serviceTier，**不是 ModelOption**。
+ * 与目录投影（ModelOption.capabilities，描述性展示）彻底分离：目录由组装层构建，
+ * entitlements/ 不 import 目录构建器（解耦边界，ADR-0006）。
+ */
+export interface TierCapabilities {
+  /** 网页 / 听音翻译——全档位可用。 */
+  translation: boolean;
+  /** 划词 / 整段语境解释门控——Pro 起。 */
+  explanation: boolean;
+  /** 学习卡 / 复盘门控——Max 起。 */
+  review: boolean;
+}
+
+/** 由账号档位派生能力门控集（来源是档位而非模型）。 */
+export function tierCapabilities(serviceTier: ServiceTier): TierCapabilities {
+  return {
+    translation: true,
+    explanation: serviceTier === "pro" || serviceTier === "max",
+    review: serviceTier === "max",
+  };
+}
+
+/**
+ * 权限模块产出：账号 → 档位 + 档位能力集 + 配额输入。
+ *
+ * **目录在组装层组合**（catalog 参数由调用方传入；entitlements/ 不构建目录）——
+ * EntitlementSnapshot.catalog 是契约必填字段，但其构建职责属于组装层（sessions / routes），
+ * 本模块只负责档位语义。
+ */
 export function createEntitlementSnapshot(
   account: AccountStatus,
+  catalog: ModelCatalog,
 ): EntitlementSnapshot {
-  const catalog = createModelCatalog(account.serviceTier);
   return {
     account,
     serviceTier: account.serviceTier,

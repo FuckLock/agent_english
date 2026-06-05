@@ -6,20 +6,19 @@ import { createModelCatalog } from "../dist/catalog/model-catalog.js";
 import { handleExplainRoute } from "../dist/routes/explain.js";
 import { handleTranslateRoute } from "../dist/routes/translate.js";
 
+// env vendor 配置只含凭证（ADR-0006：已去 *_MODEL 槽）。
 const mockEnv = {
   port: 4100,
   providers: {
     deepseek: {
       providerID: "deepseek",
       apiKey: "deepseek-secret",
-      model: "deepseek-chat",
       baseURL: "https://api.deepseek.example/v1",
       timeoutMs: 15000,
     },
     openai: {
       providerID: "openai",
       apiKey: "openai-secret",
-      model: "gpt-4.1-mini",
       baseURL: "https://api.openai.example/v1",
       timeoutMs: 15000,
     },
@@ -39,6 +38,40 @@ test("model catalog exposes Free Pro Max tiers without internal routing fields",
   assert.equal(catalog.options[0].displayName.includes("Free"), true);
   assert.equal("fallbackOrder" in catalog.options[0], false);
   assert.equal("cost" in catalog.options[0], false);
+  // 脱敏投影绝不携带后端内部路由字段（ADR-0002 / ADR-0006 密钥边界）。
+  for (const option of catalog.options) {
+    assert.equal("vendor" in option, false);
+    assert.equal("realModelName" in option, false);
+    assert.equal("fallbackVendors" in option, false);
+  }
+});
+
+test("registry-driven catalog accumulates lower tiers into higher tiers (D1)", () => {
+  // 加一条模型 = 加一条 registry 配置即生效；目录条数随 registry 条目而定。
+  const free = createModelCatalog("free");
+  const pro = createModelCatalog("pro");
+  const max = createModelCatalog("max");
+
+  // 按档位累加：高档 options 数量 >= 低档。
+  assert.equal(pro.options.length >= free.options.length, true);
+  assert.equal(max.options.length >= pro.options.length, true);
+
+  // D1：高档目录的 id 集合 ⊇ 低档目录的 id 集合。
+  const freeIds = new Set(free.options.map((option) => option.id));
+  const maxIds = new Set(max.options.map((option) => option.id));
+  for (const id of freeIds) {
+    assert.equal(maxIds.has(id), true);
+  }
+});
+
+test("a single vendor credential backs multiple registry models (multi-to-one)", () => {
+  // openai 凭证同时支撑 free 档 openai-gpt-4o-mini 与 pro 档 openai-gpt-4o
+  // （解「一 vendor 只能填一个模型名」约束）——两条 id 不同的模型都出现在 max 档累加目录中。
+  const maxIds = new Set(
+    createModelCatalog("max").options.map((option) => option.id),
+  );
+  assert.equal(maxIds.has("openai-gpt-4o-mini"), true);
+  assert.equal(maxIds.has("openai-gpt-4o"), true);
 });
 
 test("translate route maps segmentId results and quota state", async () => {

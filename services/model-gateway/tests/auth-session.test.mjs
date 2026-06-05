@@ -79,6 +79,27 @@ test("session entitlement ignores client serviceTier and returns tier-unavailabl
 
   assert.equal("statusCode" in entitlement, false);
 
+  // env 配齐 vendor 凭证，使高档模型进入目录、参与服务端 minTier 重校验。
+  const routingEnv = {
+    ...mockEnv,
+    providers: {
+      deepseek: {
+        providerID: "deepseek",
+        apiKey: "deepseek-secret",
+        baseURL: "https://api.deepseek.example/v1",
+        timeoutMs: 15000,
+      },
+      openai: {
+        providerID: "openai",
+        apiKey: "openai-secret",
+        baseURL: "https://api.openai.example/v1",
+        timeoutMs: 15000,
+      },
+    },
+  };
+
+  // 客户端自报 serviceTier=max 被忽略（实际是 guest=free）；请求 pro 档真实模型 openai-gpt-4o
+  // → 服务端 minTier 重校验拒绝（ADR-0003，不信任客户端自报档位）。
   const response = await handleTranslateRoute(
     applySessionEntitlement(
       {
@@ -86,14 +107,14 @@ test("session entitlement ignores client serviceTier and returns tier-unavailabl
         sourceLanguage: "English",
         targetLanguage: "简体中文",
         serviceTier: "max",
-        preferredModelId: "pro-context",
+        preferredModelId: "openai-gpt-4o",
         segments: [{ segmentId: "seg-1", sourceText: "Hello world." }],
       },
       entitlement,
     ),
     0,
     {
-      env: mockEnv,
+      env: routingEnv,
       entitlement,
       transport: {
         async complete() {
@@ -105,6 +126,7 @@ test("session entitlement ignores client serviceTier and returns tier-unavailabl
 
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.error.code, "tier-unavailable");
+  assert.equal(response.body.error.requiredTier, "pro");
 });
 
 test("model routes reject missing session token before using guest entitlement", () => {

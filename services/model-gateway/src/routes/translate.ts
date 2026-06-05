@@ -1,9 +1,12 @@
 import type {
+  ModelOption,
   ModelServiceError,
+  ServiceTier,
   TranslateRequest,
   TranslateResponse,
 } from "@agent-english/contracts";
 
+import { createModelCatalog } from "../catalog/model-catalog";
 import { createQuotaState } from "../quota/service-tier";
 import type { ServiceEntitlement } from "../entitlements/entitlement-service";
 import {
@@ -30,15 +33,11 @@ export async function handleTranslateRoute(
       body: {
         pageId: request.pageId,
         serviceTier: request.serviceTier,
-        model: {
-          id: request.preferredModelId ?? "free-translate",
-          tier: request.serviceTier,
-          displayName: "模型服务暂不可用",
-          summary: "当前请求未命中可用模型。",
-          capabilities: ["translation"],
-          availability: "available",
-          quota: createQuotaState(request.serviceTier, usedQuota),
-        },
+        model: fallbackModelOption(
+          request.serviceTier,
+          request.preferredModelId,
+          usedQuota,
+        ),
         segmentResults: request.segments.map((segment) => ({
           segmentId: segment.segmentId,
           errorCode: routed.errorCode,
@@ -56,6 +55,26 @@ export async function handleTranslateRoute(
   return {
     statusCode: 200,
     body: routed.response,
+  };
+}
+
+/**
+ * 错误兜底时的占位 model：未命中 preferredModelId 则回退该档默认模型
+ * （catalog.defaultModelId → isDefaultForTier），不再写死旧字面量 id。
+ */
+function fallbackModelOption(
+  serviceTier: ServiceTier,
+  preferredModelId: string | undefined,
+  usedQuota: number,
+): ModelOption {
+  const catalog = createModelCatalog(serviceTier);
+  const option =
+    catalog.options.find((candidate) => candidate.id === preferredModelId)
+    ?? catalog.options.find((candidate) => candidate.id === catalog.defaultModelId)
+    ?? catalog.options[0];
+  return {
+    ...option,
+    quota: createQuotaState(serviceTier, usedQuota),
   };
 }
 
