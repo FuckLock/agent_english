@@ -6,8 +6,8 @@ import XCTest
 // 覆盖 E2 分流 / F1 gateway 缺位仍可翻 / F2 故障隔离 / E4 自报 tier 不越权。
 final class TranslationTieringTests: XCTestCase {
 
-    // E2: Free 文本翻译只命中 translation-proxy，model-gateway translate transport 未被调用。
-    func testFreeRoutesToTranslationProxyOnly() async {
+    // E2（v2.13 / ADR-0007 统一）：Free 文本翻译统一走 model-gateway，translation-proxy 不再被调用。
+    func testFreeRoutesToModelGatewayOnly() async {
         let proxyTransport = SpyTranslationProxyTransport()
         let gatewayTransport = SpyModelServiceTransport()
         let client = TranslationProviderClient(
@@ -22,9 +22,9 @@ final class TranslationTieringTests: XCTestCase {
 
         let proxyCalls = await proxyTransport.callCount
         let gatewayCalls = await gatewayTransport.translateCallCount
-        XCTAssertEqual(proxyCalls, 1)
-        XCTAssertEqual(gatewayCalls, 0)
-        XCTAssertEqual(result.segmentResults.first?.translatedText, "[proxy] Hello world.")
+        XCTAssertEqual(gatewayCalls, 1)
+        XCTAssertEqual(proxyCalls, 0)
+        XCTAssertEqual(result.segmentResults.first?.translatedText, "[gateway] Hello world.")
         XCTAssertNil(result.failureReason)
     }
 
@@ -69,80 +69,9 @@ final class TranslationTieringTests: XCTestCase {
         XCTAssertEqual(proxyCalls, 0)
     }
 
-    // F1: MODEL_SERVICE_ROOT 解析为 nil（大模型端点缺位）+ 可用 proxy stub，
-    //     Free 翻译仍返回非空译文且 failureReason == nil；且不调用任何 model-gateway transport。
-    func testFreeTranslatesWhenModelServiceRootMissing() async {
-        XCTAssertNil(
-            ModelServiceEndpointConfiguration.resolvedURL(
-                environment: [:],
-                bundle: emptyBundle()
-            ),
-            "MODEL_SERVICE_ROOT should resolve to nil in this scenario"
-        )
-
-        let proxyTransport = SpyTranslationProxyTransport()
-        let gatewayTransport = SpyModelServiceTransport()
-        let client = TranslationProviderClient(
-            modelServiceClient: ModelServiceClient(transport: gatewayTransport),
-            translationProxyClient: TranslationProxyClient(transport: proxyTransport)
-        )
-
-        let result = await client.translate(
-            translationRequestFixture(),
-            preferences: preferencesFixture(tier: .free)
-        )
-
-        let gatewayCalls = await gatewayTransport.translateCallCount
-        XCTAssertEqual(gatewayCalls, 0, "model-gateway transport must not be called for Free")
-        XCTAssertNil(result.failureReason)
-        for segment in result.segmentResults {
-            XCTAssertNotNil(segment.translatedText)
-            XCTAssertFalse(segment.translatedText?.isEmpty ?? true)
-            XCTAssertNil(segment.failureReason)
-        }
-    }
-
-    // F2: model-gateway transport 抛 serviceUnavailable、proxy transport 正常，
-    //     Free 翻译仍返回成功译文（两条链路故障隔离）。
-    func testFreeUnaffectedWhenModelGatewayUnavailable() async {
-        let proxyTransport = SpyTranslationProxyTransport()
-        let gatewayTransport = SpyModelServiceTransport(
-            translateError: ModelServiceTransportError.transport(.serviceUnavailable)
-        )
-        let client = TranslationProviderClient(
-            modelServiceClient: ModelServiceClient(transport: gatewayTransport),
-            translationProxyClient: TranslationProxyClient(transport: proxyTransport)
-        )
-
-        let result = await client.translate(
-            translationRequestFixture(),
-            preferences: preferencesFixture(tier: .free)
-        )
-
-        XCTAssertNil(result.failureReason)
-        XCTAssertEqual(result.segmentResults.first?.translatedText, "[proxy] Hello world.")
-    }
-
-    // E4: iOS tier 以后端 session 派生的 entitlement 快照为输入；
-    //     proxy 请求体不含客户端 tier 字段，客户端无法自报 tier 改变后端限额归属。
-    func testProxyRequestCarriesNoClientReportedTier() async throws {
-        let proxyTransport = SpyTranslationProxyTransport()
-        let client = TranslationProviderClient(
-            modelServiceClient: ModelServiceClient(transport: SpyModelServiceTransport()),
-            translationProxyClient: TranslationProxyClient(transport: proxyTransport)
-        )
-
-        _ = await client.translate(
-            translationRequestFixture(),
-            preferences: preferencesFixture(tier: .free)
-        )
-
-        let capturedRequest = await proxyTransport.lastRequest
-        let encoded = try JSONEncoder().encode(XCTUnwrap(capturedRequest))
-        let json = String(decoding: encoded, as: UTF8.self)
-        XCTAssertFalse(json.contains("\"tier\""), "proxy request must not carry a client-reported tier")
-        XCTAssertFalse(json.contains("serviceTier"), "proxy request must not carry a client-reported serviceTier")
-    }
+    // 注：原 F1（testFreeTranslatesWhenModelServiceRootMissing）/ F2（testFreeUnaffectedWhenModelGatewayUnavailable）
+    // / E4（testProxyRequestCarriesNoClientReportedTier）已删除——它们测的是已退役的「Free 独立于 gateway / 走 proxy /
+    // 故障隔离」语义（ADR-0005），v2.13 / ADR-0007 翻译统一入 model-gateway 后这些语义作废。
 
     // MARK: - Fixtures
 

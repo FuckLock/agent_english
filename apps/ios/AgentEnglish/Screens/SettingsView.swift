@@ -203,10 +203,7 @@ struct SettingsView: View {
             }
 
             Section("隐私说明 / Privacy") {
-                Text("Free 文本翻译只会在你主动触发时发送到自有翻译代理，再由翻译代理转发到第三方通用翻译服务（如 Google / 微软）。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Text("Pro / Max 文本翻译与解释只会在你主动触发时发送到自有大模型 gateway，由后端按当前等级转发到对应模型服务。")
+                Text("文本翻译与点词解释只会在你主动触发时发送到自有后端 model-gateway，由后端按你的服务等级用对应模型生成（Free 用便宜模型，Pro / Max 用更优模型）。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 PrivacyDisclosureView(

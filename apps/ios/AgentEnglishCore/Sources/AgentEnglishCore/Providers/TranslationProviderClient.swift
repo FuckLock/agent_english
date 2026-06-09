@@ -2,11 +2,11 @@ import Foundation
 
 public struct TranslationProviderClientConfiguration: Sendable { public init() {} }
 
-// 按 session entitlement 分流文本翻译：
-//   Free  → translation-proxy（轻量翻译代理转发第三方通用翻译，独立于大模型 gateway）
-//   Pro/Max → model-gateway（/v1/translate）
+// 文本翻译统一走 model-gateway（v2.13 / ADR-0007）：所有档位（含 Free）都用 model-gateway
+// 的 registry 模型，Free 只是权限档位低、用 free 档默认模型（如 deepseek-chat）。
+// translation-proxy 已退役——代码保留、不再路由（撤销 ADR-0005 的 Free-via-proxy / 故障隔离）。
 // 授权事实源是后端 session 派生的 entitlement 快照（preferences.serviceTier）；
-// 本层只做路由编排与错误映射，不重新校验后端授权（后端是事实源）。
+// 本层只做编排与错误映射，不重新校验后端授权（后端是事实源）。
 public actor TranslationProviderClient {
     private let modelServiceClient: ModelServiceClient
     private let translationProxyClient: TranslationProxyClient
@@ -25,12 +25,9 @@ public actor TranslationProviderClient {
         _ request: TranslationRequest,
         preferences: TranslationPreferencesSnapshot
     ) async -> TranslationResult {
-        switch preferences.serviceTier {
-        case .free:
-            return await translationProxyClient.translate(request)
-        case .pro, .max:
-            return await translateViaModelGateway(request, preferences: preferences)
-        }
+        // 所有档位统一走 model-gateway（Free 用 registry 的 free 档模型）；proxy 已退役不再路由。
+        _ = translationProxyClient
+        return await translateViaModelGateway(request, preferences: preferences)
     }
 
     private func translateViaModelGateway(

@@ -1106,6 +1106,35 @@
 
 ---
 
+## Phase 8.16: 翻译统一入 model-gateway — Free 路由改走 gateway + 暂废弃 translation-proxy
+
+> 依据 **ADR-0007（翻译统一入 model-gateway、暂废弃 translation-proxy）** + Product-Spec v2.13 + ARCHITECTURE / PROJECT-STRUCTURE v2.13。撤销原「Free 文本翻译走独立 translation-proxy + 故障隔离」（ADR-0005 superseded）与 ADR-0006「proxy 物理路径不变」。**所有档位（含 Free）的文本 / 字幕翻译统一走 model-gateway，free / pro / max 只是权限不同、翻译机制无区别**，Free 用 registry 的 free 档便宜模型（deepseek-chat）。translation-proxy 代码保留、不再路由（非删除）。取舍：放弃 Free 与 gateway 故障隔离，统一后 Free 翻译依赖 model-gateway 在跑。
+
+**交付内容**：
+- iOS `TranslationProviderClient.swift` 路由：把 `translate()` 的「Free→translationProxyClient / Pro·Max→gateway」改为**所有档位→model-gateway**（translateViaModelGateway）；`translationProxyClient` 字段保留但不再被路由调用（proxy parked）。
+- 过时测试收敛：`TranslationTieringTests.swift` —— `testFreeRoutesToTranslationProxyOnly` 翻成 Free→gateway（断言 gateway 1 调用 / proxy 0）；删 `testFreeTranslatesWhenModelServiceRootMissing`（即旧 DEBUG-gate 既有失败）、`testFreeUnaffectedWhenModelGatewayUnavailable`、`testProxyRequestCarriesNoClientReportedTier`（均测已退役的「Free 独立于 gateway / 走 proxy」语义）；保留 Pro / Max→gateway 测试。
+- 隐私文案：设置页 / PrivacyDisclosure 里「Free 文本→自有翻译代理」改为「Free 文本→model-gateway」（若有）。
+- `services/translation-proxy` 不动（代码保留、不再路由）。
+
+**关键文件**：
+- `[修改] apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/TranslationProviderClient.swift` —— translate() 所有档位走 gateway
+- `[修改] apps/ios/AgentEnglishTests/TranslationTieringTests.swift` —— 翻 1 + 删 3 过时测试
+- `[修改]（如有）iOS 隐私文案` —— Free 文本发送目标 → model-gateway
+
+**依赖前置 Phase**：Phase 8.14（registry free 档模型 deepseek-chat 已就位）、8.15（契约 minTier）、8.5（Providers 分层路由现状）。
+
+**架构约束映射**：
+- ADR-0007 / ADR-0002：所有档位走 model-gateway；后端按 session entitlement 路由、`preferredModelId` minTier 重校验，不信任客户端自报档位。
+- non-goals：translation-proxy 不删（代码保留 parked）；不引入新的 Free 兜底链路；不动 model-gateway 后端（8.14 / 8.15 已就位）。
+
+**验收标准**：
+- `TranslationProviderClient.translate()` 对 .free / .pro / .max 都调 model-gateway、不调 translationProxyClient（测试断言 proxy 0 调用、gateway 1 调用）。
+- `cd apps/ios && swift build` 退出 0；`swift test` 中 TranslationTiering 相关测试通过（删过时 3 个、翻 1 个）；无残留对 proxy 路由的断言。
+- 回归：Pro / Max→gateway 不破坏；model-gateway 后端 + 契约不动（git diff 不含 services/ 与 packages/contracts）。
+- Free 翻译失败（gateway 不可用）走选区 / 复制降级提示（沿用现有失败文案）。
+
+---
+
 ## Phase 9: 导出、回归加固与交付收口
 
 **交付内容**：
