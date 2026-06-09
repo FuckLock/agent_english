@@ -15,8 +15,8 @@ public struct TranslationPreferencesSnapshot: Equatable, Sendable {
         sourceLanguage: String,
         targetLanguage: String,
         serviceTier: ModelServiceTier = .free,
-        preferredModelID: String = "free-translate",
-        preferredModelLabel: String = "Free 服务 · 轻量翻译",
+        preferredModelID: String = "deepseek-chat",
+        preferredModelLabel: String = "Free 服务 · deepseek-chat",
         quota: ModelQuotaSnapshot = ModelCatalogSnapshot.preview(currentTier: .free).quota,
         lastSyncedAt: Date = .now,
         catalog: ModelCatalogSnapshot = ModelCatalogSnapshot.preview(currentTier: .free)
@@ -153,8 +153,8 @@ public final class ModelServiceSettingsStore {
 
         let profile = ModelServiceProfileRecord(
             serviceTier: ModelServiceTier.free.rawValue,
-            preferredModelID: "free-translate",
-            preferredModelLabel: "Free 服务 · 轻量翻译",
+            preferredModelID: "deepseek-chat",
+            preferredModelLabel: "Free 服务 · deepseek-chat",
             quotaStatus: ModelQuotaStatus.ok.rawValue,
             quotaUsed: 3,
             quotaLimit: 20

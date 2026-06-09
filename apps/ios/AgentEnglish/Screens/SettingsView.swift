@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var sourceLanguage = "English"
     @State private var targetLanguage = "简体中文"
     @State private var serviceTier: ModelServiceTier = .free
-    @State private var preferredModelID = "free-translate"
+    @State private var preferredModelID = "deepseek-chat"
     @State private var catalog = ModelCatalogSnapshot.preview(currentTier: .free)
     @State private var quota = ModelCatalogSnapshot.preview(currentTier: .free).quota
     @State private var audioQuota = ModelCatalogSnapshot.previewAudioQuota(for: .free)
@@ -264,7 +264,7 @@ struct SettingsView: View {
     }
 
     private var selectedModelLabel: String {
-        catalog.option(id: preferredModelID)?.displayName ?? "Free 服务 · 轻量翻译"
+        catalog.option(id: preferredModelID)?.displayName ?? "Free 服务 · deepseek-chat"
     }
 
     private var quotaSummary: String {
@@ -560,7 +560,7 @@ private struct ModelPickerSheet: View {
     @ViewBuilder
     private func pickerSection(for tier: ModelServiceTier, title: String) -> some View {
         Section(title) {
-            ForEach(catalog.options.filter { $0.tier == tier }) { option in
+            ForEach(catalog.options.filter { $0.minTier == tier }) { option in
                 Button {
                     onSelect(option)
                 } label: {
@@ -586,7 +586,7 @@ private struct ModelPickerSheet: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.orange)
                         } else {
-                            Text(option.tier == currentTier ? "当前可用" : option.tier.displayName)
+                            Text(option.minTier == currentTier ? "当前可用" : option.minTier.displayName)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                         }

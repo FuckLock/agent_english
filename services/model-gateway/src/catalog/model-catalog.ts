@@ -31,7 +31,7 @@ export interface CreateModelCatalogOptions {
  * 由后端模型清单 registry 驱动生成「档位 → 脱敏目录投影」（ADR-0006 决策 1/6）。
  *
  * - 按 minTier 累加：返回 `minTier ≤ currentTier` 的全部模型（D1 高档累加低档便宜模型）。
- * - **本 Phase 仍输出现有 ModelOption 形状**（字段名仍是 `tier`，`tier→minTier` 干净切留 Phase 8.15）。
+ * - 投影输出 `minTier`（ADR-0006 决策 5 干净切：`tier→minTier` 已完成，无旧字段、无双轨）。
  * - 投影**绝不含**任何后端内部路由字段（ADR-0002 密钥边界）。
  * - 门控不再从此处产出——能力门控迁档位（见 entitlements/），此处 capabilities 仅作描述性展示。
  */
@@ -70,7 +70,7 @@ export function createModelCatalog(
 
 /**
  * registry 条目 → 脱敏 ModelOption 投影。
- * 只取展示字段（id / displayName / summary / tier / capabilities）+ 档位派生的可用性 / 配额，
+ * 只取展示字段（id / displayName / summary / minTier / capabilities）+ 档位派生的可用性 / 配额，
  * 后端内部路由字段一律不进投影。
  */
 function toModelOption(
@@ -82,7 +82,7 @@ function toModelOption(
 
   return {
     id: entry.id,
-    tier: entry.minTier,
+    minTier: entry.minTier,
     displayName: display.displayName,
     summary: display.summary,
     capabilities: capabilitiesForTier(entry.minTier),

@@ -30,7 +30,7 @@ final class VideoAudioTranslationContractTests: XCTestCase {
             sourceLanguage: "English",
             targetLanguage: "简体中文",
             serviceTier: .free,
-            preferredModelID: "free-translate",
+            preferredModelID: "deepseek-chat",
             audioSegmentID: "vaud-1",
             audioDurationSeconds: 49,
             playbackPositionSeconds: 12,

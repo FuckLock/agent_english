@@ -182,7 +182,7 @@ final class TranslationTieringTests: XCTestCase {
             sourceLanguage: "English",
             targetLanguage: "简体中文",
             serviceTier: tier,
-            preferredModelID: tier == .free ? "free-translate" : "pro-context",
+            preferredModelID: tier == .free ? "deepseek-chat" : "openai-gpt-4o",
             preferredModelLabel: tier.displayName,
             quota: ModelCatalogSnapshot.preview(currentTier: tier).quota,
             lastSyncedAt: .now,

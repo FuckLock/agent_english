@@ -23,7 +23,7 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         XCTAssertEqual(preferences.sourceLanguage, "English")
         XCTAssertEqual(preferences.targetLanguage, "简体中文")
         XCTAssertEqual(preferences.serviceTier, .free)
-        XCTAssertEqual(preferences.preferredModelID, "free-translate")
+        XCTAssertEqual(preferences.preferredModelID, "deepseek-chat")
         XCTAssertEqual(preferences.quota.limit, 20)
     }
 
@@ -41,8 +41,8 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         modelContext.insert(
             ModelServiceProfileRecord(
                 serviceTier: ModelServiceTier.pro.rawValue,
-                preferredModelID: "pro-context",
-                preferredModelLabel: "Pro 模型 · 语境精读",
+                preferredModelID: "openai-gpt-4o",
+                preferredModelLabel: "Pro 模型 · openai-gpt-4o",
                 quotaStatus: ModelQuotaStatus.ok.rawValue,
                 quotaUsed: 9,
                 quotaLimit: 200
@@ -54,9 +54,44 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         let preferences = try settingsStore.loadPreferences()
 
         XCTAssertEqual(preferences.serviceTier, .pro)
-        XCTAssertEqual(preferences.preferredModelID, "pro-context")
-        XCTAssertEqual(preferences.preferredModelLabel, "Pro 模型 · 语境精读")
+        XCTAssertEqual(preferences.preferredModelID, "openai-gpt-4o")
+        XCTAssertEqual(preferences.preferredModelLabel, "Pro 模型 · openai-gpt-4o")
         XCTAssertEqual(preferences.quota.used, 9)
+    }
+
+    // F11（决策5 读取侧）：持久化的旧 preferredModelId（free-translate/pro-context/max-mentor）
+    // 在干净切后已不在目录中 → 读取时「未知 id → 回退该档默认模型」，不致命崩溃。
+    @MainActor
+    func testLegacyPreferredModelIdFallsBackToTierDefault() throws {
+        let container = try AppModelContainer.makeInMemoryContainer(seedSampleData: false)
+        let modelContext = container.mainContext
+        modelContext.insert(
+            AppSettingsRecord(
+                sourceLanguage: "English",
+                targetLanguage: "简体中文",
+                privacySummary: "Uses model service only."
+            )
+        )
+        modelContext.insert(
+            ModelServiceProfileRecord(
+                serviceTier: ModelServiceTier.pro.rawValue,
+                preferredModelID: "pro-context",
+                preferredModelLabel: "Pro 模型 · 语境精读",
+                quotaStatus: ModelQuotaStatus.ok.rawValue,
+                quotaUsed: 5,
+                quotaLimit: 200
+            )
+        )
+        try modelContext.save()
+
+        let settingsStore = ModelServiceSettingsStore(modelContext: modelContext)
+        let preferences = try settingsStore.loadPreferences()
+
+        // 旧 id 不在目录 → 回退该档（pro）默认模型 id，而非保留旧 id。
+        XCTAssertEqual(preferences.serviceTier, .pro)
+        XCTAssertEqual(preferences.preferredModelID, preferences.catalog.defaultModelID)
+        XCTAssertEqual(preferences.preferredModelID, "openai-gpt-4o")
+        XCTAssertNotEqual(preferences.preferredModelID, "pro-context")
     }
 
     @MainActor
@@ -66,8 +101,8 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         modelContext.insert(
             ModelServiceProfileRecord(
                 serviceTier: ModelServiceTier.pro.rawValue,
-                preferredModelID: "pro-context",
-                preferredModelLabel: "Pro 模型 · 语境精读",
+                preferredModelID: "openai-gpt-4o",
+                preferredModelLabel: "Pro 模型 · openai-gpt-4o",
                 quotaStatus: ModelQuotaStatus.ok.rawValue,
                 quotaUsed: 0,
                 quotaLimit: 200
@@ -78,14 +113,14 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         let settingsStore = ModelServiceSettingsStore(modelContext: modelContext)
 
         try settingsStore.updateLanguages(sourceLanguage: "English", targetLanguage: "繁體中文")
-        try settingsStore.updatePreferredModel("pro-context")
+        try settingsStore.updatePreferredModel("openai-gpt-4o")
 
         let preferences = try settingsStore.loadPreferences()
 
         XCTAssertEqual(preferences.targetLanguage, "繁體中文")
         XCTAssertEqual(preferences.serviceTier, .pro)
-        XCTAssertEqual(preferences.preferredModelID, "pro-context")
-        XCTAssertEqual(preferences.catalog.option(id: "pro-context")?.availability, .available)
+        XCTAssertEqual(preferences.preferredModelID, "openai-gpt-4o")
+        XCTAssertEqual(preferences.catalog.option(id: "openai-gpt-4o")?.availability, .available)
     }
 
     @MainActor
@@ -104,12 +139,12 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         let remoteCatalog = ModelCatalogSnapshot(
             currentTier: .pro,
             availableTiers: [.free, .pro, .max],
-            defaultModelID: "pro-context",
+            defaultModelID: "openai-gpt-4o",
             options: [
                 ModelCatalogOption(
-                    id: "pro-context",
-                    tier: .pro,
-                    displayName: "Pro 模型 · 语境精读",
+                    id: "openai-gpt-4o",
+                    minTier: .pro,
+                    displayName: "Pro 模型 · openai-gpt-4o",
                     summary: "适合整段语境解释。",
                     capabilities: ["translation", "explanation"],
                     availability: .available,
@@ -142,9 +177,9 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         let preferences = try await settingsStore.refreshCatalog()
 
         XCTAssertEqual(preferences.serviceTier, .pro)
-        XCTAssertEqual(preferences.preferredModelID, "pro-context")
+        XCTAssertEqual(preferences.preferredModelID, "openai-gpt-4o")
         XCTAssertEqual(preferences.quota.limit, 200)
-        XCTAssertEqual(preferences.catalog.defaultModelID, "pro-context")
+        XCTAssertEqual(preferences.catalog.defaultModelID, "openai-gpt-4o")
     }
 
     @MainActor
@@ -162,8 +197,8 @@ final class ModelServiceSettingsStoreTests: XCTestCase {
         modelContext.insert(
             ModelServiceProfileRecord(
                 serviceTier: ModelServiceTier.free.rawValue,
-                preferredModelID: "free-translate",
-                preferredModelLabel: "Free 服务 · 轻量翻译",
+                preferredModelID: "deepseek-chat",
+                preferredModelLabel: "Free 服务 · deepseek-chat",
                 quotaStatus: ModelQuotaStatus.ok.rawValue,
                 quotaUsed: 3,
                 quotaLimit: 20,

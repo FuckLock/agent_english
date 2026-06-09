@@ -9,10 +9,8 @@ import type {
 } from "@agent-english/contracts";
 
 import type { GatewayEnv } from "../env";
-import {
-  defaultSessionStore,
-  type SessionStore,
-} from "../sessions/session-store";
+import { defaultSessionStore } from "../composition";
+import type { SessionStore } from "../sessions/session-store";
 
 export interface ServiceEntitlement {
   account: AccountStatus;

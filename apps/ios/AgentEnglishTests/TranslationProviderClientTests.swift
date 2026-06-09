@@ -94,8 +94,8 @@ final class TranslationProviderClientTests: XCTestCase {
             sourceLanguage: "English",
             targetLanguage: "简体中文",
             serviceTier: .pro,
-            preferredModelID: "pro-context",
-            preferredModelLabel: "Pro 服务 · 语境增强",
+            preferredModelID: "openai-gpt-4o",
+            preferredModelLabel: "Pro 模型 · openai-gpt-4o",
             quota: previewQuota(),
             lastSyncedAt: .now,
             catalog: .preview(currentTier: .pro)
@@ -105,9 +105,9 @@ final class TranslationProviderClientTests: XCTestCase {
 
 private func previewModelOption() -> ModelCatalogOption {
     ModelCatalogOption(
-        id: "free-translate",
-        tier: .free,
-        displayName: "Free 服务 · 轻量翻译",
+        id: "deepseek-chat",
+        minTier: .free,
+        displayName: "Free 服务 · deepseek-chat",
         summary: "适合通用网页翻译和快速释义。",
         capabilities: ["translation"],
         availability: .available,

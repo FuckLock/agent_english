@@ -6,9 +6,9 @@ import type {
 } from "@agent-english/contracts";
 
 import type { GatewayEnv } from "../env";
+import { defaultSessionStore } from "../composition";
 import {
   accountStatusForTier,
-  defaultSessionStore,
   type SessionStore,
 } from "../sessions/session-store";
 

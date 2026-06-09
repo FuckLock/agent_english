@@ -22,17 +22,19 @@ final class ModelServiceClientTests: XCTestCase {
         )
     }
 
-    func testDecodesDefaultModelIdAndRequiredTierFromJSON() throws {
+    func testDecodesDefaultModelIdAndMinTierFromJSON() throws {
+        // E1 双端等价：投影 JSON 的 minTier key 解码为 ModelCatalogOption.minTier
+        // （与 packages/contracts fixture 字段名一致：均为 minTier，无目录项 tier key）。
         let payload = """
         {
           "currentTier": "free",
           "availableTiers": ["free", "pro", "max"],
-          "defaultModelId": "free-translate",
+          "defaultModelId": "deepseek-chat",
           "options": [
             {
-              "id": "pro-context",
-              "tier": "pro",
-              "displayName": "Pro 模型 · 语境精读",
+              "id": "openai-gpt-4o",
+              "minTier": "pro",
+              "displayName": "Pro 模型 · openai-gpt-4o",
               "summary": "适合整段语境解释。",
               "capabilities": ["translation", "explanation"],
               "availability": "requiresTier",
@@ -59,7 +61,8 @@ final class ModelServiceClientTests: XCTestCase {
 
         let decoded = try JSONDecoder().decode(ModelCatalogSnapshot.self, from: payload)
 
-        XCTAssertEqual(decoded.defaultModelID, "free-translate")
+        XCTAssertEqual(decoded.defaultModelID, "deepseek-chat")
+        XCTAssertEqual(decoded.options.first?.minTier, .pro)
         XCTAssertEqual(decoded.options.first?.requiredTier, .pro)
     }
 
@@ -111,7 +114,7 @@ final class ModelServiceClientTests: XCTestCase {
         {
           "currentTier": "free",
           "availableTiers": ["free", "pro", "max"],
-          "defaultModelId": "free-translate",
+          "defaultModelId": "deepseek-chat",
           "options": [],
           "quota": {
             "status": "ok",
@@ -189,7 +192,7 @@ private func videoAudioRequest(
         sourceLanguage: "English",
         targetLanguage: "简体中文",
         serviceTier: .free,
-        preferredModelID: "free-translate",
+        preferredModelID: "deepseek-chat",
         audioSegmentID: "vaud-1",
         audioDurationSeconds: 42,
         captionText: nil,

@@ -53,7 +53,7 @@ test("video audio translate request carries videoId + playbackPositionSeconds an
     sourceLanguage: "English",
     targetLanguage: "简体中文",
     serviceTier: "free",
-    preferredModelId: "free-translate",
+    preferredModelId: "deepseek-chat",
     audioSegmentId: createVideoAudioSegmentId(
       "page-youtube-shorts-1",
       "2026-05-30T10:00:00.000Z",

@@ -28,7 +28,7 @@ final class ModelServiceTransportRequestTests: XCTestCase {
             {
               "currentTier": "pro",
               "availableTiers": ["free", "pro", "max"],
-              "defaultModelId": "pro-context",
+              "defaultModelId": "openai-gpt-4o",
               "options": [],
               "quota": {
                 "status": "ok",
@@ -52,7 +52,7 @@ final class ModelServiceTransportRequestTests: XCTestCase {
         let catalog = try await transport.catalog(for: .free)
 
         XCTAssertEqual(catalog.currentTier, .pro)
-        XCTAssertEqual(catalog.defaultModelID, "pro-context")
+        XCTAssertEqual(catalog.defaultModelID, "openai-gpt-4o")
     }
 
     func testCatalogRequestBootstrapsGuestSessionWhenKeychainTokenIsMissing() async throws {
@@ -99,7 +99,7 @@ final class ModelServiceTransportRequestTests: XCTestCase {
                     "catalog": {
                       "currentTier": "free",
                       "availableTiers": ["free", "pro", "max"],
-                      "defaultModelId": "free-translate",
+                      "defaultModelId": "deepseek-chat",
                       "options": [],
                       "quota": {
                         "status": "ok",
@@ -132,7 +132,7 @@ final class ModelServiceTransportRequestTests: XCTestCase {
             {
               "currentTier": "free",
               "availableTiers": ["free", "pro", "max"],
-              "defaultModelId": "free-translate",
+              "defaultModelId": "deepseek-chat",
               "options": [],
               "quota": {
                 "status": "ok",

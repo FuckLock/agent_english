@@ -37,7 +37,7 @@ export interface ModelQuotaState {
 
 export interface ModelOption {
   id: string;
-  tier: ServiceTier;
+  minTier: ServiceTier;
   displayName: string;
   summary: string;
   capabilities: string[];

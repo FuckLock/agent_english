@@ -77,11 +77,11 @@ final class ExplanationProviderClientTests: XCTestCase {
             sourceLanguage: "English",
             targetLanguage: "简体中文",
             serviceTier: .pro,
-            preferredModelID: "pro-context",
-            preferredModelLabel: "Pro 模型 · 语境精读",
+            preferredModelID: "openai-gpt-4o",
+            preferredModelLabel: "Pro 模型 · openai-gpt-4o",
             quota: fixtureQuota(),
             lastSyncedAt: .now,
-            catalog: .preview(currentTier: .pro, preferredModelID: "pro-context")
+            catalog: .preview(currentTier: .pro, preferredModelID: "openai-gpt-4o")
         )
     }
 }
@@ -113,9 +113,9 @@ private struct ExplanationTransportFixture: ModelServiceTransport {
 
 private func fixtureModelOption() -> ModelCatalogOption {
     ModelCatalogOption(
-        id: "pro-context",
-        tier: .pro,
-        displayName: "Pro 模型 · 语境精读",
+        id: "openai-gpt-4o",
+        minTier: .pro,
+        displayName: "Pro 模型 · openai-gpt-4o",
         summary: "适合整段语境解释和更稳定的长句处理。",
         capabilities: ["translation", "explanation", "examples"],
         availability: .available,

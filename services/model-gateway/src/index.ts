@@ -24,10 +24,8 @@ import { handleCatalogRoute } from "./routes/catalog";
 import { handleExplainRoute } from "./routes/explain";
 import { handleTranslateRoute } from "./routes/translate";
 import { handleVideoAudioTranslateRoute } from "./routes/video-audio-translate";
-import {
-  defaultSessionStore,
-  type SessionStore,
-} from "./sessions/session-store";
+import { defaultSessionStore } from "./composition";
+import type { SessionStore } from "./sessions/session-store";
 
 export interface ModelGatewayServerDependencies extends ProviderRouterDependencies {
   env?: GatewayEnv;

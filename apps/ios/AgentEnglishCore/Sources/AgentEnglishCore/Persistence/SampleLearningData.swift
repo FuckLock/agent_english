@@ -27,8 +27,8 @@ public enum SampleLearningData {
 
         let modelProfile = ModelServiceProfileRecord(
             serviceTier: ModelServiceTier.free.rawValue,
-            preferredModelID: "free-translate",
-            preferredModelLabel: "Free 服务 · 轻量翻译",
+            preferredModelID: "deepseek-chat",
+            preferredModelLabel: "Free 服务 · deepseek-chat",
             quotaStatus: ModelQuotaStatus.ok.rawValue,
             quotaUsed: 3,
             quotaLimit: 20

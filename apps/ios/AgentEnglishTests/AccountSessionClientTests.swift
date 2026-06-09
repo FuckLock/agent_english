@@ -63,7 +63,7 @@ final class AccountSessionClientTests: XCTestCase {
         XCTAssertEqual(response.session.entitlement.account.kind, .devPro)
         XCTAssertEqual(response.session.entitlement.serviceTier, .pro)
         XCTAssertEqual(response.session.entitlement.quota.remaining, 188)
-        XCTAssertEqual(response.session.entitlement.catalog.defaultModelID, "pro-context")
+        XCTAssertEqual(response.session.entitlement.catalog.defaultModelID, "openai-gpt-4o")
         XCTAssertEqual(response.session.entitlement.catalog.availableTiers, [.free, .pro, .max])
         XCTAssertEqual(response.session.entitlement.catalog.options.last?.requiredTier, .max)
     }

@@ -59,7 +59,7 @@ public struct ModelQuotaSnapshot: Codable, Equatable, Sendable {
 
 public struct ModelCatalogOption: Codable, Equatable, Identifiable, Sendable {
     public let id: String
-    public let tier: ModelServiceTier
+    public let minTier: ModelServiceTier
     public let displayName: String
     public let summary: String
     public let capabilities: [String]
@@ -69,7 +69,7 @@ public struct ModelCatalogOption: Codable, Equatable, Identifiable, Sendable {
 
     public init(
         id: String,
-        tier: ModelServiceTier,
+        minTier: ModelServiceTier,
         displayName: String,
         summary: String,
         capabilities: [String],
@@ -78,7 +78,7 @@ public struct ModelCatalogOption: Codable, Equatable, Identifiable, Sendable {
         quota: ModelQuotaSnapshot
     ) {
         self.id = id
-        self.tier = tier
+        self.minTier = minTier
         self.displayName = displayName
         self.summary = summary
         self.capabilities = capabilities
@@ -141,38 +141,38 @@ public struct ModelCatalogSnapshot: Codable, Equatable, Sendable {
         let maxQuota = previewQuota(limit: 800, used: currentTier == .max ? used : 0)
         let options = [
             ModelCatalogOption(
-                id: "free-translate",
-                tier: .free,
-                displayName: "Free 服务 · 轻量翻译",
+                id: "deepseek-chat",
+                minTier: .free,
+                displayName: "Free 服务 · deepseek-chat",
                 summary: "适合通用网页翻译和快速释义。",
-                capabilities: ["translation", "glossary"],
+                capabilities: ["translation", "glossary", "audio", "asr"],
                 availability: .available,
                 requiredTier: nil,
                 quota: freeQuota
             ),
             ModelCatalogOption(
-                id: "pro-context",
-                tier: .pro,
-                displayName: "Pro 模型 · 语境精读",
+                id: "openai-gpt-4o",
+                minTier: .pro,
+                displayName: "Pro 模型 · openai-gpt-4o",
                 summary: "适合整段语境解释和更稳定的长句处理。",
-                capabilities: ["translation", "explanation", "examples"],
+                capabilities: ["translation", "glossary", "audio", "asr", "explanation", "examples"],
                 availability: currentTier == .free ? .requiresTier : .available,
                 requiredTier: currentTier == .free ? .pro : nil,
                 quota: proQuota
             ),
             ModelCatalogOption(
-                id: "max-mentor",
-                tier: .max,
-                displayName: "Max 模型 · 深度讲解",
+                id: "anthropic-claude-sonnet",
+                minTier: .max,
+                displayName: "Max 模型 · anthropic-claude-sonnet",
                 summary: "适合复杂句深挖、例句扩展和学习建议。",
-                capabilities: ["translation", "explanation", "examples", "review"],
+                capabilities: ["translation", "glossary", "audio", "asr", "explanation", "examples", "review"],
                 availability: currentTier == .max ? .available : .requiresTier,
                 requiredTier: currentTier == .max ? nil : .max,
                 quota: maxQuota
             ),
         ]
         let preferred = options.first(where: { $0.id == preferredModelID && $0.availability == .available })
-        let fallback = options.first(where: { $0.tier == currentTier }) ?? options[0]
+        let fallback = options.first(where: { $0.minTier == currentTier }) ?? options[0]
 
         return ModelCatalogSnapshot(
             currentTier: currentTier,
