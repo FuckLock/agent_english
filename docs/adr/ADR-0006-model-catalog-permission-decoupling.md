@@ -85,7 +85,9 @@ Product-Spec v2.12 把它拆成两个互不掺和的系统，唯一接口 = 一�
 - 不在本版实现：账号实体、持久化存储、多端一致、账号级配额都需要"账号 + 持久层"，二者当前皆不存在。本版继续用游客会话 + dev/staging 测试账号撑测试，足以验证线A。
 - 归属：线B 是 ADR-0002/ADR-0003 所述"未来订阅 / 计费需单独 ADR"的那一份的核心内容；落地时新增 ADR（或并入订阅 ADR），不隐含进本 ADR 的线A 实现。
 
-### Translation-proxy 边界（不变）
+### Translation-proxy 边界（⚠️ 本段已被 ADR-0007 取代）
+
+> **更新（v2.13 / ADR-0007）**：本段当时的判断「Free 文本翻译物理路径仍走 proxy / translation-proxy 边界不变」**已被 ADR-0007 撤销**。新口径：所有档位（含 Free）的翻译统一走 model-gateway，translation-proxy 暂废弃（代码保留、不再路由）。下方原文保留作沿革。
 
 - 模型清单 × minTier 是 **model-gateway 的目录**：由 `/v1/model-catalog` 下发，驱动 Pro/Max 的 translate/explain/听音翻译路由 + iOS SettingsView 展示与默认选择。
 - ADR-0005 的 Free 文本翻译路由到 `services/translation-proxy`（其内部自配便宜大模型）**保持不变**。`preferredModelId` 实质作用于 model-gateway 所服务的调用；Free 文本翻译物理路径仍走 proxy。

@@ -5,8 +5,8 @@
 | Concern | Decision |
 |---|---|
 | Project type | iPhone-first native mobile app with reusable browser injection packages. |
-| Platform / runtime targets | Current: iOS + backend model gateway（auth / session / entitlement / Pro·Max / ASR）+ 独立轻量 translation-proxy（Free 文本翻译）. Future: Web app, Android, macOS, Windows, billing backend expansion and optional learning data sync. |
-| Chosen structure pattern | `apps/` for platform shells, `packages/` for reusable browser agent and contracts, `services/` for backend model gateway（auth/session/entitlement/Pro·Max/ASR）和独立 translation-proxy（Free 文本翻译）, `docs/` for architecture decisions, root docs for product/design/architecture. |
+| Platform / runtime targets | Current: iOS + backend model gateway（auth / session / entitlement / **所有档位翻译** / ASR）；translation-proxy 暂废弃（v2.13 / ADR-0007，代码保留、不再路由）. Future: Web app, Android, macOS, Windows, billing backend expansion and optional learning data sync. |
+| Chosen structure pattern | `apps/` for platform shells, `packages/` for reusable browser agent and contracts, `services/` for backend model gateway（auth/session/entitlement/所有档位翻译/ASR）；translation-proxy 暂废弃（parked，v2.13 / ADR-0007，代码保留）, `docs/` for architecture decisions, root docs for product/design/architecture. |
 | Reason | iOS 原生能力和 App Store 交付是首版关键；网页 DOM 识别与翻译层逻辑天然可跨 WebView 复用，适合放入 TypeScript 包；取消用户 BYOK 后，Provider / ASR 密钥、模型目录、会话、权益、文本额度、音频分钟额度和 fallback 必须进入后端服务；未来平台不应复用 iOS UI，但应复用协议、注入脚本和模型服务 API。 |
 
 ## Directory Tree
@@ -82,6 +82,7 @@ agent_english/
       ADR-0004-youtube-video-immersive-translation.md
       ADR-0005-tiered-translation-proxy.md
       ADR-0006-model-catalog-permission-decoupling.md
+      ADR-0007-unify-translation-into-model-gateway.md
     research/
   design_export/
     clean_pencil/
@@ -109,7 +110,7 @@ agent_english/
 | `apps/ios/AgentEnglishCore/` | create across DEV-PLAN Phase 2-3, expand later | Swift 无 UI 模块：收藏、历史、复习状态、账号 / session 状态、模型目录快照、服务等级、bridge DTO、视频翻译来源 / 听音额度 DTO、错误映射、隐私清理服务、SwiftData repository 接口、模型服务客户端。 | SwiftUI View、WKWebView DOM 选择器、站点 CSS selector、第三方网页品牌资源、第三方 Provider / ASR 密钥、固定生产等级 token、后台静默音频采集。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Bridge/` | create in DEV-PLAN Phase 3 | `BridgeEvent` decode/encode、schema version、request tracking、错误映射；Swift DTO 必须用 tests 与 `packages/contracts` 的 payload 字段保持等价。 | UI 展示、DOM selector、Provider 网络请求、模型服务网络实现。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Persistence/` | create in DEV-PLAN Phase 2, expand in later phases | SwiftData models、repository implementation、migration、cache 清理；Keychain 只保存后端 session token、App 服务令牌或匿名设备令牌。 | 明文 API Key、第三方 Provider 密钥、固定生产等级 token、WebKit cookie 管理、SwiftUI View state。 |
-| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | existing provider adapter area; tiered translation routing added in translation tiering phase | 翻译 / 解释客户端：按 entitlement 把 Free 文本翻译路由到轻量翻译代理、Pro / Max 文本翻译与解释和听音路由到大模型 gateway；service-tier / audio-quota error mapping、retry、错误归一；Free 文本翻译在大模型 gateway 未就绪时仍可用；旧的全量直连 `/v1/translate` 链路作为迁移技术债收敛。 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码、第三方 Provider / ASR 密钥和 Base URL 配置、把翻译 key 放进客户端。 |
+| `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Providers/` | existing provider adapter area；v2.13 翻译统一入 gateway（ADR-0007） | 翻译 / 解释客户端：**所有档位统一路由到 model-gateway**（Free 用 free 档便宜模型）；service-tier / audio-quota error mapping、retry、错误归一；translation-proxy 已废弃不再路由（`TranslationProxyClient` 代码保留、不删）。 | 页面 overlay 渲染、收藏列表 UI、JS 注入源码、第三方 Provider / ASR 密钥和 Base URL 配置、把翻译 key 放进客户端、把 Free 路由回 translation-proxy。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Account/` | create in DEV-PLAN Phase 6.5 | `AuthSession` / `AccountStatus` / `EntitlementSnapshot` Swift DTO、session bootstrap、logout、dev/staging login client、Keychain session token 编排。 | 直接验证 Google / Apple identity token、硬编码测试账号密码、保存 Provider 凭证、把客户端选择的等级当授权。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Review/` | create in DEV-PLAN Phase 6 | 主动回忆卡、复习反馈、下一次复习优先级。 | 游戏化奖励、课程路径、页面 DOM 操作。 |
 | `apps/ios/AgentEnglishCore/Sources/AgentEnglishCore/Privacy/` | create in DEV-PLAN Phase 3, expand in Phase 6 | 模型服务数据发送提示、后端转发说明、学习数据清理、网站数据清理提示策略。 | 悄悄上传浏览历史、替用户同意第三方数据发送。 |
@@ -131,7 +132,7 @@ agent_english/
 | `services/model-gateway/src/routes/` | create in model service refactor phase; auth routes expand in Phase 6.5; audio route expands in Phase 6.7 | `/v1/sessions/guest`、`/v1/auth/dev-login`、`/v1/auth/logout`、`/v1/model-catalog`、`/v1/translate`、`/v1/explain`、`/v1/video-audio-translate` 等服务 API。 | 网页 DOM 选择器、SwiftUI 状态、无 session 授权的模型调用、完整音频上传存储接口。 |
 | `services/model-gateway/src/providers/` | model service refactor phase；v2.12 provider-router 改造（ADR-0006） | 后端内部 Provider / ASR adapter、请求归一、重试、错误映射；provider-router 读所选模型自带 vendor + 真实模型名 + 备用 vendor 链（废除 per-model switch）。 | 暴露 API Key / vendor / 真实模型名给客户端、写死模型→provider 的 switch、保存完整浏览历史或完整音频。 |
 | `services/model-gateway/src/quota/` | model service refactor phase；v2.12 配额持久化属线B（ADR-0006） | Free / Pro / Max 文本额度、音频分钟额度、速率限制、用量统计、滥用保护；Free 听音每天 10 分钟。本版维持按档位总量计算（用量未持久化，已知缺口）。 | 支付 UI、App Store 订阅流程；在线A 引入账号级配额持久化 / 多端共享 / 并发自增（属线B / 后续 phase）。 |
-| `services/translation-proxy/` | create in translation tiering phase | 独立轻量翻译转发服务：Free 文本翻译路由到第三方通用翻译（Google / 微软）、按 session 限额、分块、缓存、错误归一、通用翻译 Provider fallback；独立于 model-gateway 部署，gateway 故障不影响 Free 文本翻译；iOS / Web 跨端共用。 | 大模型 / ASR 调用、entitlement 等级判定、完整浏览历史、向客户端暴露翻译 key、页面渲染或本地学习数据持久化。 |
+| `services/translation-proxy/` | **parked / 暂废弃（v2.13 / ADR-0007）** | 独立轻量翻译转发服务，**代码保留、不再被任何客户端路由**——翻译统一入 model-gateway；不在发布的运行路径内，后续再决定移除或另作他用。 | 不再进任何客户端路由或运行路径；若彻底移除另起决策。 |
 | `docs/adr/` | current | 架构决策记录。 | 产品需求正文、设计稿源文件、运行时代码。 |
 | `docs/research/` | create when research artifacts exist | 官方政策、平台能力、竞品分析和调研记录。 | 未核实的库版本、临时代码片段。 |
 | `design_export/` | current | Pencil 设计导出图，用于实现和 review 对齐；v2.2 账号 / 登录 / 模型服务错误状态稿、v2.3 YouTube 视频沉浸翻译状态稿、v2.4 听音翻译 Beta 状态稿保存在根层 PNG，旧基础页面在 `clean_pencil/`。 | 应用源码、生成代码、运行时资产。 |
@@ -150,13 +151,14 @@ agent_english/
 | `docs/adr/ADR-0002-backend-managed-model-service.md` | yes | 后台托管模型目录、Provider / ASR 密钥和 Free / Pro / Max 路由决策需要留痕。 |
 | `docs/adr/ADR-0003-auth-session-entitlement.md` | yes | 游客会话、可选登录、测试账号和后端 entitlement 决策需要留痕。 |
 | `docs/adr/ADR-0004-youtube-video-immersive-translation.md` | yes | YouTube 视频页与文本型网页使用不同交互模型，需要记录字幕叠层、听音翻译 Beta、降级和合规边界。 |
-| `docs/adr/ADR-0005-tiered-translation-proxy.md` | yes | 翻译分层与独立 Free 翻译代理（故障隔离）决策需要留痕。 |
+| `docs/adr/ADR-0005-tiered-translation-proxy.md` | yes | 翻译分层与独立 Free 翻译代理（故障隔离）决策——**已被 ADR-0007 取代**，保留作沿革。 |
+| `docs/adr/ADR-0007-unify-translation-into-model-gateway.md` | yes | 翻译统一入 model-gateway、暂废弃 translation-proxy 决策需要留痕。 |
 | `docs/adr/ADR-0006-model-catalog-permission-decoupling.md` | yes | 模型清单 × minTier、vendor 解耦、权限↔目录解耦、能力按档位、线B 占位决策需要留痕。 |
 | `packages/contracts/` | no | 由 DEV-PLAN Phase 1 创建，作为 bridge、数据模型和错误码事实源；模型服务 refactor 时扩展模型目录、服务等级和额度 contract。 |
 | `packages/browser-agent/` | no | 由 DEV-PLAN Phase 1 创建最小 bootstrap 包，后续 Phase 4-8 扩展 DOM、overlay 和站点适配。 |
 | `apps/ios/` | no | 由 DEV-PLAN Phase 2-3 创建，避免架构阶段混入实现；创建时按 Phase 分别落 SwiftUI shell、SwiftData / Keychain、WKWebView 和 bridge 边界。 |
 | `services/model-gateway/` | no | 已由模型服务 refactor Phase 创建或扩展；后续 Phase 6.5 只补 auth/session/entitlement，不在结构文档阶段写实现。 |
-| `services/translation-proxy/` | no | 由翻译分层 Phase 创建：Free 文本翻译独立转发服务，不在结构文档阶段写实现。 |
+| `services/translation-proxy/` | no | **暂废弃（v2.13 / ADR-0007）**：代码已存在但不再被路由，不新增、不删除；翻译统一入 model-gateway。 |
 | `apps/android/` | no | 后续平台，不进入首版实现。 |
 | `apps/macos/` | no | 后续平台，不进入首版实现。 |
 | `apps/windows/` | no | 后续平台，不进入首版实现。 |

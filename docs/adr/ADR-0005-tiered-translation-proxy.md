@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted, introduced by Product-Spec v2.5；amended by v2.7（Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型；翻译分层 / 独立代理 / 故障隔离 / 不做 BYOK 等核心决策不变，见末尾「v2.7 修订」段）
+**Superseded by ADR-0007**（Product-Spec v2.13：翻译统一入 model-gateway、暂废弃 translation-proxy，撤销本 ADR「Free 文本翻译走独立 proxy + 与付费 gateway 故障隔离」核心决策；proxy 代码暂保留、不再路由、不删，见 ADR-0007）。撤销原因：owner 重申模型系统统一、档位只管权限，proxy 的 Free 专用代理 + 故障隔离是额外复杂度。
+
+原状态（保留沿革）：Accepted, introduced by Product-Spec v2.5；amended by v2.7（Free 翻译 provider 从第三方通用翻译改为产品方服务端配置的便宜大模型；翻译分层 / 独立代理 / 故障隔离 / 不做 BYOK 等核心决策不变，见末尾「v2.7 修订」段）
 
 ## Context
 

@@ -1,5 +1,28 @@
 # 变更记录
 
+## [v2.13] - 2026-06-09
+
+### 修改（撤销 v2.5/v2.7 翻译分层 + v2.12 / ADR-0006 「proxy 不动」）
+
+- 🔴 翻译链路统一：Free 文本 / 字幕翻译从「走独立 translation-proxy」改为「统一走 model-gateway」；free / pro / max 只是开放的**权限不同**（可用模型范围 + 配额 + 解锁功能如解释 / 学习卡），翻译机制无区别——Free 用 model-gateway registry 的 free 档便宜模型（如 deepseek-chat）（位置：[技术方向] / [AI 服务与模型等级 → 模型系统与权限系统] / [AI 能力需求] / [MVP 范围]）—— 原因：owner 重申模型系统统一、档位只管权限；translation-proxy 的「Free 专用代理 + 故障隔离」是旧的额外复杂度，简化掉。
+
+### 决策
+
+- 🟡 translation-proxy 暂废弃：代码保留、不再路由、后续再处理（**非永久删除**）（位置：[非目标]）。
+- 🔴 取舍：放弃原「Free 翻译与大模型后端故障隔离、gateway 没起仍可翻」的保证——统一后 Free 翻译依赖 model-gateway 在跑（位置：[状态] / [MVP 范围]）。
+
+### 影响后续文档（本轮只改 Spec，下列随后单独走）
+
+- ARCHITECTURE.md / PROJECT-STRUCTURE.md：translation-proxy 平台矩阵 / 层次边界 / 目录职责、「两条翻译链路解耦」核心原则需同步更新（→ architecture-builder）。
+- ADR：ADR-0005 标 superseded、ADR-0006 纠正「proxy 物理路径不变」、新增 ADR-0007 记录统一决策（→ architecture-builder）。
+- iOS 代码：`TranslationProviderClient` 路由改 Free→model-gateway、删过时 proxy 分流测试（→ dev-builder）。
+
+### 位置
+
+- [状态] / [AI 能力需求] / [技术方向] / [AI 服务与模型等级 → 模型系统与权限系统] / [MVP 范围] / [非目标]
+
+---
+
 ## [v2.12] - 2026-06-05
 
 ### 重设计（模型系统与权限系统解耦）
