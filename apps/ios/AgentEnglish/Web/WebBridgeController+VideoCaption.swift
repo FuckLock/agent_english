@@ -24,6 +24,7 @@ extension WebBridgeController {
             videoCaptionTranslationKeys.removeAll()
             videoCaptionTranslationCache.removeAll()
             videoCaptionPrefetchedVideoId = nil
+            resetVideoCaptionChunkState()
             isSummonMenuPresented = false
             return
         }
@@ -46,12 +47,20 @@ extension WebBridgeController {
 
         let videoKey = state.videoId ?? state.pageId
 
-        // 字幕轨首次出现 → 异步批量预翻整轨填缓存（后续句直接命中、不逐句串行等 DeepSeek）。
+        // 字幕轨首次出现 → 取整轨句子按序切块，预翻当前滑窗（当前块 + 下一块）填缓存。
         if videoCaptionPrefetchedVideoId != videoKey {
             videoCaptionPrefetchedVideoId = videoKey
-            // 切到新视频：清旧译文缓存（键含 videoId、只留当前视频，避免跨视频内存累积）。
+            // 切到新视频：清旧译文缓存与分块状态（键含 videoId、只留当前视频，避免跨视频内存累积）。
             videoCaptionTranslationCache.removeAll()
-            prefetchVideoCaptionTranslations(videoKey: videoKey, state: state)
+            resetVideoCaptionChunkState()
+            loadVideoCaptionChunks(videoKey: videoKey, state: state)
+        } else {
+            // 播放推进 / 用户拖动 → 滑窗跟着当前句走，缺的块补预取。
+            ensureVideoCaptionPrefetchWindow(
+                videoKey: videoKey,
+                state: state,
+                aroundText: segment.sourceText
+            )
         }
 
         // 命中预取缓存 → 直接显示双语，不卡「等待字幕翻译」。
@@ -160,13 +169,67 @@ extension WebBridgeController {
         }
     }
 
-    // 批量预翻：字幕轨加载后取整轨全部句（getVideoCaptionLines 已暴露），一次性批量翻 → 填缓存。
-    // 修「翻译跟不上」：之前逐句串行等 DeepSeek（1-2 秒/句）跟不上字幕滚动、卡「等待字幕翻译」；
-    // 预取后播到当前句直接命中缓存显示双语。失败 / 未命中仍回退单句翻（不破坏 Phase 8.9 字幕翻译）。
-    private func prefetchVideoCaptionTranslations(
-        videoKey: String,
-        state: VideoCaptionOverlayState
-    ) {
+    // 分块滑窗预翻（修「翻译跟不上」）：整轨单批必撞 gateway 双闸——总字符 >1800 →
+    // content-too-long、配额按句计 / 单请求超档位上限 → quota-exceeded——预翻从未成功过，
+    // 句句退化为现场单句翻（1-2 秒/句跟不上台词滚动、常驻「字幕翻译中」）。
+    // 现按原始句序切块（块内保留对白上下文，批量对齐质量优于孤立单句；不再 Set 去重打乱句序），
+    // 只预翻「当前块 + 下一块」（Shorts 短轨 ≈ 整轨，长视频成本有界、划走少白翻），播放跨块时
+    // 由字幕状态回调事件驱动补预取；失败块最多重试 1 次，期间回退单句翻（不投毒）。
+    nonisolated static let videoCaptionChunkMaxLines = 12
+    nonisolated static let videoCaptionChunkMaxChars = 1500
+    nonisolated static let videoCaptionChunkWindowSize = 2
+    nonisolated static let videoCaptionChunkMaxAttempts = 2
+    nonisolated static let videoCaptionChunkMaxConcurrent = 2
+
+    /// 按原始句序切块：跳过空白句；块不超过 maxLines 句且不超过 maxChars 总字符
+    /// （双闸均留余量：gateway 限 1800 字符、Free 档配额单请求 20 句）。
+    /// 单句超长独占一块（交给 gateway 判 content-too-long，与单句现场翻同失败语义）。
+    nonisolated static func chunkCaptionTexts(
+        _ texts: [String],
+        maxLines: Int = videoCaptionChunkMaxLines,
+        maxChars: Int = videoCaptionChunkMaxChars
+    ) -> [[String]] {
+        var chunks: [[String]] = []
+        var current: [String] = []
+        var currentChars = 0
+
+        for text in texts {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                continue
+            }
+            if !current.isEmpty,
+               current.count >= maxLines || currentChars + trimmed.count > maxChars {
+                chunks.append(current)
+                current = []
+                currentChars = 0
+            }
+            current.append(trimmed)
+            currentChars += trimmed.count
+        }
+        if !current.isEmpty {
+            chunks.append(current)
+        }
+        return chunks
+    }
+
+    /// 当前句所在块的下标（句文本与块内文本同源自注入脚本的 videoCaptionLines，均已 normalize）。
+    nonisolated static func videoCaptionChunkIndex(containing text: String, in chunks: [[String]]) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+        return chunks.firstIndex(where: { $0.contains(trimmed) })
+    }
+
+    func resetVideoCaptionChunkState() {
+        videoCaptionChunks.removeAll()
+        videoCaptionChunkRequested.removeAll()
+        videoCaptionChunkAttempts.removeAll()
+        videoCaptionChunkInFlightCount = 0
+    }
+
+    private func loadVideoCaptionChunks(videoKey: String, state: VideoCaptionOverlayState) {
         guard let webView else {
             return
         }
@@ -180,58 +243,124 @@ extension WebBridgeController {
             else {
                 return
             }
-            let uniqueTexts = Array(
-                Set(texts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
-            )
-            guard !uniqueTexts.isEmpty else {
+            // evaluateJavaScript 回调在主线程；期间可能已划走视频 → 丢弃迟到的轨数据。
+            guard self.videoCaptionPrefetchedVideoId == videoKey else {
                 return
             }
+            self.videoCaptionChunks = Self.chunkCaptionTexts(texts)
+            guard !self.videoCaptionChunks.isEmpty else {
+                return
+            }
+            // 滑窗锚定当前句（用户可能已拖动进度条，不一定从第 0 块开始）。
+            let aroundText = self.videoCaptionState?.activeSegment?.sourceText
+                ?? state.activeSegment?.sourceText
+                ?? ""
+            self.ensureVideoCaptionPrefetchWindow(
+                videoKey: videoKey,
+                state: state,
+                aroundText: aroundText
+            )
+        }
+    }
 
-            Task { [weak self] in
-                guard let self else {
+    private func ensureVideoCaptionPrefetchWindow(
+        videoKey: String,
+        state: VideoCaptionOverlayState,
+        aroundText: String
+    ) {
+        guard !videoCaptionChunks.isEmpty else {
+            return
+        }
+        let currentIndex = Self.videoCaptionChunkIndex(
+            containing: aroundText,
+            in: videoCaptionChunks
+        ) ?? 0
+        let windowEnd = min(
+            currentIndex + Self.videoCaptionChunkWindowSize,
+            videoCaptionChunks.count
+        )
+        for index in currentIndex..<windowEnd {
+            guard
+                !videoCaptionChunkRequested.contains(index),
+                videoCaptionChunkAttempts[index, default: 0] < Self.videoCaptionChunkMaxAttempts,
+                videoCaptionChunkInFlightCount < Self.videoCaptionChunkMaxConcurrent
+            else {
+                continue
+            }
+            requestVideoCaptionChunk(index, videoKey: videoKey, state: state)
+        }
+    }
+
+    private func requestVideoCaptionChunk(
+        _ index: Int,
+        videoKey: String,
+        state: VideoCaptionOverlayState
+    ) {
+        videoCaptionChunkRequested.insert(index)
+        videoCaptionChunkAttempts[index, default: 0] += 1
+        videoCaptionChunkInFlightCount += 1
+        let texts = videoCaptionChunks[index]
+
+        Task { [weak self] in
+            guard let self else {
+                return
+            }
+            let preferences = await self.currentTranslationPreferences()
+            let (request, idToText) = await MainActor.run {
+                self.batchVideoCaptionRequest(
+                    texts: texts,
+                    state: state,
+                    preferences: preferences
+                )
+            }
+            let result = await self.providerClient.translate(request, preferences: preferences)
+
+            await MainActor.run {
+                // 划走视频后迟到的块结果直接丢弃（缓存已清、滑窗已重置）；此时计数器已被
+                // reset 归零，不再递减——否则会误减新视频正在飞行的计数。
+                guard self.videoCaptionPrefetchedVideoId == videoKey else {
                     return
                 }
-                let preferences = await self.currentTranslationPreferences()
-                let (request, idToText) = await MainActor.run {
-                    self.batchVideoCaptionRequest(
-                        texts: uniqueTexts,
-                        state: state,
-                        preferences: preferences
-                    )
-                }
-                let result = await self.providerClient.translate(request, preferences: preferences)
+                self.videoCaptionChunkInFlightCount = max(0, self.videoCaptionChunkInFlightCount - 1)
 
-                await MainActor.run {
-                    for segmentResult in result.segmentResults {
-                        guard
-                            let sourceText = idToText[segmentResult.segmentId],
-                            let translated = segmentResult.translatedText,
-                            !translated.isEmpty
-                        else {
-                            continue
-                        }
-                        self.videoCaptionTranslationCache["\(videoKey)\n\(sourceText)"] = translated
-                    }
-                    // 预取完成：若当前句已在缓存且尚未显示译文 → 立即刷新双语（不等下一次 timeupdate）。
+                var translatedCount = 0
+                for segmentResult in result.segmentResults {
                     guard
-                        let current = self.videoCaptionState,
-                        let activeSegment = current.activeSegment,
-                        activeSegment.translatedText?.isEmpty != false,
-                        let cached = self.videoCaptionTranslationCache["\(videoKey)\n\(activeSegment.sourceText)"],
-                        !cached.isEmpty
+                        let sourceText = idToText[segmentResult.segmentId],
+                        let translated = segmentResult.translatedText,
+                        !translated.isEmpty
                     else {
-                        return
+                        continue
                     }
-                    let refreshedSegment = activeSegment.with(translatedText: cached)
-                    let refreshedState = current.with(
-                        status: .translated,
-                        activeSegment: refreshedSegment,
-                        failureReason: nil,
-                        message: nil
-                    )
-                    self.videoCaptionState = refreshedState
-                    self.applyVideoCaptionOverlayState(refreshedState)
+                    self.videoCaptionTranslationCache["\(videoKey)\n\(sourceText)"] = translated
+                    translatedCount += 1
                 }
+
+                if translatedCount == 0 {
+                    // 整块失败：释放 requested，滑窗按 attempts 上限最多再试 1 次；句子由单句翻兜底。
+                    self.videoCaptionChunkRequested.remove(index)
+                    return
+                }
+
+                // 块完成：若当前句已在缓存且尚未显示译文 → 立即刷新双语（不等下一次 timeupdate）。
+                guard
+                    let current = self.videoCaptionState,
+                    let activeSegment = current.activeSegment,
+                    activeSegment.translatedText?.isEmpty != false,
+                    let cached = self.videoCaptionTranslationCache["\(videoKey)\n\(activeSegment.sourceText)"],
+                    !cached.isEmpty
+                else {
+                    return
+                }
+                let refreshedSegment = activeSegment.with(translatedText: cached)
+                let refreshedState = current.with(
+                    status: .translated,
+                    activeSegment: refreshedSegment,
+                    failureReason: nil,
+                    message: nil
+                )
+                self.videoCaptionState = refreshedState
+                self.applyVideoCaptionOverlayState(refreshedState)
             }
         }
     }
