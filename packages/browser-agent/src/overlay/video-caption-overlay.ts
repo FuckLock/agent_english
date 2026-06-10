@@ -187,7 +187,9 @@ function captionTextForState(
   }
 
   if (sourceText) {
-    return `${sourceText}\n${VIDEO_CAPTION_STATUS_LABELS[state.status]}`;
+    // 等待期只显示原文（去掉「字幕翻译中」等占位行）：译文经 JS 预埋或 native 推回后
+    // 再补第二行，观感与 YouTube 原生字幕一致（与 runtime-source/youtube-overlay 等价）。
+    return sourceText;
   }
 
   return state.message ?? VIDEO_CAPTION_STATUS_LABELS[state.status];

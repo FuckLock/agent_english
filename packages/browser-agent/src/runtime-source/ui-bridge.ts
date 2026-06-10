@@ -219,6 +219,9 @@ export const RUNTIME_UI_BRIDGE_SOURCE = String.raw`  // YouTube 整站识别 / �
     applyTranslationResult,
     applyTranslationFailure,
     applyVideoCaptionOverlayState,
+    // native 块预翻 / 单句翻完成后预埋译文到 JS 侧（youtube-caption-track-source 声明），
+    // 换句首帧即双语、消除占位闪烁。
+    primeVideoCaptionTranslations,
     requestVideoAudioTranslation,
     postVideoAudioState,
     applySelectionExplanationFailure,

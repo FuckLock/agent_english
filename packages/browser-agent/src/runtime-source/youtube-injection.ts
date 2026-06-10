@@ -208,5 +208,7 @@ export const RUNTIME_YOUTUBE_INJECTION_SOURCE = String.raw`  const readActiveYou
     syncActiveCaptionLine,
     resetVideoCaptionTrack,
     getVideoCaptionLines: () => videoCaptionLines,
+    primeVideoCaptionTranslations,
+    getVideoCaptionTranslations: () => videoCaptionTranslations,
   };
 `;

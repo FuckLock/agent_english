@@ -54,6 +54,9 @@ enum BrowserAgentRuntimeSource {
   let videoCaptionTrackUnavailable = false;
   let videoTimeUpdateBound = false;
   let lastVideoTimeUpdateAt = 0;
+  // native 预埋的译文表（原文 → 译文，仅当前视频、内存态）：换句构造状态时直接查表带译文，
+  // 首帧即双语——消除「先渲染占位、native 推回再换双语」的闪烁。SPA 切视频随轨重置。
+  let videoCaptionTranslations = {};
 
   const postBridgeEvent = (eventType, payload, metadata = {}) => {
     bridge.postMessage({
@@ -417,8 +420,9 @@ enum BrowserAgentRuntimeSource {
       return state.activeSegment.sourceText + "\n" + state.activeSegment.translatedText;
     }
     if (state.activeSegment?.sourceText) {
-      const statusText = state.status === "translating" ? "字幕翻译中" : "等待字幕翻译";
-      return state.activeSegment.sourceText + "\n" + statusText;
+      // 等待期只显示原文（去掉「字幕翻译中 / 等待字幕翻译」占位行）：译文经 JS 预埋
+      // 或 native 推回后再补第二行，观感与 YouTube 原生字幕一致。
+      return state.activeSegment.sourceText;
     }
     if (state.status === "detecting") {
       return "正在识别字幕";
@@ -705,8 +709,37 @@ enum BrowserAgentRuntimeSource {
     videoCaptionTrackLanguage = "";
     videoCaptionTrackIsAuto = false;
     videoCaptionTrackUnavailable = false;
+    videoCaptionTranslations = {};
     lastVideoCaptionSignature = "";
     lastVideoTimeUpdateAt = 0;
+  };
+  // native 块预翻 / 单句翻完成后预埋译文（payload: { videoId, entries: { 原文: 译文 } }）。
+  // videoId 不匹配当前轨 → 划走视频后迟到的预埋，直接丢弃；预埋成功立即重同步当前句，
+  // 译文恰是当前句时不等下一次 timeupdate。
+  const primeVideoCaptionTranslations = (payload) => {
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+    // 当前视频 videoId：轨道加载空窗期（reset 后 videoCaptionTrackVideoId 尚为空）
+    // 回退 URL videoId 兜底，防止划走视频后 A 的迟到预埋污染 B 的译文表。
+    const currentVideoId = videoCaptionTrackVideoId || detectYouTubePage().videoId || "";
+    if (payload.videoId && currentVideoId && payload.videoId !== currentVideoId) {
+      return false;
+    }
+    const entries = payload.entries && typeof payload.entries === "object" ? payload.entries : {};
+    let primedCount = 0;
+    for (const sourceText of Object.keys(entries)) {
+      const translatedText = entries[sourceText];
+      if (sourceText && typeof translatedText === "string" && translatedText) {
+        videoCaptionTranslations[sourceText] = translatedText;
+        primedCount += 1;
+      }
+    }
+    if (primedCount > 0) {
+      const video = document.querySelector("video");
+      syncActiveCaptionLine(video && typeof video.currentTime === "number" ? video.currentTime : 0, false);
+    }
+    return primedCount > 0;
   };
   const captionTrackTargetLanguageCode = () => (
     typeof window.__agentEnglishTargetLanguageCode === "string"
@@ -775,8 +808,12 @@ enum BrowserAgentRuntimeSource {
         ? { sourceText: "", failureReason: "caption-unavailable" }
         : { sourceText: "" };
     }
+    // 查 native 预埋译文表：命中则首帧即双语（status translated），不再先渲染占位等推回。
+    const translatedText = videoCaptionTranslations[line.sourceText];
     return {
       sourceText: line.sourceText,
+      translatedText: translatedText || undefined,
+      status: translatedText ? "translated" : undefined,
       startTimeSeconds: line.startTimeSeconds,
       endTimeSeconds: line.endTimeSeconds,
       selectedTrackLanguage: videoCaptionTrackLanguage || undefined,
@@ -1150,6 +1187,8 @@ enum BrowserAgentRuntimeSource {
     syncActiveCaptionLine,
     resetVideoCaptionTrack,
     getVideoCaptionLines: () => videoCaptionLines,
+    primeVideoCaptionTranslations,
+    getVideoCaptionTranslations: () => videoCaptionTranslations,
   };
 
   // YouTube 整站识别 / 字幕状态 / overlay 渲染 / SPA 路由监听由 youtube-overlay +
@@ -1373,6 +1412,9 @@ enum BrowserAgentRuntimeSource {
     applyTranslationResult,
     applyTranslationFailure,
     applyVideoCaptionOverlayState,
+    // native 块预翻 / 单句翻完成后预埋译文到 JS 侧（youtube-caption-track-source 声明），
+    // 换句首帧即双语、消除占位闪烁。
+    primeVideoCaptionTranslations,
     requestVideoAudioTranslation,
     postVideoAudioState,
     applySelectionExplanationFailure,

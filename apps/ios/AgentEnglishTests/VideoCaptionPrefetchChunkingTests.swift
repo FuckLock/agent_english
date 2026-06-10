@@ -18,9 +18,23 @@ final class VideoCaptionPrefetchChunkingTests: XCTestCase {
 
     func testChunkingRespectsMaxLines() {
         let lines = (0..<25).map { "line \($0)" }
-        let chunks = WebBridgeController.chunkCaptionTexts(lines, maxLines: 12, maxChars: 1500)
+        let chunks = WebBridgeController.chunkCaptionTexts(
+            lines,
+            maxLines: 12,
+            maxChars: 1500,
+            firstChunkMaxLines: 12
+        )
 
         XCTAssertEqual(chunks.map(\.count), [12, 12, 1])
+        XCTAssertEqual(chunks.flatMap { $0 }, lines)
+    }
+
+    func testFirstChunkIsSmallerForFastFirstTranslation() {
+        // 默认首块 4 句（快速返回首批译文），后续块按 12 句切。
+        let lines = (0..<20).map { "line \($0)" }
+        let chunks = WebBridgeController.chunkCaptionTexts(lines)
+
+        XCTAssertEqual(chunks.map(\.count), [4, 12, 4])
         XCTAssertEqual(chunks.flatMap { $0 }, lines)
     }
 
@@ -29,7 +43,12 @@ final class VideoCaptionPrefetchChunkingTests: XCTestCase {
         let lines = (0..<16).map { index in
             String(repeating: Character(UnicodeScalar(UInt8(97 + index))), count: 100)
         }
-        let chunks = WebBridgeController.chunkCaptionTexts(lines, maxLines: 20, maxChars: 1500)
+        let chunks = WebBridgeController.chunkCaptionTexts(
+            lines,
+            maxLines: 20,
+            maxChars: 1500,
+            firstChunkMaxLines: 20
+        )
 
         XCTAssertEqual(chunks.map(\.count), [15, 1])
         XCTAssertLessThanOrEqual(chunks[0].reduce(0) { $0 + $1.count }, 1500)

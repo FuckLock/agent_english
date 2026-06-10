@@ -114,6 +114,11 @@ extension WebBridgeController {
 
                 if let translatedText = segmentResult?.translatedText, !translatedText.isEmpty {
                     self.videoCaptionTranslationCache[cacheKey] = translatedText
+                    // 单句翻成功同样预埋 JS：同句再次 active（循环播放 / 回拖）首帧即双语。
+                    self.primeVideoCaptionTranslations(
+                        videoId: state.videoId,
+                        entries: [segment.sourceText: translatedText]
+                    )
                     let translatedSegment = segment.with(translatedText: translatedText)
                     let translatedState = state.with(
                         status: .translated,
@@ -180,14 +185,19 @@ extension WebBridgeController {
     nonisolated static let videoCaptionChunkWindowSize = 2
     nonisolated static let videoCaptionChunkMaxAttempts = 2
     nonisolated static let videoCaptionChunkMaxConcurrent = 2
+    // 首块更小：4 句输出 token 少、~1 秒即返，第 2 句 active 前缓存已就位——把「字幕翻译中」
+    // 占位收窄到只剩首句一次服务器往返（物理下限）。
+    nonisolated static let videoCaptionFirstChunkMaxLines = 4
 
     /// 按原始句序切块：跳过空白句；块不超过 maxLines 句且不超过 maxChars 总字符
-    /// （双闸均留余量：gateway 限 1800 字符、Free 档配额单请求 20 句）。
-    /// 单句超长独占一块（交给 gateway 判 content-too-long，与单句现场翻同失败语义）。
+    /// （双闸均留余量：gateway 限 1800 字符、Free 档配额单请求 20 句）；首块上限
+    /// firstChunkMaxLines（更快返回首批译文）。单句超长独占一块（交给 gateway 判
+    /// content-too-long，与单句现场翻同失败语义）。
     nonisolated static func chunkCaptionTexts(
         _ texts: [String],
         maxLines: Int = videoCaptionChunkMaxLines,
-        maxChars: Int = videoCaptionChunkMaxChars
+        maxChars: Int = videoCaptionChunkMaxChars,
+        firstChunkMaxLines: Int = videoCaptionFirstChunkMaxLines
     ) -> [[String]] {
         var chunks: [[String]] = []
         var current: [String] = []
@@ -198,8 +208,9 @@ extension WebBridgeController {
             guard !trimmed.isEmpty else {
                 continue
             }
+            let lineLimit = chunks.isEmpty ? min(firstChunkMaxLines, maxLines) : maxLines
             if !current.isEmpty,
-               current.count >= maxLines || currentChars + trimmed.count > maxChars {
+               current.count >= lineLimit || currentChars + trimmed.count > maxChars {
                 chunks.append(current)
                 current = []
                 currentChars = 0
@@ -323,7 +334,7 @@ extension WebBridgeController {
                 }
                 self.videoCaptionChunkInFlightCount = max(0, self.videoCaptionChunkInFlightCount - 1)
 
-                var translatedCount = 0
+                var primedEntries: [String: String] = [:]
                 for segmentResult in result.segmentResults {
                     guard
                         let sourceText = idToText[segmentResult.segmentId],
@@ -333,14 +344,18 @@ extension WebBridgeController {
                         continue
                     }
                     self.videoCaptionTranslationCache["\(videoKey)\n\(sourceText)"] = translated
-                    translatedCount += 1
+                    primedEntries[sourceText] = translated
                 }
 
-                if translatedCount == 0 {
+                if primedEntries.isEmpty {
                     // 整块失败：释放 requested，滑窗按 attempts 上限最多再试 1 次；句子由单句翻兜底。
                     self.videoCaptionChunkRequested.remove(index)
                     return
                 }
+
+                // 预埋译文到 JS 侧（修占位闪烁）：换句时 JS 查表首帧即双语，不再等 native 推回；
+                // 下方 native 缓存刷新保留作预埋失败时的兜底。
+                self.primeVideoCaptionTranslations(videoId: state.videoId, entries: primedEntries)
 
                 // 块完成：若当前句已在缓存且尚未显示译文 → 立即刷新双语（不等下一次 timeupdate）。
                 guard
@@ -453,6 +468,21 @@ extension WebBridgeController {
         }
 
         evaluateBridgeCommand(named: "applyVideoCaptionOverlayState", argument: payload)
+    }
+
+    /// 把译文预埋进 JS 侧译文表（原文 → 译文）：换句时 JS 查表首帧即双语，消除
+    /// 「先渲染占位、native 推回再换双语」的闪烁。videoId 供 JS 侧丢弃划走视频的迟到预埋。
+    func primeVideoCaptionTranslations(videoId: String?, entries: [String: String]) {
+        guard
+            !entries.isEmpty,
+            let payload = jsonString(
+                PrimeVideoCaptionTranslationsPayload(videoId: videoId, entries: entries)
+            )
+        else {
+            return
+        }
+
+        evaluateBridgeCommand(named: "primeVideoCaptionTranslations", argument: payload)
     }
 
     func videoCaptionFailureReason(
@@ -576,4 +606,9 @@ extension VideoCaptionOverlayState {
             updatedAt: ISO8601DateFormatter().string(from: .now)
         )
     }
+}
+
+struct PrimeVideoCaptionTranslationsPayload: Encodable {
+    let videoId: String?
+    let entries: [String: String]
 }

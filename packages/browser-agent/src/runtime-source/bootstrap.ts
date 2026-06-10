@@ -49,6 +49,9 @@ export const RUNTIME_BOOTSTRAP_SOURCE = String.raw`(() => {
   let videoCaptionTrackUnavailable = false;
   let videoTimeUpdateBound = false;
   let lastVideoTimeUpdateAt = 0;
+  // native 预埋的译文表（原文 → 译文，仅当前视频、内存态）：换句构造状态时直接查表带译文，
+  // 首帧即双语——消除「先渲染占位、native 推回再换双语」的闪烁。SPA 切视频随轨重置。
+  let videoCaptionTranslations = {};
 
   const postBridgeEvent = (eventType, payload, metadata = {}) => {
     bridge.postMessage({

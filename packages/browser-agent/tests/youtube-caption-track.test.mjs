@@ -782,3 +782,113 @@ test("E9: Shorts 视频页也走 InnerTube 取字幕（按 URL videoId，不依�
     "InnerTube body carries shorts videoId from URL",
   );
 });
+
+// ===========================================================================
+// E10 — native 预埋译文（primeVideoCaptionTranslations）· 占位闪烁修复：
+// 换句构造状态时直接查 JS 侧译文表，首帧即双语，不再「先渲染占位、native 推回再换」。
+// ===========================================================================
+async function createPrimedHarness() {
+  const harness = createCaptionHarness({
+    url: WATCH_URL,
+    playerResponse: buildPlayerResponse(watchCaptionTracks()),
+    json3Payload: buildJson3Payload(),
+  });
+  const yt = harness.youtube;
+  await flushMicrotasks();
+  yt.resetVideoCaptionTrack();
+  const hasLines = await yt.ensureVideoCaptionTrackLoaded();
+  assert.equal(hasLines, true, "caption lines should load from stub json3");
+  return { harness, yt };
+}
+
+function captionOverlay(harness) {
+  return harness.windowLike.document.getElementById("agent-english-video-caption-overlay");
+}
+
+test("E10: primed line renders bilingual on the first frame of line change", async () => {
+  const { harness, yt } = await createPrimedHarness();
+
+  const primed = yt.primeVideoCaptionTranslations({
+    videoId: "abc123",
+    entries: { "second line": "第二行" },
+  });
+  assert.equal(primed, true);
+
+  harness.postedEvents.length = 0;
+  yt.syncActiveCaptionLine(2.5, false);
+
+  assert.equal(captionOverlay(harness).textContent, "second line\n第二行");
+  const lastEvent = harness.postedEvents
+    .filter((event) => event.eventType === "video.caption.state.changed")
+    .pop();
+  assert.equal(lastEvent.payload.status, "translated");
+  assert.equal(lastEvent.payload.activeSegment.translatedText, "第二行");
+});
+
+test("E10: un-primed waiting line renders source only (no placeholder line)", async () => {
+  const { harness, yt } = await createPrimedHarness();
+
+  yt.syncActiveCaptionLine(0.5, false);
+
+  assert.equal(captionOverlay(harness).textContent, "first line");
+});
+
+test("E10: priming the currently displayed line refreshes overlay immediately", async () => {
+  const { harness, yt } = await createPrimedHarness();
+
+  harness.setCurrentTime(2.5);
+  yt.syncActiveCaptionLine(2.5, false);
+  assert.equal(captionOverlay(harness).textContent, "second line");
+
+  yt.primeVideoCaptionTranslations({
+    videoId: "abc123",
+    entries: { "second line": "第二行" },
+  });
+
+  assert.equal(captionOverlay(harness).textContent, "second line\n第二行");
+});
+
+test("E10: prime with mismatched videoId is dropped (stale after swipe)", async () => {
+  const { yt } = await createPrimedHarness();
+
+  const primed = yt.primeVideoCaptionTranslations({
+    videoId: "someOtherVideo",
+    entries: { "second line": "第二行" },
+  });
+
+  assert.equal(primed, false);
+  // vm 跨上下文对象原型不同，deepStrictEqual 会报引用不等——用 JSON 序列化比较。
+  assert.equal(JSON.stringify(yt.getVideoCaptionTranslations()), "{}");
+});
+
+test("E10: SPA route change clears primed translations with the track", async () => {
+  const { harness, yt } = await createPrimedHarness();
+
+  yt.primeVideoCaptionTranslations({
+    videoId: "abc123",
+    entries: { "second line": "第二行" },
+  });
+  assert.equal(
+    JSON.stringify(yt.getVideoCaptionTranslations()),
+    JSON.stringify({ "second line": "第二行" }),
+  );
+
+  harness.navigate(WATCH_URL_B);
+
+  assert.equal(JSON.stringify(yt.getVideoCaptionTranslations()), "{}");
+});
+
+test("E10: late prime from previous video is dropped while next track is still loading", async () => {
+  const { harness, yt } = await createPrimedHarness();
+
+  // 切到视频 B：resetVideoCaptionTrack 已清 videoCaptionTrackVideoId（轨道加载空窗期），
+  // 此时 A（abc123）的迟到预埋必须被 URL videoId（def456）兜底拦下。
+  harness.navigate(WATCH_URL_B);
+  const primed = yt.primeVideoCaptionTranslations({
+    videoId: "abc123",
+    entries: { "second line": "第二行" },
+  });
+
+  assert.equal(primed, false);
+  assert.equal(JSON.stringify(yt.getVideoCaptionTranslations()), "{}");
+});

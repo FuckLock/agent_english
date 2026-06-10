@@ -49,8 +49,9 @@ export const RUNTIME_YOUTUBE_OVERLAY_SOURCE = String.raw`  const detectYouTubePa
       return state.activeSegment.sourceText + "\n" + state.activeSegment.translatedText;
     }
     if (state.activeSegment?.sourceText) {
-      const statusText = state.status === "translating" ? "字幕翻译中" : "等待字幕翻译";
-      return state.activeSegment.sourceText + "\n" + statusText;
+      // 等待期只显示原文（去掉「字幕翻译中 / 等待字幕翻译」占位行）：译文经 JS 预埋
+      // 或 native 推回后再补第二行，观感与 YouTube 原生字幕一致。
+      return state.activeSegment.sourceText;
     }
     if (state.status === "detecting") {
       return "正在识别字幕";
