@@ -137,6 +137,23 @@ test("model routes reject missing session token before using guest entitlement",
   assert.equal(entitlement.body.error.message, "Model service session is required.");
 });
 
+test("stale session token returns 401 (not 503) so clients can re-auth and retry", () => {
+  // gateway 重启后内存 session 丢失的场景：旧 token 查不到 → 401，
+  // 503 留给真正的服务故障（provider-fallback 等）。
+  const entitlement = resolveSessionEntitlement(
+    { authorization: "Bearer session_stale-from-previous-process" },
+    mockEnv,
+    new SessionStore(),
+  );
+
+  assert.equal("statusCode" in entitlement, true);
+  assert.equal(entitlement.statusCode, 401);
+  assert.equal(
+    entitlement.body.error.message,
+    "Model service session is invalid or expired.",
+  );
+});
+
 test("session store can restore and revoke a logout token", () => {
   const sessionStore = new SessionStore();
   const guest = sessionStore.createGuestSession();

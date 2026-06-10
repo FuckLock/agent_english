@@ -159,6 +159,164 @@ final class ModelServiceTransportRequestTests: XCTestCase {
         XCTAssertEqual(catalog.currentTier, .free)
         XCTAssertEqual(try KeychainCredentialStore.loadSessionToken(), "guest-session-token")
     }
+
+    func testStaleSessionTokenGets401ThenReissuesGuestSessionAndRetriesOnce() async throws {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [RecordingURLProtocol.self]
+        let session = URLSession(configuration: config)
+        let transport = URLSessionModelServiceTransport(
+            serviceRoot: URL(string: "https://example.com")!,
+            session: session,
+            tokenProvider: { "stale-session-token" }
+        )
+        var requests: [(path: String, authorization: String?)] = []
+
+        RecordingURLProtocol.handler = { request in
+            requests.append((request.url?.path ?? "", request.value(forHTTPHeaderField: "Authorization")))
+
+            if request.url?.path == "/v1/sessions/guest" {
+                return (
+                    Self.jsonResponse(for: request),
+                    Self.guestSessionPayload(token: "reissued-guest-token")
+                )
+            }
+
+            if request.value(forHTTPHeaderField: "Authorization") == "Bearer stale-session-token" {
+                let payload = """
+                {"error":{"code":"service-unavailable","message":"Model service session is invalid or expired.","retryable":true}}
+                """.data(using: .utf8)!
+                return (Self.jsonResponse(for: request, statusCode: 401), payload)
+            }
+
+            XCTAssertEqual(
+                request.value(forHTTPHeaderField: "Authorization"),
+                "Bearer reissued-guest-token"
+            )
+            return (Self.jsonResponse(for: request), Self.freeCatalogPayload)
+        }
+
+        let catalog = try await transport.catalog(for: .free)
+
+        XCTAssertEqual(
+            requests.map(\.path),
+            ["/v1/model-catalog", "/v1/sessions/guest", "/v1/model-catalog"]
+        )
+        // 换发时带上旧 token，gateway 可尝试恢复后再决定换发
+        XCTAssertEqual(requests[1].authorization, "Bearer stale-session-token")
+        XCTAssertEqual(catalog.currentTier, .free)
+        XCTAssertEqual(try KeychainCredentialStore.loadSessionToken(), "reissued-guest-token")
+    }
+
+    func testRetryAfter401HappensOnlyOnceWhenSessionStaysInvalid() async {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [RecordingURLProtocol.self]
+        let session = URLSession(configuration: config)
+        let transport = URLSessionModelServiceTransport(
+            serviceRoot: URL(string: "https://example.com")!,
+            session: session,
+            tokenProvider: { "stale-session-token" }
+        )
+        var paths: [String] = []
+
+        RecordingURLProtocol.handler = { request in
+            paths.append(request.url?.path ?? "")
+
+            if request.url?.path == "/v1/sessions/guest" {
+                return (
+                    Self.jsonResponse(for: request),
+                    Self.guestSessionPayload(token: "reissued-guest-token")
+                )
+            }
+
+            let payload = """
+            {"error":{"code":"service-unavailable","message":"Model service session is invalid or expired.","retryable":true}}
+            """.data(using: .utf8)!
+            return (Self.jsonResponse(for: request, statusCode: 401), payload)
+        }
+
+        do {
+            _ = try await transport.catalog(for: .free)
+            XCTFail("Expected transport to throw after the single 401 retry failed.")
+        } catch {
+            XCTAssertEqual((error as? ModelServiceTransportError)?.code, .serviceUnavailable)
+        }
+        XCTAssertEqual(
+            paths,
+            ["/v1/model-catalog", "/v1/sessions/guest", "/v1/model-catalog"]
+        )
+    }
+
+    private static func jsonResponse(for request: URLRequest, statusCode: Int = 200) -> HTTPURLResponse {
+        HTTPURLResponse(
+            url: request.url!,
+            statusCode: statusCode,
+            httpVersion: nil,
+            headerFields: ["Content-Type": "application/json"]
+        )!
+    }
+
+    private static let freeCatalogPayload = """
+    {
+      "currentTier": "free",
+      "availableTiers": ["free", "pro", "max"],
+      "defaultModelId": "deepseek-chat",
+      "options": [],
+      "quota": {
+        "status": "ok",
+        "used": 0,
+        "limit": 20,
+        "remaining": 20,
+        "resetAt": "2026-05-23T00:00:00Z"
+      },
+      "lastUpdatedAt": "2026-05-22T00:00:00Z"
+    }
+    """.data(using: .utf8)!
+
+    private static func guestSessionPayload(token: String) -> Data {
+        """
+        {
+          "sessionToken": "\(token)",
+          "expiresAt": "2026-06-21T00:00:00Z",
+          "account": {
+            "kind": "guest",
+            "displayName": "游客模式",
+            "serviceTier": "free",
+            "isTestAccount": false
+          },
+          "entitlement": {
+            "account": {
+              "kind": "guest",
+              "displayName": "游客模式",
+              "serviceTier": "free",
+              "isTestAccount": false
+            },
+            "serviceTier": "free",
+            "quota": {
+              "status": "ok",
+              "used": 0,
+              "limit": 20,
+              "remaining": 20,
+              "resetAt": "2026-05-23T00:00:00Z"
+            },
+            "catalog": {
+              "currentTier": "free",
+              "availableTiers": ["free", "pro", "max"],
+              "defaultModelId": "deepseek-chat",
+              "options": [],
+              "quota": {
+                "status": "ok",
+                "used": 0,
+                "limit": 20,
+                "remaining": 20,
+                "resetAt": "2026-05-23T00:00:00Z"
+              },
+              "lastUpdatedAt": "2026-05-22T00:00:00Z"
+            },
+            "refreshedAt": "2026-05-22T00:00:00Z"
+          }
+        }
+        """.data(using: .utf8)!
+    }
 }
 
 private final class RecordingURLProtocol: URLProtocol {

@@ -296,16 +296,32 @@ public struct URLSessionModelServiceTransport: ModelServiceTransport {
             throw ModelServiceTransportError.transport(.serviceUnavailable)
         }
 
-        var request = URLRequest(url: serviceRoot.appending(path: path))
-        request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let encodedBody = try body.map { try JSONEncoder().encode($0) }
         let sessionToken = try await resolvedRequestSessionToken(serviceRoot: serviceRoot)
-        request.setValue("Bearer \(sessionToken)", forHTTPHeaderField: "Authorization")
-        if let body { request.httpBody = try JSONEncoder().encode(body) }
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ModelServiceTransportError.transport(.serviceUnavailable)
+        var (data, httpResponse) = try await perform(
+            path: path,
+            method: method,
+            encodedBody: encodedBody,
+            sessionToken: sessionToken,
+            serviceRoot: serviceRoot
+        )
+
+        // 401 = session 失效（gateway session 存内存，重启即丢）：换发 guest session 后原请求
+        // 重试一次。只认 401——503 是服务真不可用，换 token 解决不了；且不能在 503 时清登录态。
+        if httpResponse.statusCode == 401 {
+            let refreshedToken = try await refreshedGuestSessionToken(
+                serviceRoot: serviceRoot,
+                staleSessionToken: sessionToken
+            )
+            (data, httpResponse) = try await perform(
+                path: path,
+                method: method,
+                encodedBody: encodedBody,
+                sessionToken: refreshedToken,
+                serviceRoot: serviceRoot
+            )
         }
+
         guard (200..<300).contains(httpResponse.statusCode) else {
             if let errorEnvelope = try? JSONDecoder().decode(ServiceErrorEnvelope.self, from: data), let error = errorEnvelope.error {
                 throw ModelServiceTransportError.service(error)
@@ -315,15 +331,42 @@ public struct URLSessionModelServiceTransport: ModelServiceTransport {
         return try JSONDecoder().decode(TResponse.self, from: data)
     }
 
+    private func perform(
+        path: String,
+        method: String,
+        encodedBody: Data?,
+        sessionToken: String,
+        serviceRoot: URL
+    ) async throws -> (Data, HTTPURLResponse) {
+        var request = URLRequest(url: serviceRoot.appending(path: path))
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(sessionToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = encodedBody
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ModelServiceTransportError.transport(.serviceUnavailable)
+        }
+        return (data, httpResponse)
+    }
+
     private func resolvedRequestSessionToken(serviceRoot: URL) async throws -> String {
         if let sessionToken = try tokenProvider(), !sessionToken.isEmpty {
             return sessionToken
         }
+        return try await refreshedGuestSessionToken(serviceRoot: serviceRoot, staleSessionToken: nil)
+    }
 
+    private func refreshedGuestSessionToken(
+        serviceRoot: URL,
+        staleSessionToken: String?
+    ) async throws -> String {
+        // gateway 的 /v1/sessions/guest 对失效 token 会直接换发新 guest session；
+        // 登录态（dev-pro / dev-max）的 session 服务端已丢失，只能降级 guest，可在设置页重新登录。
         let guestSession = try await URLSessionAccountSessionTransport(
             serviceRoot: serviceRoot,
             session: session
-        ).guestSession(existingSessionToken: nil)
+        ).guestSession(existingSessionToken: staleSessionToken)
         try KeychainCredentialStore.saveSessionToken(guestSession.sessionToken)
         return guestSession.sessionToken
     }

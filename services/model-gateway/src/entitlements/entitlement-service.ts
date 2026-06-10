@@ -92,12 +92,15 @@ export function resolveSessionEntitlement(
 
   const session = sessionStore.session(token);
   if (!session) {
+    // 失效 / 过期 session 必须是 401 而非 503：503 与"服务真不可用"共用一个
+    // 状态码会让客户端无法区分"该换 token 重试"和"该直接报错"，
+    // 客户端（iOS transport）依赖 401 触发 guest session 换发 + 单次重试。
     return {
-      statusCode: 503,
+      statusCode: 401,
       body: {
         error: {
           code: "service-unavailable",
-          message: "Model service session is unavailable right now.",
+          message: "Model service session is invalid or expired.",
           retryable: true,
         },
       },
