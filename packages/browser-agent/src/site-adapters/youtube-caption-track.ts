@@ -254,6 +254,67 @@ export function parseJson3Captions(
   return lines;
 }
 
+const SENTENCE_MERGE_GAP_SECONDS = 1.2;
+const SENTENCE_MERGE_MAX_CHARS = 140;
+const SENTENCE_TERMINAL_PATTERN = /[.!?…。！？][)\]"'”’]*$/;
+const SPEAKER_CHANGE_PATTERN = /^[-–—♪>»]/;
+
+/**
+ * 把 cue 级字幕片段按原始时间序合并为完整句（修「每句话不全」）：json3 的 cue 是按
+ * 显示时间切的片段而非完整句，逐片段显示 / 翻译会让中英文都断在半截。
+ * 断句条件（任一命中即闭合当前句）：
+ * - 片段以句末标点结尾（允许尾随引号 / 括号）——人工轨标准断句；
+ * - 与下一片段时间间隔 > 1.2 秒（说话停顿即句界）——兜底无标点的 ASR 自动轨；
+ * - 合并长度将超 140 字符——防字幕叠层盒过高（极长句保护）；
+ * - 下一片段以对白换行符 / 音乐符开头（- – — ♪ 等）——不同说话人不粘成一句。
+ * 另：跳过与组尾相同的连续重复片段（ASR 滚动窗会重复上一片段文本）。
+ * 合并句时间范围 = 首片段 start → 末片段 end（整句自首片段起完整显示，字幕略前于语音）。
+ */
+export function mergeCaptionLinesIntoSentences(
+  lines: readonly YouTubeCaptionLine[],
+): YouTubeCaptionLine[] {
+  const merged: YouTubeCaptionLine[] = [];
+  let group: YouTubeCaptionLine | null = null;
+  let lastFragmentText = "";
+
+  for (const line of lines) {
+    if (group) {
+      const gapSeconds = line.startTimeSeconds - group.endTimeSeconds;
+      const wouldOverflow =
+        group.sourceText.length + 1 + line.sourceText.length > SENTENCE_MERGE_MAX_CHARS;
+      if (
+        gapSeconds > SENTENCE_MERGE_GAP_SECONDS
+        || wouldOverflow
+        || SPEAKER_CHANGE_PATTERN.test(line.sourceText)
+      ) {
+        merged.push(group);
+        group = null;
+      }
+    }
+
+    if (group) {
+      if (line.sourceText !== lastFragmentText) {
+        group.sourceText += ` ${line.sourceText}`;
+        lastFragmentText = line.sourceText;
+      }
+      group.endTimeSeconds = Math.max(group.endTimeSeconds, line.endTimeSeconds);
+    } else {
+      group = { ...line };
+      lastFragmentText = line.sourceText;
+    }
+
+    if (SENTENCE_TERMINAL_PATTERN.test(group.sourceText)) {
+      merged.push(group);
+      group = null;
+      lastFragmentText = "";
+    }
+  }
+  if (group) {
+    merged.push(group);
+  }
+  return merged;
+}
+
 /**
  * 按 `currentTime`（秒）在已解析字幕句序列中定位当前句。区间为左闭右开 `[start, end)`。
  * 命中多句时取 startTimeSeconds 最大（最贴近当前播放点）的一句；无命中返回 null。

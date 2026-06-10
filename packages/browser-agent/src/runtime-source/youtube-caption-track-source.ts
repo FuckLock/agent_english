@@ -146,6 +146,61 @@ export const RUNTIME_YOUTUBE_CAPTION_TRACK_SOURCE = String.raw`  const CAPTION_T
     lines.sort((left, right) => left.startTimeSeconds - right.startTimeSeconds);
     return lines;
   };
+  // 把 cue 级字幕片段按原始时间序合并为完整句（修「每句话不全」）：json3 的 cue 是按显示时间
+  // 切的片段而非完整句，逐片段显示 / 翻译会让中英文都断在半截。断句条件（任一命中即闭合）：
+  // 句末标点（人工轨）/ 间隔 >1.2 秒（兜底无标点 ASR）/ 合并将超 140 字符（防叠层盒过高）/
+  // 下一片段以对白换行符或音乐符开头（不同说话人不粘句）。跳过连续重复片段（ASR 滚动窗）。
+  // 合并句时间范围 = 首片段 start → 末片段 end；与 site-adapters/youtube-caption-track.ts 等价。
+  const SENTENCE_MERGE_GAP_SECONDS = 1.2;
+  const SENTENCE_MERGE_MAX_CHARS = 140;
+  const SENTENCE_TERMINAL_PATTERN = /[.!?…。！？][)\]"'”’]*$/;
+  const SPEAKER_CHANGE_PATTERN = /^[-–—♪>»]/;
+  const mergeCaptionLinesIntoSentences = (lines) => {
+    const merged = [];
+    let group = null;
+    let lastFragmentText = "";
+
+    for (const line of lines) {
+      if (group) {
+        const gapSeconds = line.startTimeSeconds - group.endTimeSeconds;
+        const wouldOverflow =
+          group.sourceText.length + 1 + line.sourceText.length > SENTENCE_MERGE_MAX_CHARS;
+        if (
+          gapSeconds > SENTENCE_MERGE_GAP_SECONDS
+          || wouldOverflow
+          || SPEAKER_CHANGE_PATTERN.test(line.sourceText)
+        ) {
+          merged.push(group);
+          group = null;
+        }
+      }
+
+      if (group) {
+        if (line.sourceText !== lastFragmentText) {
+          group.sourceText += " " + line.sourceText;
+          lastFragmentText = line.sourceText;
+        }
+        group.endTimeSeconds = Math.max(group.endTimeSeconds, line.endTimeSeconds);
+      } else {
+        group = {
+          startTimeSeconds: line.startTimeSeconds,
+          endTimeSeconds: line.endTimeSeconds,
+          sourceText: line.sourceText,
+        };
+        lastFragmentText = line.sourceText;
+      }
+
+      if (SENTENCE_TERMINAL_PATTERN.test(group.sourceText)) {
+        merged.push(group);
+        group = null;
+        lastFragmentText = "";
+      }
+    }
+    if (group) {
+      merged.push(group);
+    }
+    return merged;
+  };
   const findActiveCaptionLine = (lines, currentTime) => {
     let active = null;
     for (const line of lines) {
@@ -242,7 +297,9 @@ export const RUNTIME_YOUTUBE_CAPTION_TRACK_SOURCE = String.raw`  const CAPTION_T
           .then((response) => (response && response.ok ? response.json() : null))
           .then((payload) => {
             videoCaptionTrackLoading = false;
-            const lines = parseJson3Captions(payload);
+            // 解析后立即句子合并：下游（当前句定位 / 预翻取句 / 缓存与预埋 key / 显示 / 收藏）
+            // 全部消费本数组，单点合并保证全链路句粒度一致。
+            const lines = mergeCaptionLinesIntoSentences(parseJson3Captions(payload));
             videoCaptionLines = lines;
             videoCaptionTrackVideoId = videoId;
             if (!lines.length) {

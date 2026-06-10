@@ -201,6 +201,7 @@ export const RUNTIME_YOUTUBE_INJECTION_SOURCE = String.raw`  const readActiveYou
     selectCaptionTrack,
     buildJson3CaptionUrl,
     parseJson3Captions,
+    mergeCaptionLinesIntoSentences,
     findActiveCaptionLine,
     captionLineSignature,
     ensureVideoCaptionTrackLoaded,

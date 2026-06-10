@@ -38,8 +38,8 @@ function buildPlayerResponse(captionTracks) {
 function buildJson3Payload() {
   return {
     events: [
-      { tStartMs: 2000, dDurationMs: 2000, segs: [{ utf8: "second line" }] },
-      { tStartMs: 0, dDurationMs: 2000, segs: [{ utf8: "first " }, { utf8: "line" }] },
+      { tStartMs: 2000, dDurationMs: 2000, segs: [{ utf8: "second line." }] },
+      { tStartMs: 0, dDurationMs: 2000, segs: [{ utf8: "first " }, { utf8: "line." }] },
       { tStartMs: 4000, dDurationMs: 1000, segs: [] }, // 空 segs → 过滤
       { tStartMs: 5000, dDurationMs: 1000, segs: [{ utf8: "\n" }] }, // 纯换行 → 过滤
       { tStartMs: 6000, segs: [{ utf8: "no duration line" }] }, // 无 dDurationMs → end=start
@@ -414,8 +414,8 @@ test("E4: parseJson3Captions builds time-axis lines, filters noise, sorts asc", 
   assert.equal(lines.length, 3);
 
   // 升序：first(0) → second(2) → no-duration(6)。
-  assert.equal(lines[0].sourceText, "first line");
-  assert.equal(lines[1].sourceText, "second line");
+  assert.equal(lines[0].sourceText, "first line.");
+  assert.equal(lines[1].sourceText, "second line.");
   assert.equal(lines[2].sourceText, "no duration line");
 
   // tStartMs/1000、(tStartMs+dDurationMs)/1000，浮点误差 <= 0.001。
@@ -553,8 +553,8 @@ test("E5: timeupdate listener throttle skips bursts within window", async () => 
 function videoBJson3Payload() {
   return {
     events: [
-      { tStartMs: 0, dDurationMs: 3000, segs: [{ utf8: "video B opening line" }] },
-      { tStartMs: 3000, dDurationMs: 2000, segs: [{ utf8: "video B second line" }] },
+      { tStartMs: 0, dDurationMs: 3000, segs: [{ utf8: "video B opening line." }] },
+      { tStartMs: 3000, dDurationMs: 2000, segs: [{ utf8: "video B second line." }] },
     ],
   };
 }
@@ -571,7 +571,7 @@ test("E6: SPA route change re-fetches caption track for video B (not A)", async 
   await flushMicrotasks();
   yt.resetVideoCaptionTrack();
   await yt.ensureVideoCaptionTrackLoaded();
-  assert.equal(yt.getVideoCaptionLines()[0].sourceText, "first line");
+  assert.equal(yt.getVideoCaptionLines()[0].sourceText, "first line.");
 
   // SPA 切到视频 B：先换 player response + json3 payload，再触发路由切换钩子。
   harness.setPlayerResponse(buildPlayerResponse(watchCaptionTracks()));
@@ -585,8 +585,8 @@ test("E6: SPA route change re-fetches caption track for video B (not A)", async 
 
   const lines = yt.getVideoCaptionLines();
   assert.equal(lines.length, 2, "lines come from video B payload");
-  assert.equal(lines[0].sourceText, "video B opening line");
-  assert.notEqual(lines[0].sourceText, "first line", "must not reuse video A lines");
+  assert.equal(lines[0].sourceText, "video B opening line.");
+  assert.notEqual(lines[0].sourceText, "first line.", "must not reuse video A lines");
 
   // 签名重置：B 的首句被作为新句 post（不被视为与 A 重复）。
   const captionEvents = harness.postedEvents.filter(
@@ -810,14 +810,14 @@ test("E10: primed line renders bilingual on the first frame of line change", asy
 
   const primed = yt.primeVideoCaptionTranslations({
     videoId: "abc123",
-    entries: { "second line": "第二行" },
+    entries: { "second line.": "第二行" },
   });
   assert.equal(primed, true);
 
   harness.postedEvents.length = 0;
   yt.syncActiveCaptionLine(2.5, false);
 
-  assert.equal(captionOverlay(harness).textContent, "second line\n第二行");
+  assert.equal(captionOverlay(harness).textContent, "second line.\n第二行");
   const lastEvent = harness.postedEvents
     .filter((event) => event.eventType === "video.caption.state.changed")
     .pop();
@@ -830,7 +830,7 @@ test("E10: un-primed waiting line renders source only (no placeholder line)", as
 
   yt.syncActiveCaptionLine(0.5, false);
 
-  assert.equal(captionOverlay(harness).textContent, "first line");
+  assert.equal(captionOverlay(harness).textContent, "first line.");
 });
 
 test("E10: priming the currently displayed line refreshes overlay immediately", async () => {
@@ -838,14 +838,14 @@ test("E10: priming the currently displayed line refreshes overlay immediately", 
 
   harness.setCurrentTime(2.5);
   yt.syncActiveCaptionLine(2.5, false);
-  assert.equal(captionOverlay(harness).textContent, "second line");
+  assert.equal(captionOverlay(harness).textContent, "second line.");
 
   yt.primeVideoCaptionTranslations({
     videoId: "abc123",
-    entries: { "second line": "第二行" },
+    entries: { "second line.": "第二行" },
   });
 
-  assert.equal(captionOverlay(harness).textContent, "second line\n第二行");
+  assert.equal(captionOverlay(harness).textContent, "second line.\n第二行");
 });
 
 test("E10: prime with mismatched videoId is dropped (stale after swipe)", async () => {
@@ -853,7 +853,7 @@ test("E10: prime with mismatched videoId is dropped (stale after swipe)", async 
 
   const primed = yt.primeVideoCaptionTranslations({
     videoId: "someOtherVideo",
-    entries: { "second line": "第二行" },
+    entries: { "second line.": "第二行" },
   });
 
   assert.equal(primed, false);
@@ -866,11 +866,11 @@ test("E10: SPA route change clears primed translations with the track", async ()
 
   yt.primeVideoCaptionTranslations({
     videoId: "abc123",
-    entries: { "second line": "第二行" },
+    entries: { "second line.": "第二行" },
   });
   assert.equal(
     JSON.stringify(yt.getVideoCaptionTranslations()),
-    JSON.stringify({ "second line": "第二行" }),
+    JSON.stringify({ "second line.": "第二行" }),
   );
 
   harness.navigate(WATCH_URL_B);
@@ -886,9 +886,112 @@ test("E10: late prime from previous video is dropped while next track is still l
   harness.navigate(WATCH_URL_B);
   const primed = yt.primeVideoCaptionTranslations({
     videoId: "abc123",
-    entries: { "second line": "第二行" },
+    entries: { "second line.": "第二行" },
   });
 
   assert.equal(primed, false);
   assert.equal(JSON.stringify(yt.getVideoCaptionTranslations()), "{}");
+});
+
+// ===========================================================================
+// E11 — cue 片段合并为完整句（mergeCaptionLinesIntoSentences）·修「每句话不全」
+// ===========================================================================
+import { mergeCaptionLinesIntoSentences } from "../dist/index.js";
+
+function fragment(start, end, sourceText) {
+  return { startTimeSeconds: start, endTimeSeconds: end, sourceText };
+}
+
+test("E11: fragments merge until terminal punctuation (user-reported case)", () => {
+  const merged = mergeCaptionLinesIntoSentences([
+    fragment(0, 2.1, "As far as we know, all that happened is"),
+    fragment(2.1, 4.0, "Ramona kissed Sheldon,"),
+    fragment(4.0, 6.2, "and Sheldon left to find Amy."),
+    fragment(6.2, 7.5, "She's upset."),
+  ]);
+
+  assert.equal(merged.length, 2);
+  assert.equal(
+    merged[0].sourceText,
+    "As far as we know, all that happened is Ramona kissed Sheldon, and Sheldon left to find Amy.",
+  );
+  assert.equal(merged[0].startTimeSeconds, 0);
+  assert.equal(merged[0].endTimeSeconds, 6.2);
+  assert.equal(merged[1].sourceText, "She's upset.");
+});
+
+test("E11: gap over 1.2s closes a sentence without punctuation (ASR fallback)", () => {
+  const merged = mergeCaptionLinesIntoSentences([
+    fragment(0, 2, "no punctuation here"),
+    fragment(3.5, 5, "next thought starts late"),
+  ]);
+
+  assert.equal(merged.length, 2);
+  assert.equal(merged[0].sourceText, "no punctuation here");
+  assert.equal(merged[1].sourceText, "next thought starts late");
+});
+
+test("E11: merged length is capped to keep the overlay box bounded", () => {
+  const long = "x".repeat(80);
+  const merged = mergeCaptionLinesIntoSentences([
+    fragment(0, 1, long),
+    fragment(1, 2, long),
+    fragment(2, 3, "tail"),
+  ]);
+
+  // 80+1+80 > 140 → 第二片段另起一句；tail 与其同句（80+1+4 ≤ 140）。
+  assert.equal(merged.length, 2);
+  assert.equal(merged[0].sourceText, long);
+  assert.equal(merged[1].sourceText, `${long} tail`);
+});
+
+test("E11: speaker-change dash starts a new sentence", () => {
+  const merged = mergeCaptionLinesIntoSentences([
+    fragment(0, 2, "wait, you can't be serious"),
+    fragment(2, 4, "- I am totally serious"),
+  ]);
+
+  assert.equal(merged.length, 2);
+  assert.equal(merged[1].sourceText, "- I am totally serious");
+});
+
+test("E11: consecutive duplicate fragments are not concatenated (ASR rolling window)", () => {
+  const merged = mergeCaptionLinesIntoSentences([
+    fragment(0, 2, "all that happened"),
+    fragment(2, 4, "all that happened"),
+    fragment(4, 6, "is this."),
+  ]);
+
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].sourceText, "all that happened is this.");
+  assert.equal(merged[0].endTimeSeconds, 6);
+});
+
+test("E11: loaded caption track exposes merged sentences to the whole pipeline", async () => {
+  const harness = createCaptionHarness({
+    url: WATCH_URL,
+    playerResponse: buildPlayerResponse(watchCaptionTracks()),
+    json3Payload: {
+      events: [
+        { tStartMs: 0, dDurationMs: 2000, segs: [{ utf8: "this sentence is" }] },
+        { tStartMs: 2000, dDurationMs: 2000, segs: [{ utf8: "split across cues." }] },
+      ],
+    },
+  });
+  const yt = harness.youtube;
+  await flushMicrotasks();
+  yt.resetVideoCaptionTrack();
+  const hasLines = await yt.ensureVideoCaptionTrackLoaded();
+
+  assert.equal(hasLines, true);
+  const lines = yt.getVideoCaptionLines();
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].sourceText, "this sentence is split across cues.");
+
+  // 整句自首片段起完整显示：3.0s（第二片段时段）当前句即整句。
+  yt.syncActiveCaptionLine(3.0, false);
+  assert.equal(
+    captionOverlay(harness).textContent,
+    "this sentence is split across cues.",
+  );
 });
